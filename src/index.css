@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Microsoft Font Stack - System Fonts */
+* {
+  font-family: "Segoe UI", "Segoe UI Web (West European)", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+}
+
 /* Microsoft 365 Fluent 2025 Custom Styles */
 :root {
   --ms-accent: #2563eb;

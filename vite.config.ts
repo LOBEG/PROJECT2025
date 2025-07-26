@@ -11,7 +11,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser',
+    minify: 'esbuild',
+    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -28,5 +29,11 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: true
+  },
+  define: {
+    global: 'globalThis',
+  },
+  esbuild: {
+    target: 'es2020'
   }
 });

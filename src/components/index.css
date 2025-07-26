@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap');
+/* Using system Segoe UI font instead of Google Fonts import to avoid CORB issues */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
