@@ -78,3 +78,8 @@ const MessageIconLanding: React.FC<MessageIconLandingProps> = ({ onOpenMessage }
           />
         </div>
       </div>
+    </div>
+  );
+};
+
+export default MessageIconLanding;

