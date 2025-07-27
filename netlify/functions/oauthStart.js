@@ -1,7 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 
-// Use a persistent store (e.g., Redis) for production!
 const pkceStore = {}; // In-memory session store (for dev/demo only)
 
 function generateCodeVerifier() {
@@ -38,7 +37,7 @@ exports.handler = async (event) => {
     scope: 'openid profile email offline_access',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
-    state: sessionId // <-- CRITICAL: state param must be present
+    state: sessionId // <-- CRITICAL: state param must be present!
   });
   const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
 
@@ -49,6 +48,4 @@ exports.handler = async (event) => {
   };
 };
 
-// Export pkceStore for tokenExchange to use (for dev/demo only)
-// If you move to Redis or another store, update this accordingly
 exports.pkceStore = pkceStore;
