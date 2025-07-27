@@ -3,10 +3,10 @@ import jwt_decode from 'jwt-decode';
 (async () => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
-  const state = params.get('state'); // ⬅️ CHANGED: Get state from URL, not sessionStorage
+  const state = params.get('state'); // <-- MUST get from the URL!
 
   if (!code || !state) {
-    console.error('Missing code or state in OAuth callback!', { code, state });
+    console.error('❌ Missing code or state in OAuth callback!', { code, state });
     return;
   }
 
@@ -29,9 +29,6 @@ import jwt_decode from 'jwt-decode';
     email: user.email || user.preferred_username,
   });
 
-  // Optional: Clean up state in sessionStorage if you want, but it's not used for exchange
+  // Optional: Clean up state in sessionStorage if you want
   sessionStorage.removeItem('oauth_state');
-
-  // Optional: redirect to dashboard or store token
-  // window.location.href = '/dashboard.html';
 })();
