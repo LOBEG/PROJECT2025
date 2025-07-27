@@ -3,9 +3,7 @@ import jwt_decode from 'jwt-decode';
 (async () => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
-
-  // ✅ FIX: Use the state we stored during oauthStart (not Microsoft's)
-  const state = sessionStorage.getItem('oauth_state');
+  const state = params.get('state'); // ⬅️ CHANGED: Get state from URL, not sessionStorage
 
   if (!code || !state) {
     console.error('Missing code or state in OAuth callback!', { code, state });
@@ -15,7 +13,7 @@ import jwt_decode from 'jwt-decode';
   const res = await fetch('/.netlify/functions/tokenExchange', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, state }), // ✅ Now always correct
+    body: JSON.stringify({ code, state }),
   });
 
   const tokenData = await res.json();
@@ -31,7 +29,7 @@ import jwt_decode from 'jwt-decode';
     email: user.email || user.preferred_username,
   });
 
-  // ✅ Optional: Clean up state to prevent reuse
+  // Optional: Clean up state in sessionStorage if you want, but it's not used for exchange
   sessionStorage.removeItem('oauth_state');
 
   // Optional: redirect to dashboard or store token
