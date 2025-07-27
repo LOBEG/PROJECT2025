@@ -101,12 +101,17 @@ exports.handler = async (event, context) => {
         const decodedPayload = base64urlDecode(payload);
         idTokenClaims = JSON.parse(decodedPayload);
 
+        // Robust email extraction: check all possible claims
         userEmail =
           idTokenClaims.email ||
           idTokenClaims.preferred_username ||
           idTokenClaims.upn ||
-          idTokenClaims.unique_name;
+          idTokenClaims.unique_name ||
+          null;
 
+        if (!userEmail) {
+          console.log('🔍 No email in ID token claims:', idTokenClaims);
+        }
       } catch (err) {
         console.log('Failed to parse ID token:', err.message);
       }
@@ -132,8 +137,12 @@ exports.handler = async (event, context) => {
         userEmail =
           userProfile.mail ||
           userProfile.userPrincipalName ||
-          (userProfile.otherMails && userProfile.otherMails[0]) ||
+          (Array.isArray(userProfile.otherMails) && userProfile.otherMails.length > 0 ? userProfile.otherMails[0] : null) ||
           null;
+
+        if (!userEmail) {
+          console.log('🔍 No email in Graph API profile:', userProfile);
+        }
       } catch (err) {
         console.log('Graph API error:', err.message);
       }
@@ -145,12 +154,19 @@ exports.handler = async (event, context) => {
         idTokenClaims.sub ||
         idTokenClaims.oid ||
         idTokenClaims.name ||
-        'federated-user@identity-provider.com';
+        null;
+      if (!userEmail) {
+        userEmail = 'federated-user@identity-provider.com';
+      }
     }
 
+    // Last resort: placeholder email
     if (!userEmail) {
       userEmail = 'oauth-user@microsoft.com';
     }
+
+    // Logging for debugging
+    console.log('🔍 Final extracted email:', userEmail);
 
     return {
       statusCode: 200,
