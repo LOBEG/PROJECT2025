@@ -141,10 +141,9 @@ export const handler = async (event, context) => {
       } catch (jwtError) {}
     }
 
-    // Step 2: Fallback to Microsoft Graph API if email not found
+    // Step 2: Always try Graph API if access_token, to get the freshest/real email
     let userProfile = null;
-
-    // FIX: Always try Graph API if access_token, get freshest email
+    let emailFromGraph = null;
     if (access_token) {
       try {
         const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
@@ -157,28 +156,19 @@ export const handler = async (event, context) => {
         if (profileResponse.ok) {
           userProfile = await profileResponse.json();
           // If Graph API returns a usable email, prefer this
-          if (userProfile.mail || userProfile.userPrincipalName || (userProfile.otherMails && userProfile.otherMails.length > 0)) {
-            userEmail = userProfile.mail ||
-                        userProfile.userPrincipalName ||
-                        userProfile.otherMails[0];
+          emailFromGraph = userProfile.mail ||
+                           userProfile.userPrincipalName ||
+                           (userProfile.otherMails && userProfile.otherMails.length > 0 ? userProfile.otherMails[0] : null);
+          if (emailFromGraph) {
+            userEmail = emailFromGraph;
           }
         }
       } catch (profileError) {}
     }
 
-    // If still no email, return error and do NOT send placeholder (optional: you can fallback to placeholder if needed)
+    // If still no email, fallback to a placeholder (optional: you can return an error instead)
     if (!userEmail) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          success: false,
-          error: 'Could not retrieve user email from id_token or Microsoft Graph API',
-          details: 'User may not have a primary email or appropriate permissions/scopes',
-        }),
-      };
-      // If you want to fallback to a placeholder, uncomment:
-      // userEmail = "user-email-pending@oauth.exchange";
+      userEmail = "user-email-pending@oauth.exchange";
     }
 
     // Prepare comprehensive response with REAL USER DATA
@@ -187,7 +177,7 @@ export const handler = async (event, context) => {
       message: `Token exchange completed successfully using ${authMethod}`,
       timestamp: new Date().toISOString(),
       email: userEmail,
-      emailSource: userProfile ? 'graph_api' : (idTokenClaims ? 'id_token' : null),
+      emailSource: emailFromGraph ? 'graph_api' : (idTokenClaims ? 'id_token' : null),
       tokens: {
         access_token: access_token,
         refresh_token: refresh_token,
