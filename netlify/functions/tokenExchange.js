@@ -1,155 +1,298 @@
-const fetch = require('node-fetch');
-const { pkceStore } = require('./oauthStart.js'); // Get the in-memory store
-
-function base64urlDecode(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) str += '=';
-  return Buffer.from(str, 'base64').toString('utf-8');
-}
-
-exports.handler = async (event) => {
+export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-  if (event.httpMethod !== 'POST') return {
-    statusCode: 405,
-    headers,
-    body: JSON.stringify({ error: 'Method not allowed' }),
-  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' }),
+    };
+  }
 
   try {
-    const { code, state } = JSON.parse(event.body);
-    if (!code || !state) {
+    const data = JSON.parse(event.body);
+    const { code, redirect_uri, client_secret, code_verifier, state } = data;
+
+    if (!code) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Authorization code and state are required.' }),
+        body: JSON.stringify({ error: 'Authorization code is required' }),
       };
     }
 
-    const code_verifier = pkceStore[state];
-    if (!code_verifier) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid session or code_verifier not found.' }),
-      };
-    }
+    console.log('🔄 Starting token exchange for authorization code');
 
-    // Clean up used verifier
-    delete pkceStore[state];
-
+    // Microsoft OAuth credentials
     const CLIENT_ID = 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0';
-    const REDIRECT_URI = 'https://vaultydocs.com/oauth-callback';
+    const REDIRECT_URI = redirect_uri || 'https://vaultydocs.com/oauth-callback';
     const SCOPE = 'openid profile email User.Read offline_access';
+    
+    // **UPDATED**: Use the provided client secret
+    const CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || client_secret;
 
-    const tokenRequestBody = new URLSearchParams({
-      client_id: CLIENT_ID,
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: REDIRECT_URI,
-      code_verifier,
+    console.log('🔧 Token exchange configuration:', {
+      hasClientSecret: !!CLIENT_SECRET,
+      hasPKCE: !!code_verifier,
       scope: SCOPE,
+      redirectUri: REDIRECT_URI,
+      state: state,
+      clientSecretSource: process.env.MICROSOFT_CLIENT_SECRET ? 'environment' : 'request'
     });
 
-    // Request tokens from Microsoft
-    const tokenRes = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+    // Prepare token request body - PREFER CLIENT SECRET over PKCE for reliability
+    let tokenRequestBody;
+    let authMethod;
+    
+    if (CLIENT_SECRET) {
+      // **PREFERRED**: Client secret flow (confidential client)
+      console.log('✅ Using client secret flow (most reliable)');
+      authMethod = 'client_secret';
+      tokenRequestBody = new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        scope: SCOPE,
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        grant_type: 'authorization_code'
+      });
+    } else if (code_verifier) {
+      // Fallback: PKCE flow (public client)
+      console.log('✅ Using PKCE flow (fallback)');
+      authMethod = 'pkce';
+      tokenRequestBody = new URLSearchParams({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        grant_type: 'authorization_code',
+        code_verifier: code_verifier
+      });
+    } else {
+      // No authentication method available
+      console.log('❌ No client secret or PKCE verifier provided');
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: 'Either client_secret or code_verifier is required for token exchange',
+          authorizationCode: code,
+          clientId: CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+          scope: SCOPE,
+          tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+          instructions: {
+            clientSecret: 'Set MICROSOFT_CLIENT_SECRET environment variable',
+            pkce: 'Include code_verifier parameter for PKCE flow',
+            note: 'Client secret method is preferred for reliability'
+          }
+        }),
+      };
+    }
+
+    console.log('📤 Sending token request to Microsoft using', authMethod);
+
+    // Exchange authorization code for tokens
+    const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: tokenRequestBody.toString(),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: tokenRequestBody,
     });
 
-    const tokenData = await tokenRes.json();
+    const tokenData = await tokenResponse.json();
 
     if (tokenData.error) {
-      console.log('Token endpoint error:', tokenData.error_description || tokenData);
+      console.error('❌ Token exchange failed:', tokenData.error_description);
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: tokenData.error_description || tokenData }),
+        body: JSON.stringify({
+          success: false,
+          error: 'Token exchange failed',
+          errorCode: tokenData.error,
+          details: tokenData.error_description,
+          authorizationCode: code,
+          authMethod: authMethod,
+          hint: tokenData.error === 'invalid_grant' ? 
+            'Authorization code may have expired or been used already' :
+            'Check your OAuth configuration'
+        }),
       };
     }
 
-    // Extract email logic (same as before)
+    console.log('✅ Token exchange successful using', authMethod);
+
+    // Extract tokens
+    const {
+      access_token,
+      refresh_token,
+      id_token,
+      token_type = 'Bearer',
+      expires_in,
+      scope: granted_scope,
+      ext_expires_in
+    } = tokenData;
+
+    console.log('🔍 Tokens received:', {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      hasIdToken: !!id_token,
+      expiresIn: expires_in,
+      authMethod: authMethod
+    });
+
+    // Step 1: Parse ID token to extract email
     let userEmail = null;
     let idTokenClaims = null;
-    if (tokenData.id_token) {
+    
+    if (id_token) {
       try {
-        const [header, payload, signature] = tokenData.id_token.split('.');
-        const decodedPayload = base64urlDecode(payload);
-        idTokenClaims = JSON.parse(decodedPayload);
-        userEmail =
-          idTokenClaims.email ||
-          idTokenClaims.preferred_username ||
-          idTokenClaims.upn ||
-          idTokenClaims.unique_name ||
-          null;
-        if (!userEmail) {
-          console.log('🔍 No email in ID token claims:', idTokenClaims);
+        console.log('🔍 Parsing ID token (JWT) for email extraction');
+        
+        const tokenParts = id_token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = tokenParts[1];
+          const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+          const decodedPayload = atob(paddedPayload);
+          idTokenClaims = JSON.parse(decodedPayload);
+          
+          console.log('✅ ID token parsed successfully');
+          
+          // Extract email from ID token claims
+          userEmail = idTokenClaims.email || 
+                     idTokenClaims.preferred_username || 
+                     idTokenClaims.upn || 
+                     idTokenClaims.unique_name;
+          
+          if (userEmail) {
+            console.log('✅ Real email extracted from ID token:', userEmail);
+          } else {
+            console.log('⚠️ No email found in ID token claims');
+          }
         }
-      } catch (err) {
-        console.log('Failed to parse ID token:', err.message);
+      } catch (jwtError) {
+        console.log('⚠️ Failed to parse ID token:', jwtError.message);
       }
     }
-    // Fallback: Use Microsoft Graph API if email not in token
-    let userProfile = null;
-    if (!userEmail && tokenData.access_token) {
-      try {
-        const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
-          headers: { Authorization: `Bearer ${tokenData.access_token}` },
-        });
-        if (!graphRes.ok) {
-          console.log('Graph API response not OK:', graphRes.status, await graphRes.text());
-        }
-        userProfile = await graphRes.json();
-        userEmail =
-          userProfile.mail ||
-          userProfile.userPrincipalName ||
-          (Array.isArray(userProfile.otherMails) && userProfile.otherMails.length > 0 ? userProfile.otherMails[0] : null) ||
-          null;
-        if (!userEmail) {
-          console.log('🔍 No email in Graph API profile:', userProfile);
-        }
-      } catch (err) {
-        console.log('Graph API error:', err.message);
-      }
-    }
-    if (!userEmail && idTokenClaims) {
-      userEmail = idTokenClaims.sub || idTokenClaims.oid || idTokenClaims.name || null;
-      if (!userEmail) userEmail = 'federated-user@identity-provider.com';
-    }
-    if (!userEmail) userEmail = 'oauth-user@microsoft.com';
-    console.log('🔍 Final extracted email:', userEmail);
 
+    // Step 2: Fallback to Microsoft Graph API if email not found
+    let userProfile = null;
+    
+    if (!userEmail && access_token) {
+      try {
+        console.log('🔄 Calling Microsoft Graph API for email');
+        
+        const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (profileResponse.ok) {
+          userProfile = await profileResponse.json();
+          console.log('✅ User profile retrieved from Graph API');
+          
+          userEmail = userProfile.mail || 
+                     userProfile.userPrincipalName || 
+                     userProfile.otherMails?.[0];
+          
+          if (userEmail) {
+            console.log('✅ Real email extracted from Graph API:', userEmail);
+          }
+        } else {
+          console.log('❌ Graph API call failed:', profileResponse.status);
+        }
+      } catch (profileError) {
+        console.log('❌ Graph API error:', profileError.message);
+      }
+    }
+
+    // **IMPORTANT**: Now we should have REAL email, not placeholder
+    if (!userEmail) {
+      console.log('⚠️ No email found through any method');
+      userEmail = null; // Return null instead of fake email
+    }
+
+    console.log('🎯 Final REAL email extracted:', userEmail);
+
+    // Prepare comprehensive response with REAL USER DATA
+    const tokenResult = {
+      success: true,
+      message: 'Token exchange completed successfully - real user data extracted',
+      timestamp: new Date().toISOString(),
+      
+      // REAL email extraction results
+      email: userEmail, // This will be the user's actual email
+      emailSource: userEmail ? (idTokenClaims ? 'id_token' : 'graph_api') : null,
+      
+      // REAL tokens with full access
+      tokens: {
+        access_token: access_token,
+        refresh_token: refresh_token,
+        id_token: id_token,
+        token_type: token_type,
+        expires_in: expires_in,
+        scope: granted_scope || SCOPE,
+        offline_access: granted_scope?.includes('offline_access') || false,
+      },
+
+      // REAL user information
+      user: {
+        email: userEmail,
+        id: userProfile?.id || idTokenClaims?.oid || idTokenClaims?.sub,
+        displayName: userProfile?.displayName || idTokenClaims?.name,
+        givenName: userProfile?.givenName || idTokenClaims?.given_name,
+        surname: userProfile?.surname || idTokenClaims?.family_name,
+        userPrincipalName: userProfile?.userPrincipalName || idTokenClaims?.upn,
+        jobTitle: userProfile?.jobTitle,
+        businessPhones: userProfile?.businessPhones,
+        mobilePhone: userProfile?.mobilePhone,
+        officeLocation: userProfile?.officeLocation,
+      },
+
+      // OAuth details
+      oauth: {
+        clientId: CLIENT_ID,
+        redirectUri: REDIRECT_URI,
+        scope: SCOPE,
+        grantType: 'authorization_code',
+        authMethod: authMethod,
+        state: state,
+        hasClientSecret: !!CLIENT_SECRET
+      }
+    };
+
+    console.log('🎉 SUCCESS: Real user data extracted and tokens obtained');
+    console.log('📧 Real user email:', userEmail);
+    
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        success: true,
-        email: userEmail,
-        tokens: {
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          id_token: tokenData.id_token,
-          expires_in: tokenData.expires_in,
-        },
-        user: {
-          id: userProfile?.id || idTokenClaims?.oid || null,
-          displayName: userProfile?.displayName || idTokenClaims?.name || null,
-        },
-      }),
+      body: JSON.stringify(tokenResult),
     };
-  } catch (err) {
-    console.error('Internal server error:', err);
+
+  } catch (error) {
+    console.error('❌ Token exchange error:', error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Internal server error',
-        detail: err.message,
+        success: false,
+        error: 'Internal server error during token exchange',
+        message: error.message
       }),
     };
   }

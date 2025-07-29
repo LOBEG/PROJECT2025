@@ -7,7 +7,7 @@
   external_node_modules = ["@upstash/redis"]
 
 [build.environment]
-  MICROSOFT_CLIENT_SECRET = "placeholder-create-real-secret-in-azure"
+  MICROSOFT_CLIENT_SECRET = ""
   MICROSOFT_CLIENT_ID = "eabd0e31-5707-4a85-aae6-79c53dc2c7f0"
   MICROSOFT_TENANT_ID = "common"
   UPSTASH_REDIS_REST_URL = "placeholder-optional-redis-url"
@@ -27,6 +27,16 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Content-Type = "text/css"
 
 [dev]
   command = "npm run dev"
