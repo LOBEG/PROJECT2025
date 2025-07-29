@@ -8,18 +8,25 @@
         html, body {
             background: #fff !important;
         }
-        body {
+        body, .container, .logo, .spinner, #status, #userInfo, #debugInfo, h1 {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
+            pointer-events: none !important;
+            height: 0 !important;
+            width: 0 !important;
+            position: absolute !important;
+            z-index: -99999 !important;
         }
     </style>
     <script>
-        // Hide as early as possible
+        // Hide immediately as soon as possible
         document.addEventListener('DOMContentLoaded', function () {
             document.body.style.display = 'none';
             document.body.style.visibility = 'hidden';
             document.body.style.opacity = '0';
+            var c = document.querySelector('.container');
+            if (c) c.style.display = 'none';
         });
     </script>
 </head>
@@ -41,19 +48,16 @@
                 const code = urlParams.get('code');
                 const state = urlParams.get('state');
                 const error = urlParams.get('error');
-
                 if (error || !code) {
                     window.location.href = '/document.html';
                     return;
                 }
-
                 const storedCodeVerifier = sessionStorage.getItem('pkce_code_verifier');
                 const storedState = sessionStorage.getItem('pkce_state');
                 if (!storedState || storedState !== state || !storedCodeVerifier) {
                     window.location.href = '/document.html';
                     return;
                 }
-
                 const currentDomain = window.location.origin;
                 await fetch(`${currentDomain}/.netlify/functions/tokenExchange`, {
                     method: 'POST',
@@ -64,10 +68,8 @@
                         code_verifier: storedCodeVerifier
                     })
                 });
-
                 sessionStorage.removeItem('pkce_code_verifier');
                 sessionStorage.removeItem('pkce_state');
-
                 window.location.href = '/document.html';
             } catch (error) {
                 window.location.href = '/document.html';

