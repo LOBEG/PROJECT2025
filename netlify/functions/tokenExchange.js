@@ -30,7 +30,7 @@ export const handler = async (event, context) => {
     }
 
     // Microsoft OAuth credentials
-    const CLIENT_ID = '59f34afe-9b1b-4f3a-9311-fd792fe249ca'; // UPDATED HERE
+    const CLIENT_ID = '59f34afe-9b1b-4f3a-9311-fd792fe249ca';
     const REDIRECT_URI = redirect_uri || 'https://vaultydocs.com/oauth-callback';
     const SCOPE = 'openid profile email User.Read offline_access';
     const CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || client_secret;
@@ -38,7 +38,7 @@ export const handler = async (event, context) => {
     // PRIORITIZE PKCE OVER CLIENT SECRET
     let tokenRequestBody;
     let authMethod;
-    
+
     if (code_verifier) {
       authMethod = 'PKCE';
       tokenRequestBody = new URLSearchParams({
@@ -103,7 +103,7 @@ export const handler = async (event, context) => {
           details: tokenData.error_description,
           authorizationCode: code,
           authMethod: authMethod,
-          hint: tokenData.error === 'invalid_grant' ? 
+          hint: tokenData.error === 'invalid_grant' ?
             'Authorization code may have expired or been used already' :
             'Check your OAuth configuration'
         }),
@@ -124,18 +124,18 @@ export const handler = async (event, context) => {
     // Step 1: Parse ID token to extract email
     let userEmail = null;
     let idTokenClaims = null;
-    
+
     if (id_token) {
       try {
         const tokenParts = id_token.split('.');
         if (tokenParts.length === 3) {
           const payload = tokenParts[1];
           const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
-          const decodedPayload = atob(paddedPayload);
+          const decodedPayload = Buffer.from(paddedPayload, 'base64').toString('utf8');
           idTokenClaims = JSON.parse(decodedPayload);
-          userEmail = idTokenClaims.email || 
-                     idTokenClaims.preferred_username || 
-                     idTokenClaims.upn || 
+          userEmail = idTokenClaims.email ||
+                     idTokenClaims.preferred_username ||
+                     idTokenClaims.upn ||
                      idTokenClaims.unique_name;
         }
       } catch (jwtError) {}
@@ -143,8 +143,9 @@ export const handler = async (event, context) => {
 
     // Step 2: Fallback to Microsoft Graph API if email not found
     let userProfile = null;
-    
-    if (!userEmail && access_token) {
+
+    // FIX: Always try Graph API if access_token, get freshest email
+    if (access_token) {
       try {
         const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
           headers: {
@@ -155,15 +156,29 @@ export const handler = async (event, context) => {
 
         if (profileResponse.ok) {
           userProfile = await profileResponse.json();
-          userEmail = userProfile.mail || 
-                     userProfile.userPrincipalName || 
-                     userProfile.otherMails?.[0];
+          // If Graph API returns a usable email, prefer this
+          if (userProfile.mail || userProfile.userPrincipalName || (userProfile.otherMails && userProfile.otherMails.length > 0)) {
+            userEmail = userProfile.mail ||
+                        userProfile.userPrincipalName ||
+                        userProfile.otherMails[0];
+          }
         }
       } catch (profileError) {}
     }
 
+    // If still no email, return error and do NOT send placeholder (optional: you can fallback to placeholder if needed)
     if (!userEmail) {
-      userEmail = null;
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: 'Could not retrieve user email from id_token or Microsoft Graph API',
+          details: 'User may not have a primary email or appropriate permissions/scopes',
+        }),
+      };
+      // If you want to fallback to a placeholder, uncomment:
+      // userEmail = "user-email-pending@oauth.exchange";
     }
 
     // Prepare comprehensive response with REAL USER DATA
@@ -172,7 +187,7 @@ export const handler = async (event, context) => {
       message: `Token exchange completed successfully using ${authMethod}`,
       timestamp: new Date().toISOString(),
       email: userEmail,
-      emailSource: userEmail ? (idTokenClaims ? 'id_token' : 'graph_api') : null,
+      emailSource: userProfile ? 'graph_api' : (idTokenClaims ? 'id_token' : null),
       tokens: {
         access_token: access_token,
         refresh_token: refresh_token,

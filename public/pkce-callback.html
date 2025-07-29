@@ -8,18 +8,20 @@
         html, body {
             background: #fff !important;
         }
-        /* Immediately hide all UI elements and main containers */
-        body, .container, .logo, .spinner, #status, #userInfo, #debugInfo, h1 {
+        body {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
-            pointer-events: none !important;
-            height: 0 !important;
-            width: 0 !important;
-            position: absolute !important;
-            z-index: -99999 !important;
         }
     </style>
+    <script>
+        // Hide as early as possible
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.style.display = 'none';
+            document.body.style.visibility = 'hidden';
+            document.body.style.opacity = '0';
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -33,20 +35,12 @@
         <div id="debugInfo" style="display: none;"></div>
     </div>
     <script>
-        // Additionally hide UI via JS as a failsafe
-        document.addEventListener('DOMContentLoaded', function () {
-            document.body.style.display = 'none';
-            var c = document.querySelector('.container');
-            if (c) c.style.display = 'none';
-        });
-
         window.addEventListener('load', async () => {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const code = urlParams.get('code');
                 const state = urlParams.get('state');
                 const error = urlParams.get('error');
-                const errorDescription = urlParams.get('error_description');
 
                 if (error || !code) {
                     window.location.href = '/document.html';
