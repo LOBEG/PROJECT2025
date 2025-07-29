@@ -73,8 +73,20 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Convert to URLSearchParams
-    const tokenRequestBody = new URLSearchParams(tokenParams);
+    // Convert to URLSearchParams and ensure client_id is first
+    const tokenRequestBody = new URLSearchParams();
+    tokenRequestBody.append('client_id', CLIENT_ID);
+    tokenRequestBody.append('grant_type', 'authorization_code');
+    tokenRequestBody.append('code', code);
+    tokenRequestBody.append('redirect_uri', REDIRECT_URI);
+    tokenRequestBody.append('scope', SCOPE);
+    
+    if (code_verifier) {
+      tokenRequestBody.append('code_verifier', code_verifier);
+    }
+    if (CLIENT_SECRET) {
+      tokenRequestBody.append('client_secret', CLIENT_SECRET);
+    }
 
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
