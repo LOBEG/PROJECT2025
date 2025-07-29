@@ -25,11 +25,12 @@ exports.handler = async (event) => {
   pkceStore[sessionId] = codeVerifier;
 
   const params = new URLSearchParams({
-    client_id: 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0',
+    client_id: '59f34afe-9b1b-4f3a-9311-fd792fe249ca',
     response_type: 'code',
     redirect_uri: 'https://vaultydocs.com/oauth-callback',
     response_mode: 'query',
-    scope: 'openid profile email offline_access',
+    scope: 'openid profile email User.Read',
+    // prompt: 'login', // Uncomment if you want to always force login prompt
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     state: sessionId // THIS IS CRITICAL

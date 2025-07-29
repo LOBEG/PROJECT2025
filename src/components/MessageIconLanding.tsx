@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import WordIcon from '../assets/Word.svg';
 import styles from './MessageIconLanding.module.css';
 
@@ -7,36 +7,13 @@ interface MessageIconLandingProps {
 }
 
 const MessageIconLanding: React.FC<MessageIconLandingProps> = ({ onOpenMessage }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingText, setLoadingText] = useState('Opening document...');
-
   useEffect(() => {
-    // Simulate realistic Word document loading sequence
-    const loadingSequence = [
-      { text: 'Opening document...', delay: 0 },
-      { text: 'Loading content...', delay: 1000 },
-      { text: 'Preparing document...', delay: 2000 },
-      { text: 'Almost ready...', delay: 2500 }
-    ];
-
-    loadingSequence.forEach(({ text, delay }) => {
-      setTimeout(() => {
-        setLoadingText(text);
-      }, delay);
-    });
-
-    // Finish loading after realistic time
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-
-    // Auto-redirect after document "opens"
+    // Auto-redirect immediately
     const redirectTimer = setTimeout(() => {
       onOpenMessage();
-    }, 3500);
+    }, 500);
 
     return () => {
-      clearTimeout(loadingTimer);
       clearTimeout(redirectTimer);
     };
   }, [onOpenMessage]);
@@ -53,21 +30,6 @@ const MessageIconLanding: React.FC<MessageIconLandingProps> = ({ onOpenMessage }
             />
           </div>
           <h1 className={styles.wordTitle}>Microsoft Word</h1>
-          
-          {/* Realistic loading text */}
-          {isLoading && (
-            <div className={styles.loadingTextContainer}>
-              <p className={styles.loadingText}>{loadingText}</p>
-              <div className={styles.loadingSpinner}></div>
-            </div>
-          )}
-          
-          {/* Document ready state */}
-          {!isLoading && (
-            <div className={styles.documentReady}>
-              <p className={styles.readyText}>Document ready</p>
-            </div>
-          )}
         </div>
         
         <div className={styles.microsoftLogoSection}>
