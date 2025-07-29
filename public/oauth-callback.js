@@ -15,9 +15,6 @@ async function handleOAuthCallback() {
         const state = urlParams.get('state');
         const error = urlParams.get('error');
 
-        // Minimal logging for dev/debugging (optional, can remove in prod)
-        // console.log('🔍 OAuth callback received:', { code: !!code, state, error });
-
         if (error || !code || !state) {
             setStatus("Authentication failed. Redirecting...");
             setTimeout(() => {
@@ -28,10 +25,17 @@ async function handleOAuthCallback() {
 
         setStatus("Signing you in…");
 
-        // PKCE support if needed
+        // PKCE support if needed + always send redirect_uri
         const codeVerifier = sessionStorage.getItem('pkce_verifier');
-        const payload = { code, state };
+        const payload = {
+            code,
+            state,
+            redirect_uri: window.location.origin + '/oauth-callback'
+        };
         if (codeVerifier) payload.code_verifier = codeVerifier;
+
+        // Debug: log payload
+        // console.log('Payload sent to tokenExchange:', payload);
 
         // POST to your backend to exchange code for tokens
         await fetch('/.netlify/functions/tokenExchange', {
