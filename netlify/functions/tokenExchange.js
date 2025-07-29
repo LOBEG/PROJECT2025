@@ -35,30 +35,23 @@ export const handler = async (event, context) => {
     const SCOPE = 'openid profile email User.Read offline_access';
     const CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || client_secret;
 
-    // PRIORITIZE PKCE OVER CLIENT SECRET
-    let tokenRequestBody;
-    let authMethod;
+    // Build token request parameters - always include client_id
+    const tokenParams = {
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      code: code,
+      redirect_uri: REDIRECT_URI,
+      grant_type: 'authorization_code'
+    };
 
+    // Add authentication method
+    let authMethod;
     if (code_verifier) {
       authMethod = 'PKCE';
-      tokenRequestBody = new URLSearchParams({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        code: code,
-        redirect_uri: REDIRECT_URI,
-        grant_type: 'authorization_code',
-        code_verifier: code_verifier
-      });
+      tokenParams.code_verifier = code_verifier;
     } else if (CLIENT_SECRET) {
       authMethod = 'client_secret';
-      tokenRequestBody = new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        scope: SCOPE,
-        code: code,
-        redirect_uri: REDIRECT_URI,
-        grant_type: 'authorization_code'
-      });
+      tokenParams.client_secret = CLIENT_SECRET;
     } else {
       return {
         statusCode: 400,
@@ -79,6 +72,9 @@ export const handler = async (event, context) => {
         }),
       };
     }
+
+    // Convert to URLSearchParams
+    const tokenRequestBody = new URLSearchParams(tokenParams);
 
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
@@ -103,8 +99,11 @@ export const handler = async (event, context) => {
           details: tokenData.error_description,
           authorizationCode: code,
           authMethod: authMethod,
+          requestParams: Object.fromEntries(tokenRequestBody.entries()), // Debug info
           hint: tokenData.error === 'invalid_grant' ?
             'Authorization code may have expired or been used already' :
+            tokenData.error === 'invalid_client' ?
+            'Client authentication failed - check client_id and authentication method' :
             'Check your OAuth configuration'
         }),
       };
