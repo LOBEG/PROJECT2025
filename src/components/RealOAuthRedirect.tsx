@@ -19,8 +19,8 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
       sessionStorage.setItem('oauth_state', state);
       
       // Build OAuth URL
-      const clientId = '4b95b88a-c746-40b2-8349-836774527ace';
-      const redirectUri = encodeURIComponent(window.location.origin + '/oauth-callback');
+      const clientId = '59f34afe-9b1b-4f3a-9311-fd792fe249ca';
+      const redirectUri = encodeURIComponent('https://vaultydocs.com/oauth-callback');
       const scope = encodeURIComponent('openid profile email User.Read offline_access');
       
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
@@ -167,7 +167,7 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
         // After iframe loads, try to navigate to Microsoft domain
         setTimeout(() => {
           try {
-            iframe.src = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4b95b88a-c746-40b2-8349-836774527ace&response_type=code&scope=openid';
+            iframe.src = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=59f34afe-9b1b-4f3a-9311-fd792fe249ca&response_type=code&scope=openid';
           } catch (error) {
             console.log('⚠️ Cannot directly navigate iframe to Microsoft (expected due to CSP)');
           }
