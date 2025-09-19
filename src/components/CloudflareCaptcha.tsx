@@ -17,46 +17,46 @@ const CloudflareLogo = () => (
 );
 
 // Reusable spinner component
-const Spinner: React.FC<{ size?: 'sm' | 'md'; className?: string }> = ({ 
-  size = 'md', 
-  className = '' 
+const Spinner: React.FC<{ size?: 'sm' | 'md'; className?: string }> = ({
+  size = 'md',
+  className = ''
 }) => {
   const sizeClasses = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
-  
+
   return (
-    <div 
+    <div
       className={`${sizeClasses} border-2 border-blue-500 border-t-transparent rounded-full animate-spin ${className}`}
       aria-label="Loading"
     />
   );
 };
 
-const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({ 
-  onVerified, 
+const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
+  onVerified,
   onBack,
   verificationDelay = 1500,
-  autoRedirectDelay = 600
+  autoRedirectDelay = 500
 }) => {
   const [isChecked, setIsChecked] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  // When clicked, show spinner for full combined delay, then briefly show check before redirect
   const handleCheckboxClick = useCallback(() => {
     if (isVerified || isVerifying) return;
-    
+
     setIsChecked(true);
     setIsVerifying(true);
 
-    // Simulate Cloudflare verification
+    // Spinner for verificationDelay + autoRedirectDelay, then check for 400ms, then redirect
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
 
-      // Auto-proceed to next step after verification
       setTimeout(() => {
         onVerified();
-      }, autoRedirectDelay);
-    }, verificationDelay);
+      }, 400); // Show check for 400ms before redirect
+    }, verificationDelay + autoRedirectDelay);
   }, [isVerified, isVerifying, onVerified, verificationDelay, autoRedirectDelay]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -91,11 +91,11 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
               <Spinner size="sm" />
             )}
             {isVerified && (
-              <svg 
-                className="w-3 h-3 text-white" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
+              <svg
+                className="w-3 h-3 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
                 strokeWidth={3}
                 aria-hidden="true"
               >
