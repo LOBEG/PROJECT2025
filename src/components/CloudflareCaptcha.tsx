@@ -6,6 +6,7 @@ interface CloudflareCaptchaProps {
   verificationDelay?: number;
   autoRedirectDelay?: number;
   totalDelayTime?: number;
+  totalDelayTime?: number;
 }
 
 // Proper Cloudflare logo SVG
@@ -38,6 +39,7 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
   verificationDelay = 1500,
   autoRedirectDelay = 500,
   totalDelayTime
+  totalDelayTime
 }) => {
   const [isChecked, setIsChecked] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -53,15 +55,19 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
     // Use totalDelayTime if provided, otherwise use the original timing
     const delayTime = totalDelayTime || (verificationDelay + autoRedirectDelay);
 
+    // Keep spinner for the entire delay period, then show check briefly before redirect
+    const delayTime = totalDelayTime || (verificationDelay + autoRedirectDelay);
+
     // Keep spinner for the entire delay period, then redirect immediately
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
       
+      // Show check mark for 300ms then redirect
       // Redirect immediately without showing check mark
       setTimeout(() => {
         onVerified();
-      }, 100); // Very brief moment to show check mark
+      }, 300);
     }, delayTime);
   }, [isVerified, isVerifying, onVerified, verificationDelay, autoRedirectDelay, totalDelayTime]);
 
