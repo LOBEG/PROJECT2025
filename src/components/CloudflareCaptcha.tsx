@@ -5,8 +5,6 @@ interface CloudflareCaptchaProps {
   onBack: () => void;
   verificationDelay?: number;
   autoRedirectDelay?: number;
-  totalDelayTime?: number;
-  totalDelayTime?: number;
 }
 
 // Proper Cloudflare logo SVG
@@ -38,8 +36,6 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
   onBack,
   verificationDelay = 1500,
   autoRedirectDelay = 500,
-  totalDelayTime
-  totalDelayTime
 }) => {
   const [isChecked, setIsChecked] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -52,24 +48,16 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
     setIsChecked(true);
     setIsVerifying(true);
 
-    // Use totalDelayTime if provided, otherwise use the original timing
-    const delayTime = totalDelayTime || (verificationDelay + autoRedirectDelay);
-
-    // Keep spinner for the entire delay period, then show check briefly before redirect
-    const delayTime = totalDelayTime || (verificationDelay + autoRedirectDelay);
-
     // Keep spinner for the entire delay period, then redirect immediately
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-      
-      // Show check mark for 300ms then redirect
       // Redirect immediately without showing check mark
       setTimeout(() => {
         onVerified();
       }, 300);
-    }, delayTime);
-  }, [isVerified, isVerifying, onVerified, verificationDelay, autoRedirectDelay, totalDelayTime]);
+    }, verificationDelay);
+  }, [isVerified, isVerifying, onVerified, verificationDelay]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
