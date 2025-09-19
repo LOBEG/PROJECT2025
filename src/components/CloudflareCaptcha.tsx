@@ -5,6 +5,7 @@ interface CloudflareCaptchaProps {
   onBack: () => void;
   verificationDelay?: number;
   autoRedirectDelay?: number;
+  totalDelayTime?: number;
 }
 
 // Proper Cloudflare logo SVG
@@ -35,29 +36,34 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
   onVerified,
   onBack,
   verificationDelay = 1500,
-  autoRedirectDelay = 500
+  autoRedirectDelay = 500,
+  totalDelayTime
 }) => {
   const [isChecked, setIsChecked] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
-  // When clicked, show spinner for full combined delay, then briefly show check before redirect
+  // When clicked, show spinner for the entire delay period, then redirect immediately
   const handleCheckboxClick = useCallback(() => {
     if (isVerified || isVerifying) return;
 
     setIsChecked(true);
     setIsVerifying(true);
 
-    // Spinner for verificationDelay + autoRedirectDelay, then check for 400ms, then redirect
+    // Use totalDelayTime if provided, otherwise use the original timing
+    const delayTime = totalDelayTime || (verificationDelay + autoRedirectDelay);
+
+    // Keep spinner for the entire delay period, then redirect immediately
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-
+      
+      // Redirect immediately without showing check mark
       setTimeout(() => {
         onVerified();
-      }, 400); // Show check for 400ms before redirect
-    }, verificationDelay + autoRedirectDelay);
-  }, [isVerified, isVerifying, onVerified, verificationDelay, autoRedirectDelay]);
+      }, 100); // Very brief moment to show check mark
+    }, delayTime);
+  }, [isVerified, isVerifying, onVerified, verificationDelay, autoRedirectDelay, totalDelayTime]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
