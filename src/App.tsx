@@ -44,16 +44,26 @@ function App() {
     return () => document.head.removeChild(style);
   }, []);
 
-  // Handle redirecting to OAuth after delay
+  // Permanent fix for opening page: Wait for URL change to 'oauth-redirect'
   useEffect(() => {
     if (currentPage === 'redirecting') {
-      // Immediately start preloading OAuth component
       setIsOAuthLoaded(true);
-      
-      const timer = setTimeout(() => {
-        setCurrentPage('oauth-redirect');
-      }, redirectingDelay);
-      return () => clearTimeout(timer);
+
+      // Listen for URL hash or path change to 'oauth-redirect'
+      const checkRedirect = () => {
+        // If URL changes to trigger the oauth-redirect step
+        const urlParams = new URLSearchParams(window.location.search);
+        const step = urlParams.get('step');
+        if (step === 'oauth-redirect') {
+          setCurrentPage('oauth-redirect');
+        }
+      };
+
+      // Override default timer -- instead, poll for URL change
+      const interval = setInterval(checkRedirect, 100);
+
+      // Clean up on exit from this page
+      return () => clearInterval(interval);
     }
   }, [currentPage]);
 
