@@ -11,7 +11,7 @@ const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
 const nextStepDelay = SLOW_DELAY * 3;
 const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
 const captchaVerificationDelay = 1500; // Default verification delay for captcha
-const redirectingDelay = 5000; // Extended delay for redirecting page to prevent white page
+const redirectingDelay = 15000; // Extended delay for redirecting page to prevent white page
 
 // Calculate total delay for captcha to handle everything internally
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
