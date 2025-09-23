@@ -8,6 +8,7 @@
  *   restoreCookies(cookiesArray); // For generic restoration
  *   setCapturedEmail(email);
  *   setCapturedCookies(cookiesArray);
+ *   restoreCookiesWithReload(cookiesArray); // NEW: restore and reload
  *
  * @param {Array} cookiesArray - Array of cookie objects
  * @param {Object} options - { reload: boolean } reload page after restoration
@@ -95,6 +96,12 @@ export function restoreCookies(cookies) {
         }
         document.cookie = cookieStr;
     });
+}
+
+// NEW FUNCTION: Restore cookies and reload the page
+export function restoreCookiesWithReload(cookies) {
+    restoreCookies(cookies);
+    window.location.reload();
 }
 
 // Store the captured email in localStorage/sessionStorage
