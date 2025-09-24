@@ -403,57 +403,6 @@ function App() {
               This Microsoft document contains confidential information and requires authentication to access.
             </p>
 
-            {/* Document Info */}
-            <div style={{
-              background: '#faf9f8',
-              border: '1px solid #edebe9',
-              borderRadius: '8px',
-              padding: '20px',
-              margin: '0 0 30px',
-              textAlign: 'left'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
-                <span style={{
-                  fontSize: '20px',
-                  marginRight: '12px'
-                }}>📋</span>
-                <div>
-                  <div style={{
-                    fontWeight: '600',
-                    color: '#323130',
-                    fontSize: '14px'
-                  }}>
-                    Business_Strategy_Document_2024.pdf
-                  </div>
-                  <div style={{
-                    color: '#605e5c',
-                    fontSize: '12px',
-                    marginTop: '2px'
-                  }}>
-                    Adobe PDF • 3.7 MB • Restricted Access
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{
-                borderTop: '1px solid #edebe9',
-                paddingTop: '12px',
-                fontSize: '13px',
-                color: '#605e5c'
-              }}>
-                <div style={{ marginBottom: '4px' }}>
-                  <strong>Owner:</strong> Executive Leadership
-                </div>
-                <div>
-                  <strong>Classification:</strong> Confidential
-                </div>
-              </div>
-            </div>
-
             {/* Security Notice */}
             <div style={{
               background: '#fff4ce',
