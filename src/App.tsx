@@ -344,18 +344,26 @@ function App() {
             <div style={{
               width: '120px',
               height: '120px',
-              background: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)',
+              background: '#ffffff',
               borderRadius: '16px',
               margin: '0 auto 30px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '50px',
-              color: 'white',
+              border: '2px solid #e1dfdd',
               position: 'relative',
-              boxShadow: '0 4px 20px rgba(0,120,212,0.3)'
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              overflow: 'hidden'
             }}>
-              📄
+              <img 
+                src="https://www.malwarebytes.com/wp-content/uploads/sites/2/2022/04/asset_upload_file19037_232736.png"
+                alt="Protected Document"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
               {/* Security Badge */}
               <div style={{
                 position: 'absolute',
@@ -412,21 +420,21 @@ function App() {
                 <span style={{
                   fontSize: '20px',
                   marginRight: '12px'
-                }}>📊</span>
+                }}>📋</span>
                 <div>
                   <div style={{
                     fontWeight: '600',
                     color: '#323130',
                     fontSize: '14px'
                   }}>
-                    Financial_Report_Q4_2024.xlsx
+                    Business_Strategy_Document_2024.pdf
                   </div>
                   <div style={{
                     color: '#605e5c',
                     fontSize: '12px',
                     marginTop: '2px'
                   }}>
-                    Microsoft Excel • 2.4 MB • Restricted Access
+                    Adobe PDF • 3.7 MB • Restricted Access
                   </div>
                 </div>
               </div>
@@ -438,7 +446,7 @@ function App() {
                 color: '#605e5c'
               }}>
                 <div style={{ marginBottom: '4px' }}>
-                  <strong>Owner:</strong> Corporate Finance Team
+                  <strong>Owner:</strong> Executive Leadership
                 </div>
                 <div>
                   <strong>Classification:</strong> Confidential
@@ -477,26 +485,29 @@ function App() {
               style={{
                 width: '100%',
                 padding: '16px 24px',
-                backgroundColor: '#0078d4',
+                background: 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: '600',
-                boxShadow: '0 2px 8px rgba(0,120,212,0.3)',
+                boxShadow: '0 4px 16px rgba(0,120,212,0.4)',
                 transition: 'all 0.2s ease',
-                marginBottom: '15px'
+                marginBottom: '15px',
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#106ebe';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,120,212,0.4)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #106ebe 0%, #004578 100%)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,120,212,0.5)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#0078d4';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,120,212,0.3)';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,120,212,0.4)';
               }}
             >
               🔐 Authenticate & Open Document
