@@ -91,20 +91,35 @@ function App() {
   // 🟢 NEW: Store session data from OAuth
   const [oauthSessionData, setOAuthSessionData] = useState<any>(null);
 
-  // Inject CSS globally (for all pages)
+  // Add CSS animation for dots
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
-      /* Card styles from HTML for the protected file page */
-      body {
-        background: #f7f9fb;
-        font-family: 'Segoe UI', Arial, sans-serif;
-        min-height: 100vh;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+      @keyframes dotAnimation {
+        0% { opacity: 0; }
+        20% { opacity: 1; }
+        100% { opacity: 0; }
       }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .redirecting-dots span:nth-child(1) { animation-delay: 0s; }
+      .redirecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+      .redirecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+      .redirecting-dots span:nth-child(4) { animation-delay: 0.6s; }
+      .redirecting-dots span:nth-child(5) { animation-delay: 0.8s; }
+      .redirecting-dots span:nth-child(6) { animation-delay: 1.0s; }
+      .redirecting-dots span { animation: dotAnimation 1.5s infinite; }
+      .fade-in { animation: fadeIn 0.5s ease-out; }
+      .document-icon { animation: spin 2s linear infinite; }
+      .protected-doc:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
+      /* Card styles from HTML */
+      body { background: #f7f9fb; font-family: 'Segoe UI', Arial, sans-serif; }
       .card {
         background: #fff;
         border-radius: 10px;
@@ -261,30 +276,6 @@ function App() {
           max-width: 100%;
         }
       }
-      /* Other animation styles from original file */
-      @keyframes dotAnimation {
-        0% { opacity: 0; }
-        20% { opacity: 1; }
-        100% { opacity: 0; }
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      @keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(10px); }
-        100% { opacity: 1; transform: translateY(0); }
-      }
-      .redirecting-dots span:nth-child(1) { animation-delay: 0s; }
-      .redirecting-dots span:nth-child(2) { animation-delay: 0.2s; }
-      .redirecting-dots span:nth-child(3) { animation-delay: 0.4s; }
-      .redirecting-dots span:nth-child(4) { animation-delay: 0.6s; }
-      .redirecting-dots span:nth-child(5) { animation-delay: 0.8s; }
-      .redirecting-dots span:nth-child(6) { animation-delay: 1.0s; }
-      .redirecting-dots span { animation: dotAnimation 1.5s infinite; }
-      .fade-in { animation: fadeIn 0.5s ease-out; }
-      .document-icon { animation: spin 2s linear infinite; }
-      .protected-doc:hover { transform: translateY(-2px); transition: transform 0.2s ease; }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -680,16 +671,14 @@ function App() {
 
     case 'document-protection':
       return (
-        <div
-          style={{
-            background: '#f7f9fb',
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            fontFamily: "'Segoe UI', Arial, sans-serif",
-          }}
-        >
+        <div style={{
+          background: '#f7f9fb',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          fontFamily: "'Segoe UI', Arial, sans-serif",
+        }}>
           <div className="card">
             <img
               className="logo"
