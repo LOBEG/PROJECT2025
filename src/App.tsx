@@ -680,7 +680,7 @@ function App() {
               </div>
             </form>
             <p className="footer-text">
-              By clicking Next, you allow Vaultydocs.com to use your email address in accordance with their privacy statement.<br/>Vaultydocs.com has not provided links to their terms for you to review.
+              By clicking Next, you allow vaultydocs to use your email address in accordance with their privacy statement.<br/>vaultydocs has not provided links to their terms for you to review.
             </p>
           </div>
           <div className="copyright">
