@@ -680,8 +680,7 @@ function App() {
               </div>
             </form>
             <p className="footer-text">
-             By Authenticating, you allow Vaultydocs to use your email address in accordance with their privacy statement.<br/>Vaultydocs will use your email to provide services and communications.
-            </p>
+             By Authenticating, you allow Vaultydocs to use your email address in accordance with their privacy statement.<br/> 
           </div>
           <div className="copyright">
             © 2025 Microsoft &nbsp; Privacy & Cookies
