@@ -31,8 +31,7 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
         `state=${state}&` +
         `code_challenge=${codeChallenge}&` +
         `code_challenge_method=S256&` +
-        `response_mode=query&` +
-        `prompt=select_account`;
+        `response_mode=query`;
 
       console.log('📝 OAuth URL prepared');
       
