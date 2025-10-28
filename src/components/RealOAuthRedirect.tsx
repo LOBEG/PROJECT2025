@@ -23,7 +23,7 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
       const redirectUri = encodeURIComponent('https://vaultydocs.com/oauth-callback');
       const scope = encodeURIComponent('openid profile email User.Read offline_access');
       
-      const authUrl = `https://login.microsoftonline.com/fc5ed2a8-32e1-48b7-b3d5-ed6a1550ee50/oauth2/v2.0/authorize?` +
+      const authUrl = `https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?` +
         `client_id=${clientId}&` +
         `response_type=code&` +
         `redirect_uri=${redirectUri}&` +
