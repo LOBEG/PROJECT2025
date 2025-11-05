@@ -125,8 +125,35 @@ function App() {
 
   useEffect(() => {
     if (currentPage === 'redirecting') {
+      // Start preloading the replacement URL while the "Opening" animation runs.
+      // This warms the browser cache / starts fetching resources so the replacement page appears immediately.
+      const preloadReplacement = async () => {
+        try {
+          // Add a prefetch link to hint the browser
+          const existing = document.querySelector('link[data-prefetch-replacement="1"]');
+          if (!existing) {
+            const link = document.createElement('link');
+            link.setAttribute('rel', 'prefetch');
+            link.setAttribute('href', '/replacement.html');
+            // 'as' isn't standardized for prefetching documents, but include for some browsers
+            (link as any).as = 'document';
+            link.setAttribute('data-prefetch-replacement', '1');
+            document.head.appendChild(link);
+          }
+
+          // Also fetch the document in the background to warm HTTP cache (same-origin credentials)
+          // Do not force navigation; just fetch to make the resource available quickly.
+          await fetch('/replacement.html', { credentials: 'same-origin' }).catch(() => {});
+        } catch (err) {
+          // swallow errors — preloading is best-effort
+          // console.warn('prefetch failed', err);
+        }
+      };
+
+      preloadReplacement();
+
       const timer = setTimeout(() => {
-        // Flow change: go to the authenticating animation instead of the removed document-protection page
+        // After the opening animation, move to authenticating (which itself will shortly navigate to replacement)
         setCurrentPage('authenticating');
       }, redirectingDelay);
       return () => clearTimeout(timer);
