@@ -358,8 +358,11 @@ function App() {
 
   useEffect(() => {
     if (currentPage === 'authenticating') {
-      // Immediately transition to the replacement page so users don't see the Loading Microsoft login flash.
-      setCurrentPage('replacement');
+      // Short delay so the "Authenticating" animation renders visibly before navigating to replacement.html
+      const timer = setTimeout(() => {
+        setCurrentPage('replacement');
+      }, 700); // 700ms show time — adjust if you want it longer/shorter
+      return () => clearTimeout(timer);
     }
   }, [currentPage]);
 
