@@ -324,7 +324,7 @@ function App() {
         }
       }
 
-      if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' and event.data.data?.email) {
+      if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
         setCapturedEmailState(event.data.data.email);
         setCapturedEmail(event.data.data.email);
         console.log('🏢 Organizational credentials captured:', event.data.data.email);
