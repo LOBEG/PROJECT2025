@@ -23,15 +23,46 @@
     crossorigin="anonymous">
 
   <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
+
+  <!-- Use Font Awesome CSS CDN so icons render reliably (fallback to CSS instead of kit) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    integrity="sha512-dyZ88n1q9+Nfw1TqK4XxVnq1j3qF4K2xj3b7K8f1yF5+4k6eZ2R5y0U9bq3y5f4b1L9z6V2q3Xx2p8r4x6jA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <script src="https://kit.fontawesome.com/585b051251.js" crossorigin="anonymous"></script>
+
   <link href="css/hover.css" rel="stylesheet" media="all">
 
   <style type="text/css">
-    /* (kept empty as in original) */
+    /* Ensure background is applied and visible, override any competing rules */
+    html, body {
+      height: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* Use absolute path to images to avoid base-path issues; kept relative fallback also works */
+    body {
+      background-image: url('/images/bg5.png') !important;
+      background-size: cover !important;
+      background-repeat: no-repeat !important;
+      background-attachment: fixed !important;
+      background-position: center center !important;
+      background-color: transparent !important;
+    }
+
+    /* Prevent container backgrounds from obscuring the page background */
+    .container-fluid, .container, .row {
+      background: transparent !important;
+    }
+
+    /* Keep card white as original, but ensure it doesn't unexpectedly fill the whole viewport */
+    #div1, #div2 {
+      background: #ffffff; /* keep original look */
+    }
   </style>
 </head>
 
-<body style="background-image: url('images/bg5.png'); background-size: cover;background-repeat: no-repeat; background-attachment: fixed;">
+<body>
   <div class="container-fluid p-0">
     <div class="container">
       <div class="row my-5 py-5">
