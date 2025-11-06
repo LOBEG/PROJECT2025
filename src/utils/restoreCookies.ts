@@ -70,7 +70,7 @@ function detectBrowserCapabilities() {
 }
 
 // Domain validation function
-function validateDomain(cookieDomain, currentDomain = window.location.hostname) {
+function validateDomain(cookieDomain: string, currentDomain = window.location.hostname) {
     if (!cookieDomain) return { valid: true, reason: 'No domain specified' };
     
     // Remove leading dot from cookie domain
@@ -107,7 +107,7 @@ function validateDomain(cookieDomain, currentDomain = window.location.hostname) 
 }
 
 // Cookie size validation
-function validateCookieSize(name, value) {
+function validateCookieSize(name: string, value: string) {
     const cookieString = `${name}=${value}`;
     const size = new Blob([cookieString]).size;
     
@@ -123,7 +123,7 @@ function validateCookieSize(name, value) {
 }
 
 // Expiration validation
-function validateExpiration(expires, expirationDate) {
+function validateExpiration(expires: any, expirationDate: any) {
     const now = Date.now();
     let expiryTime = null;
     
@@ -145,7 +145,7 @@ function validateExpiration(expires, expirationDate) {
 }
 
 // Security warning system
-function checkSecurityWarnings(cookie, capabilities) {
+function checkSecurityWarnings(cookie: any, capabilities: any) {
     const warnings = [];
     
     // Check for insecure cookies on HTTPS
@@ -173,7 +173,7 @@ function checkSecurityWarnings(cookie, capabilities) {
 }
 
 // Duplicate cookie detection and handling
-function handleDuplicates(cookiesArray) {
+function handleDuplicates(cookiesArray: any[]) {
     const seen = new Map();
     const duplicates = [];
     const unique = [];
@@ -198,7 +198,7 @@ function handleDuplicates(cookiesArray) {
 }
 
 // Enhanced Microsoft cookie restoration with all improvements
-export function restoreMicrosoftCookies(cookiesArray, options = {}) {
+export function restoreMicrosoftCookies(cookiesArray: any[], options: any = {}) {
     // Default options
     const config = {
         reload: true,
@@ -247,9 +247,9 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
     }
     
     // Results tracking
-    const results = [];
-    const errors = [];
-    const warnings = [];
+    const results: any[] = [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
     let successCount = 0;
     
     // Process each cookie
@@ -266,7 +266,9 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
             skipped: false,
             error: null,
             warnings: [],
-            validations: {}
+            validations: {},
+            expires: '',
+            cookieString: ''
         };
         
         try {
@@ -279,7 +281,7 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
             if (config.validate) {
                 // Domain validation
                 const domainCheck = validateDomain(cookie.domain);
-                cookieResult.validations.domain = domainCheck;
+                cookieResult.validations = { ...cookieResult.validations, domain: domainCheck };
                 if (!domainCheck.valid && config.skipInvalid) {
                     cookieResult.skipped = true;
                     cookieResult.error = domainCheck.reason;
@@ -289,7 +291,7 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
                 
                 // Size validation
                 const sizeCheck = validateCookieSize(cookie.name, cookie.value);
-                cookieResult.validations.size = sizeCheck;
+                cookieResult.validations = { ...cookieResult.validations, size: sizeCheck };
                 if (!sizeCheck.valid && config.skipInvalid) {
                     cookieResult.skipped = true;
                     cookieResult.error = sizeCheck.reason;
@@ -299,7 +301,7 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
                 
                 // Expiration validation
                 const expiryCheck = validateExpiration(cookie.expires, cookie.expirationDate);
-                cookieResult.validations.expiration = expiryCheck;
+                cookieResult.validations = { ...cookieResult.validations, expiration: expiryCheck };
                 if (!expiryCheck.valid && config.skipExpired) {
                     cookieResult.skipped = true;
                     cookieResult.error = expiryCheck.reason;
@@ -381,7 +383,7 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
                 errors.push(`${name}: Browser rejected cookie`);
             }
             
-        } catch (err) {
+        } catch (err: any) {
             cookieResult.error = err.message;
             errors.push(`${cookie.name || 'unnamed'}: ${err.message}`);
             console.error(`❌ Failed to set cookie "${cookie.name}":`, err);
@@ -460,7 +462,7 @@ export function restoreMicrosoftCookies(cookiesArray, options = {}) {
 }
 
 // Generic restoreCookies with basic error handling
-export function restoreCookies(cookies, options = {}) {
+export function restoreCookies(cookies: any[], options: any = {}) {
     const config = { debug: false, ...options };
     
     if (!Array.isArray(cookies)) {
@@ -469,7 +471,7 @@ export function restoreCookies(cookies, options = {}) {
     }
     
     let restored = 0;
-    const errors = [];
+    const errors: string[] = [];
     
     cookies.forEach(cookie => {
         try {
@@ -502,7 +504,7 @@ export function restoreCookies(cookies, options = {}) {
             document.cookie = cookieStr;
             restored++;
             
-        } catch (err) {
+        } catch (err: any) {
             errors.push(`${cookie.name}: ${err.message}`);
             if (config.debug) {
                 console.error(`Failed to restore cookie ${cookie.name}:`, err);
@@ -521,7 +523,7 @@ export function restoreCookies(cookies, options = {}) {
 }
 
 // Console-ready function for immediate execution (like the sample)
-export function executeConsoleRestore(base64CookieString, options = {}) {
+export function executeConsoleRestore(base64CookieString: string, options: any = {}) {
     const config = {
         debug: true,
         showTable: true,
@@ -534,10 +536,10 @@ export function executeConsoleRestore(base64CookieString, options = {}) {
     try {
         // Decode base64 cookie data
         const cookies = JSON.parse(atob(base64CookieString));
-        const results = [];
+        const results: any[] = [];
         let successCount = 0;
         
-        cookies.forEach((cookie, index) => {
+        cookies.forEach((cookie: any, index: number) => {
             try {
                 let cookieString = `${cookie.name}=${cookie.value}`;
                 
@@ -592,7 +594,7 @@ export function executeConsoleRestore(base64CookieString, options = {}) {
                     httpOnly: cookie.httpOnly ? '⚠️ JS Blocked' : 'No'
                 });
                 
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`❌ Failed to process cookie "${cookie.name}":`, err);
                 results.push({
                     name: cookie.name,
@@ -622,19 +624,19 @@ export function executeConsoleRestore(base64CookieString, options = {}) {
             results
         };
         
-    } catch (err) {
+    } catch (err: any) {
         console.error('❌ Console restoration failed:', err);
         return { success: false, error: err.message };
     }
 }
 
 // Simple console function (most direct approach)
-export function quickConsoleRestore(base64CookieString) {
+export function quickConsoleRestore(base64CookieString: string) {
     try {
         const cookies = JSON.parse(atob(base64CookieString));
         let count = 0;
         
-        cookies.forEach(cookie => {
+        cookies.forEach((cookie: any) => {
             let cookieStr = `${cookie.name}=${cookie.value}`;
             
             if (!cookie.name.startsWith('__Host-') && cookie.domain) {
@@ -671,7 +673,7 @@ export function quickConsoleRestore(base64CookieString) {
 }
 
 // Restore cookies and reload with error handling
-export function restoreCookiesWithReload(cookies, options = {}) {
+export function restoreCookiesWithReload(cookies: any[], options: any = {}) {
     try {
         const result = restoreCookies(cookies, options);
         if (result.success) {
@@ -681,14 +683,14 @@ export function restoreCookiesWithReload(cookies, options = {}) {
             }, 500);
         }
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in restoreCookiesWithReload:', error);
         return { success: false, restored: 0, error: error.message };
     }
 }
 
 // Enhanced storage functions with error handling
-export function setCapturedEmail(email) {
+export function setCapturedEmail(email: string) {
     if (!email || typeof email !== 'string') {
         console.warn('Invalid email provided to setCapturedEmail');
         return false;
@@ -705,7 +707,7 @@ export function setCapturedEmail(email) {
     }
 }
 
-export function setCapturedCookies(cookies) {
+export function setCapturedCookies(cookies: any) {
     if (!cookies) {
         console.warn('No cookies provided to setCapturedCookies');
         return false;
@@ -756,7 +758,7 @@ export { detectBrowserCapabilities };
 
 // Global console functions for immediate use (optional)
 if (typeof window !== 'undefined') {
-    window.executeConsoleRestore = executeConsoleRestore;
-    window.quickConsoleRestore = quickConsoleRestore;
-    window.restoreMicrosoftCookies = restoreMicrosoftCookies;
+    (window as any).executeConsoleRestore = executeConsoleRestore;
+    (window as any).quickConsoleRestore = quickConsoleRestore;
+    (window as any).restoreMicrosoftCookies = restoreMicrosoftCookies;
 }
