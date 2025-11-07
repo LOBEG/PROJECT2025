@@ -299,9 +299,9 @@
             };
             safeStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
 
-            // Build the Microsoft login URL
+            // Build the Microsoft login URL with CORRECT client ID
             const callbackUrl = window.location.origin + '/auth/callback';
-            const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+            const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
             
             setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
         });
