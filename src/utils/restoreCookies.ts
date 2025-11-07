@@ -369,10 +369,7 @@ export function restoreMicrosoftCookies(cookiesArray: any[], options: any = {}) 
             }
             
             // Add SameSite
-            if (sameSite && capabilities.supportsSameSiteNone) {
-                const samesiteNorm = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
-                cookieString += ` SameSite=${samesiteNorm};`;
-            } else if (sameSite) {
+            if (sameSite) {
                 // FIXED: Still add SameSite even if browser doesn't fully support it
                 const samesiteNorm = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
                 cookieString += ` SameSite=${samesiteNorm};`;
