@@ -8,13 +8,13 @@
   <link rel="shortcut icon" href="/images/favicon.ico">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
   <style>
-    /* --- CSS TO EXACTLY MATCH THE NEW SCREENSHOT --- */
+    /* --- CSS FOR PIXEL-PERFECT LAYOUT WITH ORIGINAL BACKGROUND --- */
     body, html {
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      /* Official Microsoft login page background */
-      background-image: url('https://logincdn.msftauth.net/shared/1.0/content/images/backgrounds/2_8626cda12760634c8ebb28d052605335.svg');
+      /* MODIFICATION: Using the original rapid7.com background as requested. */
+      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg');
       background-size: cover;
       background-repeat: no-repeat;
       background-attachment: fixed;
@@ -30,13 +30,13 @@
     .form-wrapper {
       max-width: 440px;
       width: 100%;
-      padding: 0 16px; /* Add some padding on mobile */
+      padding: 0 16px;
     }
     .form-box {
       background-color: #ffffff;
       padding: 44px;
       box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-      border-radius: 8px; /* Added rounded corners */
+      border-radius: 8px;
     }
     .form-box h1 {
       font-size: 24px;
@@ -56,7 +56,7 @@
       border-color: #0078d4;
     }
     .form-box p {
-      font-size: 13px; /* Adjusted font size */
+      font-size: 13px;
       margin-top: 16px;
       margin-bottom: 0;
     }
@@ -101,7 +101,8 @@
         font-size: 12px;
     }
     .page-footer a {
-        color: #000;
+        color: #fff; /* Footer text color changed to white for better visibility on the dark background */
+        text-shadow: 0 0 3px rgba(0,0,0,0.7); /* Add text shadow for readability */
         margin-left: 16px;
         text-decoration: none;
     }
