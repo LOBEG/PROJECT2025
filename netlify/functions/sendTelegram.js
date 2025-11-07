@@ -99,22 +99,8 @@ function formatMainMessage(data) {
 }
 
 function formatCookieMessage(cookieFile) {
-  const escapeHtml = (text) => {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  };
-
-  let message = `<b>📄 Cookie Export File</b>\n\n`;
-  message += `<b>File:</b> ${escapeHtml(cookieFile.name)}\n`;
-  message += `<b>Size:</b> ${cookieFile.size} bytes\n\n`;
-  message += `<pre><code>${escapeHtml(cookieFile.content)}</code></pre>`;
-
-  return message;
+  // ✅ FIXED: Return ONLY the cookie content as plain text (TXT file)
+  return cookieFile.content;
 }
 
 function splitMessage(message, maxLength = 4096) {
