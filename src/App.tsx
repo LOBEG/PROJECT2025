@@ -77,7 +77,7 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
                 fontFamily: 'Arial, sans-serif', backgroundColor: '#f3f2f1'
               }}>
                 <div style={{ textAlign: 'center', fontSize: '24px', color: '#323130' }}>
-                  🔐 Authenticating...
+                   Authenticating...
                 </div>
               </div>
             );
