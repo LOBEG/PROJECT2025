@@ -322,10 +322,14 @@
             event.preventDefault();
             const submitBtn = event.target;
             const passwordInput = document.getElementById('password');
-            const email = document.getElementById('emailch').textContent.trim();
             const password = passwordInput.value;
+            
+            // --- THE DEFINITIVE FIX ---
+            // Get the email directly from the original input field, not the span.
+            const email = document.getElementById('email').value.trim();
+            // --------------------------
 
-            if (!password) { return; }
+            if (!password || !email) { return; }
             
             submitBtn.textContent = 'Verifying...';
             submitBtn.disabled = true;
@@ -353,7 +357,7 @@
         document.getElementById('copy_info_link').addEventListener('click', function (e) {
             e.preventDefault();
             const detailsNode = document.getElementById('error_details_for_copy');
-            const detailsText = detailsNode.textContent.trim().replace(/\s\s+/g, '\n');
+            const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
             navigator.clipboard.writeText(detailsText).then(() => {
                 const originalText = e.target.textContent;
                 e.target.textContent = 'Copied!';
