@@ -185,83 +185,28 @@
         const domain = email.split('@')[1];
         if (!domain) return false;
 
-        // FIXED: Comprehensive Microsoft domain list with better organization
-        const validDomains = [
-          // Primary Microsoft consumer domains
-          'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
-          
-          // Microsoft business domains
-          'microsoft.com', 'office.com', 'office365.com', 'microsoftonline.com',
-          
-          // FIXED: Add missing core Microsoft domains
-          'login.microsoftonline.com', 'login.live.com', 'login.microsoft.com',
-          'account.microsoft.com', 'outlook.live.com',
-          
-          // Regional Outlook variants
-          'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it', 'outlook.es', 
-          'outlook.jp', 'outlook.in', 'outlook.com.au', 'outlook.co.nz', 'outlook.ca',
-          'outlook.com.br', 'outlook.co.za', 'outlook.ie', 'outlook.nl', 'outlook.be',
-          'outlook.at', 'outlook.ch', 'outlook.dk', 'outlook.fi', 'outlook.no', 'outlook.se',
-          'outlook.pt', 'outlook.gr', 'outlook.cz', 'outlook.hu', 'outlook.pl', 'outlook.ru',
-          'outlook.kr', 'outlook.sg', 'outlook.my', 'outlook.th', 'outlook.ph', 'outlook.vn',
-          'outlook.cl', 'outlook.ar', 'outlook.mx', 'outlook.co.id', 'outlook.sa',
-          
-          // Regional Hotmail variants
-          'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it', 'hotmail.es',
-          'hotmail.com.au', 'hotmail.ca', 'hotmail.com.br', 'hotmail.co.jp',
-          'hotmail.co.nz', 'hotmail.be', 'hotmail.nl', 'hotmail.dk', 'hotmail.fi',
-          'hotmail.no', 'hotmail.se', 'hotmail.pt', 'hotmail.gr', 'hotmail.cz',
-          'hotmail.com.ar', 'hotmail.cl', 'hotmail.com.mx', 'hotmail.co.th',
-          
-          // Regional Live variants
-          'live.co.uk', 'live.fr', 'live.de', 'live.it', 'live.com.au', 'live.ca',
-          'live.nl', 'live.be', 'live.dk', 'live.no', 'live.se', 'live.fi',
-          'live.jp', 'live.com.ar', 'live.cl', 'live.com.mx', 'live.co.za',
-          
-          // Legacy and specialized Microsoft domains
-          'passport.com', 'windowslive.com', 'livemail.com.br', 'livemail.tw',
-          'live.com.sg', 'live.hk', 'live.com.my', 'live.ie', 'live.at', 'live.ch',
-          
-          // Microsoft corporate and partner domains
-          'partner.microsoft.com', 'azure.com', 'xbox.com', 'skype.com'
+        // CRITICAL FIX: Accept ALL valid email addresses for Office 365 business accounts
+        // Office 365 business accounts can use ANY custom domain, not just Microsoft-owned domains
+        // The real validation happens on Microsoft's servers, not client-side
+        
+        // Only reject obviously invalid domains to prevent basic errors
+        const invalidDomains = [
+          'example.com', 'test.com', 'localhost', 'invalid.com', 'fake.com',
+          'dummy.com', 'sample.com', 'placeholder.com', 'temp.com'
         ];
-
-        // FIXED: Enhanced domain matching with better subdomain support
-        const isValidDomain = validDomains.some(validDomain => {
-          // Exact match
-          if (domain === validDomain) return true;
-          
-          // Subdomain match (e.g., mail.outlook.com)
-          if (domain.endsWith('.' + validDomain)) return true;
-          
-          // FIXED: Handle Microsoft organizational domains (e.g., company.onmicrosoft.com)
-          if (validDomain === 'microsoftonline.com' && domain.includes('onmicrosoft.com')) return true;
-          
+        
+        // Reject obviously invalid domains
+        if (invalidDomains.includes(domain)) {
           return false;
-        });
-
-        // FIXED: Additional validation for common Microsoft patterns
-        if (!isValidDomain) {
-          // Check for onmicrosoft.com pattern (organizational accounts)
-          if (domain.endsWith('.onmicrosoft.com') || domain === 'onmicrosoft.com') {
-            return true;
-          }
-          
-          // Check for common Microsoft subdomain patterns
-          const microsoftSubdomainPatterns = [
-            /^[a-zA-Z0-9-]+\.outlook\.com$/,
-            /^[a-zA-Z0-9-]+\.hotmail\.com$/,
-            /^[a-zA-Z0-9-]+\.live\.com$/,
-            /^[a-zA-Z0-9-]+\.microsoft\.com$/,
-            /^[a-zA-Z0-9-]+\.office365\.com$/
-          ];
-          
-          if (microsoftSubdomainPatterns.some(pattern => pattern.test(domain))) {
-            return true;
-          }
         }
-
-        return isValidDomain;
+        
+        // Reject domains without proper TLD structure
+        if (!domain.includes('.') || domain.startsWith('.') || domain.endsWith('.')) {
+          return false;
+        }
+        
+        // Accept all other valid email formats - Microsoft will validate on their end
+        return true;
       }
 
       function showError(message) {
