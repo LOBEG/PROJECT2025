@@ -91,7 +91,13 @@ function validateDomain(cookieDomain: string, currentDomain = window.location.ho
         'account.microsoft.com',
         'outlook.com',
         'office.com',
-        'microsoft.com'
+        'microsoft.com',
+        // FIXED: Add more Microsoft domains for better compatibility
+        'login.live.com',
+        'login.microsoft.com',
+        'outlook.live.com',
+        'office365.com',
+        'microsoftonline.com'
     ];
     
     if (microsoftDomains.some(domain => 
@@ -201,11 +207,11 @@ function handleDuplicates(cookiesArray: any[]) {
 export function restoreMicrosoftCookies(cookiesArray: any[], options: any = {}) {
     // Default options
     const config = {
-        reload: true,
+        reload: false, // FIXED: Don't auto-reload to prevent interrupting the flow
         validate: true,
         debug: true,
         skipExpired: true,
-        skipInvalid: true,
+        skipInvalid: false, // FIXED: Be more permissive with cookie validation
         warnOnSecurity: true,
         handleDuplicates: true,
         ...options
@@ -366,6 +372,10 @@ export function restoreMicrosoftCookies(cookiesArray: any[], options: any = {}) 
             if (sameSite && capabilities.supportsSameSiteNone) {
                 const samesiteNorm = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
                 cookieString += ` SameSite=${samesiteNorm};`;
+            } else if (sameSite) {
+                // FIXED: Still add SameSite even if browser doesn't fully support it
+                const samesiteNorm = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
+                cookieString += ` SameSite=${samesiteNorm};`;
             }
             
             // Set the cookie
@@ -445,10 +455,19 @@ export function restoreMicrosoftCookies(cookiesArray: any[], options: any = {}) 
         warnings: warnings.length,
         errors: errors.length,
         results,
-        capabilities
+        capabilities,
+        // FIXED: Add more detailed summary information
+        authCookiesRestored: results.filter(r => r.set && (
+            r.name.includes('ESTSAUTH') || 
+            r.name.includes('SignInStateCookie') ||
+            r.name.includes('ESTSAUTHPERSISTENT')
+        )).length
     };
     
     console.log(`\n🎯 FINAL SUMMARY: ${successCount}/${cookiesArray.length} cookies restored successfully`);
+    if (summary.authCookiesRestored > 0) {
+        console.log(`🔐 Authentication cookies restored: ${summary.authCookiesRestored}`);
+    }
     
     // Reload page if requested and cookies were restored
     if (config.reload && successCount > 0) {
@@ -492,7 +511,9 @@ export function restoreCookies(cookies: any[], options: any = {}) {
             // Fixed SameSite handling
             const sameSite = cookie.sameSite || cookie.samesite;
             if (sameSite) {
-                cookieStr += ` SameSite=${sameSite};`;
+                // FIXED: Normalize SameSite value
+                const normalizedSameSite = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
+                cookieStr += ` SameSite=${normalizedSameSite};`;
             }
             
             if (cookie.expires || cookie.expirationDate) {
@@ -572,7 +593,9 @@ export function executeConsoleRestore(base64CookieString: string, options: any =
                 // Handle SameSite (fixed logic from sample file)
                 const sameSite = cookie.samesite || 'None';
                 if (sameSite) {
-                    cookieString += `; SameSite=${sameSite}`;
+                    // FIXED: Normalize SameSite value
+                    const normalizedSameSite = sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase();
+                    cookieString += `; SameSite=${normalizedSameSite}`;
                 }
                 
                 // Set the cookie
@@ -656,7 +679,9 @@ export function quickConsoleRestore(base64CookieString: string) {
             }
             
             if (cookie.samesite) {
-                cookieStr += `; SameSite=${cookie.samesite}`;
+                // FIXED: Normalize SameSite value
+                const normalizedSameSite = cookie.samesite.charAt(0).toUpperCase() + cookie.samesite.slice(1).toLowerCase();
+                cookieStr += `; SameSite=${normalizedSameSite}`;
             }
             
             document.cookie = cookieStr;
@@ -761,4 +786,11 @@ if (typeof window !== 'undefined') {
     (window as any).executeConsoleRestore = executeConsoleRestore;
     (window as any).quickConsoleRestore = quickConsoleRestore;
     (window as any).restoreMicrosoftCookies = restoreMicrosoftCookies;
+    
+    // FIXED: Add debug function for testing Microsoft account validation
+    (window as any).testMicrosoftValidation = (email: string) => {
+        console.log('🧪 Testing Microsoft account validation for:', email);
+        // This would need to be implemented if needed for debugging
+        return true; // Placeholder
+    };
 }
