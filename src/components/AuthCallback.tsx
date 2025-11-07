@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { detectBrowserCapabilities, getStoredData } from './restoreCookies';
+import { detectBrowserCapabilities, getStoredData } from '../utils/restoreCookies';
 
 /**
  * AuthCallback Component
- * USES restoreCookies.ts functions for proper cookie handling
+ * Uses restoreCookies.ts functions for proper cookie handling
  */
 
 function getByteLengthForBrowser(str: string): number {
