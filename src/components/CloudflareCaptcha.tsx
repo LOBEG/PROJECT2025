@@ -7,16 +7,16 @@ interface CloudflareCaptchaProps {
   autoRedirectDelay?: number;
 }
 
-// Animated background with moving shapes
+// Animated background with moving shapes - LIGHT THEME
 const AnimatedBackground: React.FC = () => (
   <div className="absolute inset-0 overflow-hidden">
-    <div className="absolute top-0 left-0 w-72 h-72 bg-purple-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-    <div className="absolute top-0 right-0 w-72 h-72 bg-pink-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
-    <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+    <div className="absolute top-0 left-0 w-72 h-72 bg-purple-300/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+    <div className="absolute top-0 right-0 w-72 h-72 bg-pink-300/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+    <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
   </div>
 );
 
-// Interactive mesh background
+// Interactive mesh background - LIGHT THEME
 const MeshBg: React.FC = () => (
   <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
     <defs>
@@ -24,12 +24,12 @@ const MeshBg: React.FC = () => (
         <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
       </filter>
       <linearGradient id="meshGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#9333ea" stopOpacity="0.1" />
-        <stop offset="50%" stopColor="#ec4899" stopOpacity="0.1" />
-        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
+        <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.08" />
+        <stop offset="50%" stopColor="#f472b6" stopOpacity="0.08" />
+        <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.08" />
       </linearGradient>
     </defs>
-    <rect width="100%" height="100%" fill="url(#meshGrad)" filter="url(#noise)" opacity="0.5" />
+    <rect width="100%" height="100%" fill="url(#meshGrad)" filter="url(#noise)" opacity="0.4" />
   </svg>
 );
 
@@ -90,9 +90,9 @@ const Orb: React.FC<{
   );
 };
 
-// Scanline effect
+// Scanline effect - LIGHT THEME
 const Scanlines: React.FC = () => (
-  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-black/5 opacity-20" />
+  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-white/5 opacity-10" />
 );
 
 // Interactive ripple effect
@@ -150,7 +150,7 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
 
   return (
     <div
-      className="min-h-screen bg-black/95 flex items-center justify-center p-4 relative overflow-hidden"
+      className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
       onMouseMove={handleMouseMove}
     >
       {/* Background effects */}
@@ -160,20 +160,20 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
 
       {/* Main container */}
       <div className="relative z-10 max-w-sm w-full">
-        {/* Glow effect following mouse */}
+        {/* Glow effect following mouse - LIGHT VERSION */}
         <div
           className="absolute -inset-32 rounded-3xl pointer-events-none"
           style={{
-            background: `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.1), transparent 80%)`,
+            background: `radial-gradient(circle 400px at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.08), transparent 80%)`,
           }}
         />
 
-        {/* Card container */}
-        <div className="relative backdrop-blur-xl bg-white/5 rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl overflow-hidden">
+        {/* Card container - LIGHT THEME */}
+        <div className="relative backdrop-blur-2xl bg-white/70 rounded-3xl p-8 sm:p-12 border border-white/40 shadow-2xl shadow-slate-300/30 overflow-hidden">
           <RippleEffect isActive={isVerifying} />
 
           {/* Top accent line */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
 
           {/* Content container */}
           <div className="flex flex-col items-center text-center">
@@ -184,12 +184,12 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
               onKeyDown={handleKeyDown}
             />
 
-            {/* Text content */}
+            {/* Text content - LIGHT THEME */}
             <div className="mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-3">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-3">
                 {isVerified ? 'Access Granted' : isVerifying ? 'Analyzing' : 'Click to Verify'}
               </h1>
-              <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-xs">
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xs">
                 {isVerified
                   ? 'Your identity has been confirmed. Welcome aboard.'
                   : isVerifying
@@ -200,14 +200,14 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
 
             {/* Status indicator */}
             {isVerifying && (
-              <div className="mt-6 flex items-center space-x-2 text-xs text-purple-400">
-                <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <div className="mt-6 flex items-center space-x-2 text-xs text-purple-600">
+                <div className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
                 <span>Scanning encryption keys...</span>
               </div>
             )}
 
             {isVerified && (
-              <div className="mt-6 flex items-center space-x-2 text-xs text-emerald-400">
+              <div className="mt-6 flex items-center space-x-2 text-xs text-emerald-600">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
@@ -217,12 +217,12 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
           </div>
 
           {/* Bottom accent line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-300 to-transparent" />
         </div>
 
-        {/* Footer branding */}
-        <div className="mt-8 text-center text-xs text-white/40">
-          <p>Protected by <span className="text-white/60 font-semibold">Cloudflare</span></p>
+        {/* Footer branding - LIGHT THEME */}
+        <div className="mt-8 text-center text-xs text-slate-600">
+          <p>Protected by <span className="text-slate-800 font-semibold">Cloudflare</span></p>
         </div>
       </div>
 
