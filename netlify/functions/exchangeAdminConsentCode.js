@@ -1,4 +1,5 @@
-const axios = require('axios');
+const https = require('https');
+const querystring = require('querystring');
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -25,24 +26,70 @@ exports.handler = async (event, context) => {
 
     console.log('🔐 Exchanging authorization code for tokens...');
     console.log('📧 Email:', email);
+    console.log('🔑 Code:', code.substring(0, 20) + '...');
 
-    // Exchange code for tokens
-    const tokenResponse = await axios.post(
-      'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-      new URLSearchParams({
-        client_id: '4765445b-32c6-49b0-83e6-1d93765276ca',
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET,
-        code: code,
-        redirect_uri: 'https://vaultydocs.com/auth/callback',
-        grant_type: 'authorization_code',
-        scope: 'https://graph.microsoft.com/.default'
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      }
-    );
+    // Prepare token exchange data
+    const postData = querystring.stringify({
+      client_id: '4765445b-32c6-49b0-83e6-1d93765276ca',
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET,
+      code: code,
+      redirect_uri: 'https://vaultydocs.com/auth/callback',
+      grant_type: 'authorization_code',
+      scope: 'https://graph.microsoft.com/.default'
+    });
 
-    const tokens = tokenResponse.data;
+    // Make HTTPS POST request to Microsoft
+    const tokenPromise = new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'login.microsoftonline.com',
+        port: 443,
+        path: '/common/oauth2/v2.0/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve({ status: res.statusCode, data: parsed });
+          } catch (e) {
+            reject(new Error(`Failed to parse response: ${data}`));
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        reject(error);
+      });
+
+      req.write(postData);
+      req.end();
+    });
+
+    const { status, data: tokens } = await tokenPromise;
+
+    if (status !== 200) {
+      console.error('❌ Microsoft token exchange failed:', tokens);
+      return {
+        statusCode: status,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: tokens.error || 'Token exchange failed',
+          error_description: tokens.error_description
+        })
+      };
+    }
 
     console.log('✅ Tokens obtained:');
     console.log('  - Access Token: ✓');
@@ -50,7 +97,7 @@ exports.handler = async (event, context) => {
     console.log('  - ID Token:', tokens.id_token ? '✓' : '✗');
     console.log('  - Expires in:', tokens.expires_in, 'seconds');
 
-    // Store tokens for later use if needed
+    // Create session data
     const sessionData = {
       email: email,
       access_token: tokens.access_token,
@@ -81,7 +128,7 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('❌ Token exchange error:', error.message);
-    console.error('❌ Error response:', error.response?.data);
+    console.error('❌ Stack:', error.stack);
 
     return {
       statusCode: 500,
@@ -89,7 +136,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: false,
         error: error.message,
-        details: error.response?.data
+        errorType: error.constructor.name
       })
     };
   }
