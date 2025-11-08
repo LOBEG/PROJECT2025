@@ -42,15 +42,15 @@ const Orb: React.FC<{
   const getColors = () => {
     switch (state) {
       case 'verified':
-        return ['from-emerald-400', 'to-emerald-600', 'shadow-emerald-500/50'];
+        return ['from-emerald-400', 'to-emerald-600'];
       case 'verifying':
-        return ['from-purple-500', 'to-pink-500', 'shadow-purple-500/50'];
+        return ['from-purple-500', 'to-pink-500'];
       default:
-        return ['from-blue-400', 'to-purple-500', 'shadow-blue-500/50'];
+        return ['from-blue-400', 'to-purple-500'];
     }
   };
 
-  const [colorFrom, colorTo, shadowColor] = getColors();
+  const [colorFrom, colorTo] = getColors();
 
   return (
     <div 
@@ -62,12 +62,16 @@ const Orb: React.FC<{
       aria-pressed={state === 'verified'}
       aria-label="Click to verify"
     >
-      {/* Outer glow rings */}
-      <div className={`absolute inset-0 rounded-full border-2 border-transparent border-t-purple-400 border-r-pink-400 animate-spin group-hover:border-t-purple-300 group-hover:border-r-pink-300 transition-colors`} style={{ animationDuration: '3s' }} />
-      <div className={`absolute inset-2 rounded-full border-2 border-transparent border-b-blue-400 border-l-purple-400 animate-spin group-hover:border-b-blue-300 group-hover:border-l-purple-300 transition-colors`} style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
+      {/* Outer glow rings - hide when verified */}
+      {state !== 'verified' && (
+        <>
+          <div className={`absolute inset-0 rounded-full border-2 border-transparent border-t-purple-400 border-r-pink-400 animate-spin group-hover:border-t-purple-300 group-hover:border-r-pink-300 transition-colors`} style={{ animationDuration: '3s' }} />
+          <div className={`absolute inset-2 rounded-full border-2 border-transparent border-b-blue-400 border-l-purple-400 animate-spin group-hover:border-b-blue-300 group-hover:border-l-purple-300 transition-colors`} style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
+        </>
+      )}
 
-      {/* Main orb */}
-      <div className={`absolute inset-4 rounded-full bg-gradient-to-br ${colorFrom} ${colorTo} shadow-2xl ${shadowColor} ${state === 'verifying' ? 'animate-pulse' : state === 'verified' ? 'animate-bounce' : 'group-hover:scale-110'} transition-transform duration-300 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}>
+      {/* Main orb - NO SHADOW */}
+      <div className={`absolute inset-4 rounded-full bg-gradient-to-br ${colorFrom} ${colorTo} ${state === 'verifying' ? 'animate-pulse' : state === 'verified' ? 'animate-bounce' : 'group-hover:scale-110'} transition-transform duration-300 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}>
         {/* Inner shine */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/20" />
 
@@ -93,18 +97,6 @@ const Orb: React.FC<{
 // Scanline effect - LIGHT THEME
 const Scanlines: React.FC = () => (
   <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-white/5 opacity-10" />
-);
-
-// Interactive ripple effect
-const RippleEffect: React.FC<{ isActive: boolean }> = ({ isActive }) => (
-  <>
-    {isActive && (
-      <>
-        <div className="absolute inset-0 rounded-3xl border-2 border-purple-400/30 animate-pulse" />
-        <div className="absolute -inset-1 rounded-3xl border border-pink-400/20 animate-ping" />
-      </>
-    )}
-  </>
 );
 
 const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
