@@ -54,7 +54,7 @@ const Orb: React.FC<{
 
   return (
     <div 
-      className="relative w-32 h-32 mb-8 cursor-pointer group focus:outline-none"
+      className="relative w-32 h-32 cursor-pointer group focus:outline-none"
       onClick={onClick}
       onKeyDown={onKeyDown}
       tabIndex={0}
@@ -168,29 +168,31 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
           }}
         />
 
-        {/* Card container - BLENDS WITH BACKGROUND */}
-        <div className="relative backdrop-blur-2xl bg-transparent rounded-3xl p-8 sm:p-12 border border-transparent shadow-none overflow-hidden">
-          <RippleEffect isActive={isVerifying} />
-
+        {/* Card container - COMPLETELY INVISIBLE, NO SHADOW */}
+        <div className="relative rounded-3xl p-8 sm:p-12 overflow-hidden pointer-events-none">
           {/* Content container */}
-          <div className="flex flex-col items-center text-center">
-            {/* Clickable Orb */}
-            <Orb 
-              state={isVerified ? 'verified' : isVerifying ? 'verifying' : 'idle'} 
-              onClick={handleOrbClick}
-              onKeyDown={handleKeyDown}
-            />
-
-            {/* Text content - REDUCED SIZE */}
-            <div className="mb-8">
-              <h1 className="text-lg font-semibold text-slate-600">
-                Click to Verify
-              </h1>
+          <div className="flex flex-col items-center text-center pointer-events-auto">
+            {/* Clickable Orb - ALWAYS VISIBLE */}
+            <div className={`transition-opacity duration-300 ${isVerifying || isVerified ? 'opacity-100' : 'opacity-100'}`}>
+              <Orb 
+                state={isVerified ? 'verified' : isVerifying ? 'verifying' : 'idle'} 
+                onClick={handleOrbClick}
+                onKeyDown={handleKeyDown}
+              />
             </div>
 
-            {/* Status indicator */}
+            {/* Text content - ONLY SHOW WHEN NOT VERIFYING OR VERIFIED */}
+            {!isVerifying && !isVerified && (
+              <div className="mb-8 animate-fade-in">
+                <h1 className="text-lg font-semibold text-slate-600">
+                  Click to Verify
+                </h1>
+              </div>
+            )}
+
+            {/* Status indicator - ONLY SHOW DURING VERIFICATION */}
             {isVerifying && (
-              <div className="mt-6 flex items-center space-x-2 text-xs text-purple-600">
+              <div className="mt-6 flex items-center space-x-2 text-xs text-purple-600 animate-fade-in">
                 <div className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
                 <span>Scanning encryption keys...</span>
               </div>
@@ -212,6 +214,15 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
           }
         }
 
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
         .animate-blob {
           animation: blob 7s infinite;
         }
@@ -222,6 +233,10 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
 
         .animation-delay-4000 {
           animation-delay: 4s;
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-in;
         }
       `}</style>
     </div>
