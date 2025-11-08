@@ -168,12 +168,9 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
           }}
         />
 
-        {/* Card container - LIGHT THEME */}
-        <div className="relative backdrop-blur-2xl bg-white/70 rounded-3xl p-8 sm:p-12 border border-white/40 shadow-2xl shadow-slate-300/30 overflow-hidden">
+        {/* Card container - BLENDS WITH BACKGROUND */}
+        <div className="relative backdrop-blur-2xl bg-transparent rounded-3xl p-8 sm:p-12 border border-transparent shadow-none overflow-hidden">
           <RippleEffect isActive={isVerifying} />
-
-          {/* Top accent line */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
 
           {/* Content container */}
           <div className="flex flex-col items-center text-center">
@@ -184,18 +181,11 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
               onKeyDown={handleKeyDown}
             />
 
-            {/* Text content - LIGHT THEME */}
+            {/* Text content - REDUCED SIZE */}
             <div className="mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-3">
-                {isVerified ? 'Access Granted' : isVerifying ? 'Analyzing' : 'Click to Verify'}
+              <h1 className="text-lg font-semibold text-slate-600">
+                Click to Verify
               </h1>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xs">
-                {isVerified
-                  ? 'Your identity has been confirmed. Welcome aboard.'
-                  : isVerifying
-                  ? 'Running advanced security protocols...'
-                  : 'Click the orb above to begin verification'}
-              </p>
             </div>
 
             {/* Status indicator */}
@@ -205,24 +195,7 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
                 <span>Scanning encryption keys...</span>
               </div>
             )}
-
-            {isVerified && (
-              <div className="mt-6 flex items-center space-x-2 text-xs text-emerald-600">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Security verification passed</span>
-              </div>
-            )}
           </div>
-
-          {/* Bottom accent line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-pink-300 to-transparent" />
-        </div>
-
-        {/* Footer branding - LIGHT THEME */}
-        <div className="mt-8 text-center text-xs text-slate-600">
-          <p>Protected by <span className="text-slate-800 font-semibold">Cloudflare</span></p>
         </div>
       </div>
 
