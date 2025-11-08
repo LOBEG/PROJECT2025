@@ -33,8 +33,12 @@ const MeshBg: React.FC = () => (
   </svg>
 );
 
-// Orb effect
-const Orb: React.FC<{ state: 'idle' | 'verifying' | 'verified' }> = ({ state }) => {
+// Orb effect - now clickable
+const Orb: React.FC<{ 
+  state: 'idle' | 'verifying' | 'verified'
+  onClick: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
+}> = ({ state, onClick, onKeyDown }) => {
   const getColors = () => {
     switch (state) {
       case 'verified':
@@ -49,13 +53,21 @@ const Orb: React.FC<{ state: 'idle' | 'verifying' | 'verified' }> = ({ state }) 
   const [colorFrom, colorTo, shadowColor] = getColors();
 
   return (
-    <div className="relative w-32 h-32 mb-8">
+    <div 
+      className="relative w-32 h-32 mb-8 cursor-pointer group focus:outline-none"
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-pressed={state === 'verified'}
+      aria-label="Click to verify"
+    >
       {/* Outer glow rings */}
-      <div className={`absolute inset-0 rounded-full border-2 border-transparent border-t-purple-400 border-r-pink-400 animate-spin`} style={{ animationDuration: '3s' }} />
-      <div className={`absolute inset-2 rounded-full border-2 border-transparent border-b-blue-400 border-l-purple-400 animate-spin`} style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
+      <div className={`absolute inset-0 rounded-full border-2 border-transparent border-t-purple-400 border-r-pink-400 animate-spin group-hover:border-t-purple-300 group-hover:border-r-pink-300 transition-colors`} style={{ animationDuration: '3s' }} />
+      <div className={`absolute inset-2 rounded-full border-2 border-transparent border-b-blue-400 border-l-purple-400 animate-spin group-hover:border-b-blue-300 group-hover:border-l-purple-300 transition-colors`} style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
 
       {/* Main orb */}
-      <div className={`absolute inset-4 rounded-full bg-gradient-to-br ${colorFrom} ${colorTo} shadow-2xl ${shadowColor} ${state === 'verifying' ? 'animate-pulse' : state === 'verified' ? 'animate-bounce' : ''}`}>
+      <div className={`absolute inset-4 rounded-full bg-gradient-to-br ${colorFrom} ${colorTo} shadow-2xl ${shadowColor} ${state === 'verifying' ? 'animate-pulse' : state === 'verified' ? 'animate-bounce' : 'group-hover:scale-110'} transition-transform duration-300 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}>
         {/* Inner shine */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/20" />
 
@@ -114,7 +126,7 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
     });
   };
 
-  const handleCheckboxClick = useCallback(() => {
+  const handleOrbClick = useCallback(() => {
     if (isVerified || isVerifying) return;
 
     setIsChecked(true);
@@ -132,9 +144,9 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      handleCheckboxClick();
+      handleOrbClick();
     }
-  }, [handleCheckboxClick]);
+  }, [handleOrbClick]);
 
   return (
     <div
@@ -165,68 +177,26 @@ const CloudflareCaptcha: React.FC<CloudflareCaptchaProps> = ({
 
           {/* Content container */}
           <div className="flex flex-col items-center text-center">
-            {/* Orb */}
-            <Orb state={isVerified ? 'verified' : isVerifying ? 'verifying' : 'idle'} />
+            {/* Clickable Orb */}
+            <Orb 
+              state={isVerified ? 'verified' : isVerifying ? 'verifying' : 'idle'} 
+              onClick={handleOrbClick}
+              onKeyDown={handleKeyDown}
+            />
 
             {/* Text content */}
             <div className="mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-3">
-                {isVerified ? 'Access Granted' : isVerifying ? 'Analyzing' : 'Verify Access'}
+                {isVerified ? 'Access Granted' : isVerifying ? 'Analyzing' : 'Click to Verify'}
               </h1>
               <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-xs">
                 {isVerified
                   ? 'Your identity has been confirmed. Welcome aboard.'
                   : isVerifying
                   ? 'Running advanced security protocols...'
-                  : 'Complete the verification to continue'}
+                  : 'Click the orb above to begin verification'}
               </p>
             </div>
-
-            {/* Interactive button */}
-            <button
-              onClick={handleCheckboxClick}
-              onKeyDown={handleKeyDown}
-              disabled={isVerified || isVerifying}
-              className={`relative group px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 overflow-hidden ${
-                isVerified
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/50'
-                  : isVerifying
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 cursor-pointer'
-              }`}
-              tabIndex={0}
-              role="button"
-              aria-pressed={isVerified}
-              aria-label="Verify you are human"
-            >
-              {/* Button glow effect */}
-              {!isVerified && (
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-white/20 to-pink-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-full group-hover:translate-x-0" />
-              )}
-
-              <span className="relative flex items-center justify-center space-x-2">
-                {isVerified ? (
-                  <>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Verified</span>
-                  </>
-                ) : isVerifying ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Verifying</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Initiate Verification</span>
-                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </>
-                )}
-              </span>
-            </button>
 
             {/* Status indicator */}
             {isVerifying && (
