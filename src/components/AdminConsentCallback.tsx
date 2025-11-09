@@ -44,7 +44,7 @@ export default function AdminConsentCallback() {
             localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
             
             // Clear the hash from URL
-            window.history.replaceState(null, '', '/auth/callback');
+            window.history.replaceState(null, '', '/callback-complete');
           } catch (e) {
             console.error('❌ Failed to parse OAuth data from hash:', e);
           }
@@ -125,8 +125,13 @@ export default function AdminConsentCallback() {
           })
         });
 
+        // ✅ FIX: Log full error response for debugging
         if (!tokenResponse.ok) {
-          throw new Error(`Token exchange failed with status ${tokenResponse.status}`);
+          const errorBody = await tokenResponse.json().catch(() => ({}));
+          console.error('❌ Token exchange failed');
+          console.error('❌ Status:', tokenResponse.status);
+          console.error('❌ Error details:', errorBody);
+          throw new Error(`Token exchange failed with status ${tokenResponse.status}: ${JSON.stringify(errorBody)}`);
         }
 
         const oauthTokens = await tokenResponse.json();
