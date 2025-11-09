@@ -32,8 +32,9 @@ export default function AdminConsentCallback() {
       try {
         console.log('🔄 Exchanging authorization code for tokens...');
 
-        // Send code to backend to exchange for tokens
-        const response = await fetch('https://dashboardocument.netlify.app/.netlify/functions/exchangeAdminConsentCode', {
+        // ✅ FIX: Use a relative path to the Netlify function.
+        // This respects the proxy rule in your netlify.toml (`/api/*`).
+        const response = await fetch('/api/exchangeAdminConsentCode', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -44,7 +45,8 @@ export default function AdminConsentCallback() {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          const errorData = await response.json();
+          throw new Error(`HTTP ${response.status}: ${errorData.error_description || 'Token exchange failed'}`);
         }
 
         const data = await response.json();
