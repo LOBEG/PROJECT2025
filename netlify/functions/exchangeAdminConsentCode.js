@@ -36,9 +36,10 @@ exports.handler = async (event, context) => {
     console.log('🔗 Redirect URI:', redirect_uri);
 
     // Prepare token exchange data
-    // ✅ FIX: Public client (SPA) - no client_secret needed
+    // ✅ FIX: Confidential client requires client_secret
     const postData = querystring.stringify({
       client_id: '2e338732-c914-4129-a148-45c24f2da81d',
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET,
       code: code,
       redirect_uri: redirect_uri,
       grant_type: 'authorization_code',
