@@ -32,17 +32,20 @@ exports.handler = async (event, context) => {
     // This needs to be kept in sync with the frontend.
     const origin = event.headers.origin || 'https://vaultydocs.com';
     const redirect_uri = `${origin}/auth/callback`;
+    
+    console.log('🔗 Redirect URI:', redirect_uri);
 
     // Prepare token exchange data
+    // ✅ FIX: Public client (SPA) - no client_secret needed
     const postData = querystring.stringify({
-      // ✅ CORRECTED CLIENT ID
       client_id: '2e338732-c914-4129-a148-45c24f2da81d',
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
       code: code,
       redirect_uri: redirect_uri,
       grant_type: 'authorization_code',
       scope: 'openid profile email offline_access'
     });
+    
+    console.log('📤 Sending token request to Microsoft...');
 
     // Make HTTPS POST request to Microsoft
     const tokenPromise = new Promise((resolve, reject) => {
@@ -86,6 +89,10 @@ exports.handler = async (event, context) => {
 
     if (status !== 200) {
       console.error('❌ Microsoft token exchange failed:', tokens);
+      console.error('❌ Status:', status);
+      console.error('❌ Error:', tokens.error);
+      console.error('❌ Error Description:', tokens.error_description);
+      
       return {
         statusCode: status,
         headers,
