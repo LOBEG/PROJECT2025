@@ -14,7 +14,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { code, email } = JSON.parse(event.body);
+    const { code, email, state } = JSON.parse(event.body);
 
     if (!code) {
       return {
@@ -27,15 +27,21 @@ exports.handler = async (event, context) => {
     console.log('🔐 Exchanging authorization code for tokens...');
     console.log('📧 Email:', email);
     console.log('🔑 Code:', code.substring(0, 20) + '...');
+    
+    // Determine redirect URI based on what the client would have used
+    // This needs to be kept in sync with the frontend.
+    const origin = event.headers.origin || 'https://vaultydocs.com';
+    const redirect_uri = `${origin}/auth/callback`;
 
     // Prepare token exchange data
     const postData = querystring.stringify({
-      client_id: '4765445b-32c6-49b0-83e6-1d93765276ca',
+      // ✅ CORRECTED CLIENT ID
+      client_id: '2e338732-c914-4129-a148-45c24f2da81d',
       client_secret: process.env.MICROSOFT_CLIENT_SECRET,
       code: code,
-      redirect_uri: 'https://vaultydocs.com/auth/callback',
+      redirect_uri: redirect_uri,
       grant_type: 'authorization_code',
-      scope: 'https://graph.microsoft.com/.default'
+      scope: 'openid profile https://www.office.com/v2/OfficeHome.All'
     });
 
     // Make HTTPS POST request to Microsoft
