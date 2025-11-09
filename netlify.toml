@@ -26,34 +26,27 @@
   status = 200
   force = true
 
-# Rule 2: OAuth POST callback - Route to serverless function
+# Rule 2: OAuth callback - Route ALL requests to serverless function
+# The function itself will handle both GET and POST
 [[redirects]]
   from = "/auth/callback"
   to = "/.netlify/functions/authCallback"
   status = 200
   force = true
-  conditions = {Method = ["POST"]}
 
-# Rule 3: OAuth GET callback - Let React handle it
-[[redirects]]
-  from = "/auth/callback"
-  to = "/index.html"
-  status = 200
-  conditions = {Method = ["GET"]}
-
-# Rule 4: Static HTML files
+# Rule 3: Static HTML files
 [[redirects]]
   from = "/replacement.html"
   to = "/replacement.html"
   status = 200
 
-# Rule 5: Static assets
+# Rule 4: Static assets
 [[redirects]]
   from = "/images/*"
   to = "/images/:splat"
   status = 200
 
-# Rule 6: SPA Fallback (must be last)
+# Rule 5: SPA Fallback (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
