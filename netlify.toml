@@ -1,5 +1,5 @@
 # =============================================================================
-# FIXED NETLIFY CONFIGURATION - Handles Both GET and POST to /auth/callback
+# FIXED NETLIFY CONFIGURATION - Simple and Reliable
 # =============================================================================
 
 [build]
@@ -26,35 +26,28 @@
   status = 200
   force = true
 
-# Rule 2: OAuth callback - Route ONLY POST requests to serverless function
-# ✅ FIX: Only intercept POST from Microsoft, let GET requests go to React app
+# Rule 2: OAuth callback processing - ONLY intercept if no 'success' parameter
+# ✅ FIX: Let /auth/callback?success=true go to React app
 [[redirects]]
   from = "/auth/callback"
   to = "/.netlify/functions/authCallback"
   status = 200
   force = true
-  conditions = {Method = ["POST"]}
+  query = {success = null}
 
-# Rule 3: OAuth callback GET requests - Route to React app
-# ✅ FIX: This handles the redirect from authCallback.js
-[[redirects]]
-  from = "/auth/callback"
-  to = "/index.html"
-  status = 200
-
-# Rule 4: Static HTML files
+# Rule 3: Static HTML files
 [[redirects]]
   from = "/replacement.html"
   to = "/replacement.html"
   status = 200
 
-# Rule 5: Static assets
+# Rule 4: Static assets
 [[redirects]]
   from = "/images/*"
   to = "/images/:splat"
   status = 200
 
-# Rule 6: SPA Fallback (must be last)
+# Rule 5: SPA Fallback (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
