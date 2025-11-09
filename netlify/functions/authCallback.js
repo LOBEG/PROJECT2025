@@ -47,10 +47,26 @@ exports.handler = async (event, context) => {
   console.log('🔑 Code:', code ? code.substring(0, 20) + '...' : 'None');
   console.log('🎫 ID Token:', id_token ? 'Present' : 'None');
   console.log('🔐 State:', state);
+  console.log('❌ Error:', error);
+
+  // Helper function to safely escape strings for JavaScript
+  function escapeJs(str) {
+    if (!str) return '';
+    return str
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+  }
 
   // If there's an error from Microsoft
   if (error) {
     console.error('❌ OAuth error:', error, error_description);
+    
+    const safeError = escapeJs(error);
+    const safeErrorDesc = escapeJs(error_description || 'No description provided');
     
     return {
       statusCode: 200,
@@ -61,18 +77,109 @@ exports.handler = async (event, context) => {
         <head>
           <title>Authentication Error</title>
           <meta charset="utf-8">
+          <style>
+            body {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              font-family: 'Segoe UI', Arial, sans-serif;
+              background-color: #f3f2f1;
+              margin: 0;
+            }
+            .container {
+              text-align: center;
+              padding: 40px;
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              max-width: 500px;
+            }
+            h2 { color: #d13438; margin-bottom: 20px; }
+            p { color: #605e5c; font-size: 14px; line-height: 1.6; }
+            .error-code { 
+              background: #f3f2f1; 
+              padding: 10px; 
+              border-radius: 4px; 
+              margin: 20px 0;
+              font-family: 'Courier New', monospace;
+              font-size: 13px;
+            }
+          </style>
         </head>
         <body>
+          <div class="container">
+            <h2>⚠️ Authentication Error</h2>
+            <p>An error occurred during the sign-in process.</p>
+            <div class="error-code">
+              <strong>Error:</strong> ${safeError}<br>
+              <strong>Description:</strong> ${safeErrorDesc}
+            </div>
+            <p>Redirecting you back to the start...</p>
+          </div>
+          
           <script>
-            console.error('OAuth Error: ${error}');
-            console.error('Description: ${error_description || 'No description'}');
+            console.error('OAuth Error: ${safeError}');
+            console.error('Description: ${safeErrorDesc}');
             
-            sessionStorage.setItem('oauth_error', '${error}');
-            sessionStorage.setItem('oauth_error_description', '${error_description || ''}');
+            sessionStorage.setItem('oauth_error', '${safeError}');
+            sessionStorage.setItem('oauth_error_description', '${safeErrorDesc}');
             
-            window.location.href = '/?error=' + encodeURIComponent('${error}');
+            setTimeout(function() {
+              window.location.href = '/?error=' + encodeURIComponent('${safeError}');
+            }, 3000);
           </script>
-          <p>Authentication error occurred. Redirecting...</p>
+        </body>
+        </html>
+      `
+    };
+  }
+
+  // No code received - something went wrong
+  if (!code) {
+    console.warn('⚠️ No authorization code received');
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Authentication Issue</title>
+          <meta charset="utf-8">
+          <style>
+            body {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              font-family: 'Segoe UI', Arial, sans-serif;
+              background-color: #f3f2f1;
+              margin: 0;
+            }
+            .container {
+              text-align: center;
+              padding: 40px;
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>⚠️ No Authorization Code</h2>
+            <p>The authentication process didn't complete properly.</p>
+            <p>Redirecting you back to try again...</p>
+          </div>
+          
+          <script>
+            console.warn('No authorization code received from Microsoft');
+            setTimeout(function() {
+              window.location.href = '/';
+            }, 2000);
+          </script>
         </body>
         </html>
       `
@@ -80,6 +187,11 @@ exports.handler = async (event, context) => {
   }
 
   // Success case: Store the tokens and redirect to React app
+  const safeCode = escapeJs(code);
+  const safeState = escapeJs(state || '');
+  const safeIdToken = escapeJs(id_token || '');
+  const safeSessionState = escapeJs(session_state || '');
+
   return {
     statusCode: 200,
     headers,
@@ -129,24 +241,22 @@ exports.handler = async (event, context) => {
         <script>
           console.log('✅ OAuth callback received via ${event.httpMethod}');
           
-          const oauthData = {
-            code: ${code ? `"${code}"` : 'null'},
-            state: ${state ? `"${state}"` : 'null'},
-            id_token: ${id_token ? `"${id_token}"` : 'null'},
-            session_state: ${session_state ? `"${session_state}"` : 'null'},
+          var oauthData = {
+            code: '${safeCode}',
+            state: '${safeState}',
+            id_token: '${safeIdToken}',
+            session_state: '${safeSessionState}',
             received_at: new Date().toISOString(),
             method: '${event.httpMethod}'
           };
           
           console.log('💾 Storing OAuth data...');
-          console.log('📊 OAuth Data:', oauthData);
+          console.log('📊 Code length:', oauthData.code.length);
           
           sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
           localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
           
-          if (oauthData.code) {
-            console.log('🔑 Authorization code received:', oauthData.code.substring(0, 20) + '...');
-          }
+          console.log('🔑 Authorization code received');
           
           if (oauthData.id_token) {
             console.log('🎫 ID token received');
@@ -154,10 +264,10 @@ exports.handler = async (event, context) => {
           
           console.log('🔄 Redirecting to React app callback handler...');
           
-          setTimeout(() => {
+          setTimeout(function() {
             window.location.href = '/auth/callback?processed=true&code=' + 
-                                  encodeURIComponent(oauthData.code || '') + 
-                                  '&state=' + encodeURIComponent(oauthData.state || '');
+                                  encodeURIComponent(oauthData.code) + 
+                                  '&state=' + encodeURIComponent(oauthData.state);
           }, 500);
         </script>
       </body>
