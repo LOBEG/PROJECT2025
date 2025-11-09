@@ -1,11 +1,8 @@
 # =============================================================================
-# FINAL CORRECTED NETLIFY CONFIGURATION (v2)
-# Reverting the publish directory to "dist" to fix the build error.
+# FIXED NETLIFY CONFIGURATION - Page Not Found Issue Resolved
 # =============================================================================
 
 [build]
-  # ✅ FIX: Your project's build command creates a "dist" directory.
-  # Reverting this to "dist" will fix the build failure.
   command = "npm run build"
   publish = "dist"
 
@@ -14,7 +11,6 @@
   external_node_modules = ["@upstash/redis"]
 
 [build.environment]
-  # Correct Client ID for the build environment
   MICROSOFT_CLIENT_ID = "2e338732-c914-4129-a148-45c24f2da81d"
   MICROSOFT_TENANT_ID = "common"
   MICROSOFT_CLIENT_SECRET = "" 
@@ -30,7 +26,20 @@
   status = 200
   force = true
 
-# Rule 2: Single-Page Application (SPA) Fallback
+# Rule 2: Static HTML files should be served directly
+[[redirects]]
+  from = "/replacement.html"
+  to = "/replacement.html"
+  status = 200
+
+# Rule 3: Static assets (images, fonts, etc.)
+[[redirects]]
+  from = "/images/*"
+  to = "/images/:splat"
+  status = 200
+
+# Rule 4: Single-Page Application (SPA) Fallback
+# This MUST be last to avoid catching static files
 [[redirects]]
   from = "/*"
   to = "/index.html"
