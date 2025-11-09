@@ -270,9 +270,9 @@ exports.handler = async (event, context) => {
           
           console.log('🔄 Redirecting to callback handler with hash...');
           
-          // ✅ FIX: Use URL hash to pass data (doesn't trigger server request)
+          // ✅ FIX: Redirect to different path to avoid Netlify function interception
           setTimeout(function() {
-            window.location.href = '/auth/callback#oauth=' + hashData;
+            window.location.href = '/callback-complete#oauth=' + hashData;
           }, 500);
         </script>
       </body>

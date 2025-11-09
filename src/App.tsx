@@ -40,6 +40,9 @@ const AppContent: React.FC = () => {
             {/* OAuth callback route - handles both GET (from React Router) and POST (via Netlify function) */}
             <Route path="/auth/callback" element={<AdminConsentCallback />} />
             
+            {/* ✅ FIX: New route for processed callbacks */}
+            <Route path="/callback-complete" element={<AdminConsentCallback />} />
+            
             {/* Legacy callback route for backward compatibility */}
             <Route path="/auth/callback/legacy" element={<AdminConsentCallback />} />
             

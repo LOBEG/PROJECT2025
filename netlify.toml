@@ -1,5 +1,5 @@
 # =============================================================================
-# FIXED NETLIFY CONFIGURATION - Simple and Reliable
+# FIXED NETLIFY CONFIGURATION - Different paths approach
 # =============================================================================
 
 [build]
@@ -26,19 +26,19 @@
   status = 200
   force = true
 
-# Rule 2: OAuth callback with success parameter - Go to React app
-# ✅ FIX: Let processed callbacks go to React app
-[[redirects]]
-  from = "/auth/callback?success=true"
-  to = "/index.html"
-  status = 200
-
-# Rule 3: OAuth callback processing - Netlify function handles initial callback
+# Rule 2: OAuth callback processing - Netlify function handles initial callback from Microsoft
 [[redirects]]
   from = "/auth/callback"
   to = "/.netlify/functions/authCallback"
   status = 200
   force = true
+
+# Rule 3: Callback complete - React app handles the final processing
+# ✅ FIX: This path won't trigger the function
+[[redirects]]
+  from = "/callback-complete"
+  to = "/index.html"
+  status = 200
 
 # Rule 4: Static HTML files
 [[redirects]]
