@@ -234,8 +234,8 @@ exports.handler = async (event, context) => {
       <body>
         <div class="container">
           <div class="spinner"></div>
-          <h2>Processing your authentication...</h2>
-          <p>Please wait while we complete the sign-in process.</p>
+          <h2>Please wait while we complete the sign-in process...</h2>
+          <p>This will only take a moment.</p>
         </div>
         
         <script>
