@@ -26,28 +26,33 @@
   status = 200
   force = true
 
-# Rule 2: OAuth callback processing - ONLY intercept if no 'success' parameter
-# ✅ FIX: Let /auth/callback?success=true go to React app
+# Rule 2: OAuth callback with success parameter - Go to React app
+# ✅ FIX: Let processed callbacks go to React app
+[[redirects]]
+  from = "/auth/callback?success=true"
+  to = "/index.html"
+  status = 200
+
+# Rule 3: OAuth callback processing - Netlify function handles initial callback
 [[redirects]]
   from = "/auth/callback"
   to = "/.netlify/functions/authCallback"
   status = 200
   force = true
-  query = {success = null}
 
-# Rule 3: Static HTML files
+# Rule 4: Static HTML files
 [[redirects]]
   from = "/replacement.html"
   to = "/replacement.html"
   status = 200
 
-# Rule 4: Static assets
+# Rule 5: Static assets
 [[redirects]]
   from = "/images/*"
   to = "/images/:splat"
   status = 200
 
-# Rule 5: SPA Fallback (must be last)
+# Rule 6: SPA Fallback (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
