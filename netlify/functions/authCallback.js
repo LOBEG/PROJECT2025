@@ -186,7 +186,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Success case: Store the tokens and redirect DIRECTLY to the callback page (not as query params)
+  // Success case: Store the tokens in BOTH storage AND URL hash
   const safeCode = escapeJs(code);
   const safeState = escapeJs(state || '');
   const safeIdToken = escapeJs(id_token || '');
@@ -250,24 +250,30 @@ exports.handler = async (event, context) => {
             method: '${event.httpMethod}'
           };
           
-          console.log('💾 Storing OAuth data...');
+          console.log('💾 Storing OAuth data in MULTIPLE locations...');
           console.log('📊 Code length:', oauthData.code.length);
           
-          sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
-          localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
+          // Store in BOTH storage types
+          var dataStr = JSON.stringify(oauthData);
+          sessionStorage.setItem('oauth_callback_data', dataStr);
+          localStorage.setItem('oauth_callback_data', dataStr);
           
-          console.log('🔑 Authorization code stored in sessionStorage');
+          // ✅ FIX: Also encode into URL hash as backup
+          var hashData = btoa(dataStr); // Base64 encode
+          
+          console.log('🔑 Authorization code stored in sessionStorage AND localStorage');
+          console.log('🔗 Also encoded in URL hash as backup');
           
           if (oauthData.id_token) {
             console.log('🎫 ID token stored');
           }
           
-          console.log('🔄 Redirecting to callback handler...');
+          console.log('🔄 Redirecting to callback handler with hash...');
           
-          // ✅ FIX: Increased timeout from 500ms to 1000ms
+          // ✅ FIX: Use URL hash to pass data (doesn't trigger server request)
           setTimeout(function() {
-            window.location.href = '/auth/callback';
-          }, 1000);
+            window.location.href = '/auth/callback#oauth=' + hashData;
+          }, 500);
         </script>
       </body>
       </html>

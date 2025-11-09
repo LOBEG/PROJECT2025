@@ -29,6 +29,27 @@ export default function AdminConsentCallback() {
         // Mark as processing
         sessionStorage.setItem('oauth_processing', 'true');
         
+        // ✅ FIX: Check URL hash FIRST (more reliable than sessionStorage timing)
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#oauth=')) {
+          try {
+            const hashData = hash.substring(7); // Remove '#oauth='
+            const decoded = atob(hashData); // Base64 decode
+            const oauthData = JSON.parse(decoded);
+            
+            console.log('✅ Found OAuth data in URL hash!');
+            
+            // Store it properly in sessionStorage
+            sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
+            localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
+            
+            // Clear the hash from URL
+            window.history.replaceState(null, '', '/auth/callback');
+          } catch (e) {
+            console.error('❌ Failed to parse OAuth data from hash:', e);
+          }
+        }
+        
         // ✅ FIX: Add retry logic to wait for OAuth data
         let oauthDataStr: string | null = null;
         let retries = 0;
