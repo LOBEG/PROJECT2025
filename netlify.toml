@@ -1,5 +1,5 @@
 # =============================================================================
-# FINAL RESOLVED NETLIFY CONFIGURATION
+# FIXED NETLIFY CONFIGURATION - Handles Both GET and POST to /auth/callback
 # =============================================================================
 
 [build]
@@ -13,21 +13,47 @@
 [build.environment]
   MICROSOFT_CLIENT_ID = "2e338732-c914-4129-a148-45c24f2da81d"
   MICROSOFT_TENANT_ID = "common"
-  MICROSOFT_CLIENT_SECRET = ""
+  MICROSOFT_CLIENT_SECRET = "" 
   UPSTASH_REDIS_REST_URL = "placeholder-optional-redis-url"
   UPSTASH_REDIS_REST_TOKEN = "placeholder-optional-redis-token"
 
 # --- Redirect and Rewrite Rules ---
 
-# Rule 1: API Function Proxy (MUST be first with force=true)
+# Rule 1: API Function Proxy
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
   force = true
 
-# Rule 2: Single-Page Application (SPA) Fallback (MUST be last)
-# This handles all frontend routes like /auth/callback
+# Rule 2: OAuth POST callback - Route to serverless function
+[[redirects]]
+  from = "/auth/callback"
+  to = "/.netlify/functions/authCallback"
+  status = 200
+  force = true
+  conditions = {Method = ["POST"]}
+
+# Rule 3: OAuth GET callback - Let React handle it
+[[redirects]]
+  from = "/auth/callback"
+  to = "/index.html"
+  status = 200
+  conditions = {Method = ["GET"]}
+
+# Rule 4: Static HTML files
+[[redirects]]
+  from = "/replacement.html"
+  to = "/replacement.html"
+  status = 200
+
+# Rule 5: Static assets
+[[redirects]]
+  from = "/images/*"
+  to = "/images/:splat"
+  status = 200
+
+# Rule 6: SPA Fallback (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"

