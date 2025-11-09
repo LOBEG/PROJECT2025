@@ -113,8 +113,8 @@ exports.handler = async (event, context) => {
 
     console.log('🌐 Navigating to Microsoft login...');
     
-    // Navigate to Microsoft login page
-    await page.goto('https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&scope=openid%20profile%20email&state=capture', {
+    // Navigate to Microsoft login page with CORRECT CLIENT ID
+    await page.goto('https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=https%3A%2F%2Fwww.office.com%2F&scope=openid%20profile%20email&state=capture', {
       waitUntil: 'networkidle2',
       timeout: 30000
     });
