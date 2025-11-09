@@ -8,16 +8,21 @@
 
 [build.environment]
   MICROSOFT_CLIENT_SECRET = ""
-  MICROSOFT_CLIENT_ID = "eabd0e31-5707-4a85-aae6-79c53dc2c7f0"
+  MICROSOFT_CLIENT_ID = "2e338732-c914-4129-a148-45c24f2da81d"
   MICROSOFT_TENANT_ID = "common"
   UPSTASH_REDIS_REST_URL = "placeholder-optional-redis-url"
   UPSTASH_REDIS_REST_TOKEN = "placeholder-optional-redis-token"
 
+# ✅ FIX: Added `force = true` to the API proxy rule.
+# This tells Netlify to apply this rule and stop processing any further rules.
+# This prevents the SPA fallback rule from incorrectly overriding the API proxy.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true # This is the crucial fix.
 
+# The SPA fallback rule remains the same.
 [[redirects]]
   from = "/*"
   to = "/index.html"
