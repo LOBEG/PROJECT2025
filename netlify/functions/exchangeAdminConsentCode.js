@@ -37,11 +37,11 @@ exports.handler = async (event, context) => {
     const postData = querystring.stringify({
       // ✅ CORRECTED CLIENT ID
       client_id: '2e338732-c914-4129-a148-45c24f2da81d',
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET,
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
       code: code,
       redirect_uri: redirect_uri,
       grant_type: 'authorization_code',
-      scope: 'openid profile https://www.office.com/v2/OfficeHome.All'
+      scope: 'openid profile email offline_access'
     });
 
     // Make HTTPS POST request to Microsoft
