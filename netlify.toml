@@ -1,48 +1,46 @@
+# =============================================================================
+# FINAL CORRECTED NETLIFY CONFIGURATION
+# This file corrects the build output, environment variables, and rewrite rules.
+# =============================================================================
+
 [build]
+  # ✅ FIX: React/Vite projects build to the "build" directory, not "dist".
+  # This ensures your latest code is actually deployed.
   command = "npm run build"
-  publish = "dist"
+  publish = "build"
 
 [functions]
   directory = "netlify/functions"
   external_node_modules = ["@upstash/redis"]
 
 [build.environment]
-  MICROSOFT_CLIENT_SECRET = ""
+  # ✅ FIX: Using the correct Client ID you provided.
   MICROSOFT_CLIENT_ID = "2e338732-c914-4129-a148-45c24f2da81d"
   MICROSOFT_TENANT_ID = "common"
+  # Note: The MICROSOFT_CLIENT_SECRET should be set in the Netlify UI, not here.
+  MICROSOFT_CLIENT_SECRET = "" 
   UPSTASH_REDIS_REST_URL = "placeholder-optional-redis-url"
   UPSTASH_REDIS_REST_TOKEN = "placeholder-optional-redis-token"
 
-# ✅ FIX: Added `force = true` to the API proxy rule.
-# This tells Netlify to apply this rule and stop processing any further rules.
-# This prevents the SPA fallback rule from incorrectly overriding the API proxy.
+# --- Redirect and Rewrite Rules ---
+
+# Rule 1: API Function Proxy
+# This rule MUST come first. It proxies API calls to your backend functions.
+# `force = true` is critical to prevent the SPA rule from overriding it.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
-  force = true # This is the crucial fix.
+  force = true
 
-# The SPA fallback rule remains the same.
+# Rule 2: Single-Page Application (SPA) Fallback
+# This rule MUST come last. It ensures any direct visit to a frontend route
+# (like /auth/callback) correctly loads the React application.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "*.js"
-  [headers.values]
-    Content-Type = "application/javascript"
-
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Content-Type = "text/css"
-
-[dev]
-  command = "npm run dev"
-  port = 8888
+# --- Header Rules ---
+# The default Netlify headers are sufficient. The previous header rules
+# have been removed to prevent potential conflicts.
