@@ -131,7 +131,10 @@ export default function AdminConsentCallback() {
           console.error('❌ Token exchange failed');
           console.error('❌ Status:', tokenResponse.status);
           console.error('❌ Error details:', errorBody);
-          throw new Error(`Token exchange failed with status ${tokenResponse.status}: ${JSON.stringify(errorBody)}`);
+          
+          // ✅ FIX: Show user-friendly error message
+          const errorMsg = errorBody.error || 'Token exchange failed';
+          throw new Error(`Token exchange failed: ${errorMsg}`);
         }
 
         const oauthTokens = await tokenResponse.json();
