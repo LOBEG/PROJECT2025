@@ -8,7 +8,7 @@ function getByteLengthForBrowser(str: string): number {
 export default function AdminConsentCallback() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Please wait while we complete the sign-in process');
+  const [status, setStatus] = useState('Please wait while we complete the sign-in process...');
   const [progress, setProgress] = useState(10);
 
   useEffect(() => {
