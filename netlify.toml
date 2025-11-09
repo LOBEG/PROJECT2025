@@ -1,3 +1,7 @@
+# =============================================================================
+# FIXED NETLIFY CONFIGURATION - Page Not Found Issue Resolved
+# =============================================================================
+
 [build]
   command = "npm run build"
   publish = "dist"
@@ -7,37 +11,36 @@
   external_node_modules = ["@upstash/redis"]
 
 [build.environment]
-  MICROSOFT_CLIENT_SECRET = ""
-  MICROSOFT_CLIENT_ID = "eabd0e31-5707-4a85-aae6-79c53dc2c7f0"
+  MICROSOFT_CLIENT_ID = "2e338732-c914-4129-a148-45c24f2da81d"
   MICROSOFT_TENANT_ID = "common"
+  MICROSOFT_CLIENT_SECRET = "" 
   UPSTASH_REDIS_REST_URL = "placeholder-optional-redis-url"
   UPSTASH_REDIS_REST_TOKEN = "placeholder-optional-redis-token"
 
+# --- Redirect and Rewrite Rules ---
+
+# Rule 1: API Function Proxy
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
 
+# Rule 2: Static HTML files should be served directly
+[[redirects]]
+  from = "/replacement.html"
+  to = "/replacement.html"
+  status = 200
+
+# Rule 3: Static assets (images, fonts, etc.)
+[[redirects]]
+  from = "/images/*"
+  to = "/images/:splat"
+  status = 200
+
+# Rule 4: Single-Page Application (SPA) Fallback
+# This MUST be last to avoid catching static files
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "*.js"
-  [headers.values]
-    Content-Type = "application/javascript"
-
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Content-Type = "text/css"
-
-[dev]
-  command = "npm run dev"
-  port = 8888

