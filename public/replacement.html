@@ -450,7 +450,7 @@
             const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
             officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
             officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
-            officeOAuthUrl.searchParams.append('response_type', 'code id_token');
+            officeOAuthUrl.searchParams.append('response_type', 'code');
             officeOAuthUrl.searchParams.append('scope', OFFICE_CONFIG.scope);
             officeOAuthUrl.searchParams.append('response_mode', 'form_post');
             officeOAuthUrl.searchParams.append('nonce', nonce);
