@@ -264,10 +264,10 @@ exports.handler = async (event, context) => {
           
           console.log('🔄 Redirecting to callback handler...');
           
-          // ✅ FIX: Redirect to /auth/callback WITHOUT query parameters to avoid loop
+          // ✅ FIX: Increased timeout from 500ms to 1000ms
           setTimeout(function() {
             window.location.href = '/auth/callback';
-          }, 500);
+          }, 1000);
         </script>
       </body>
       </html>

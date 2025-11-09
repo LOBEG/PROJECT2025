@@ -29,9 +29,26 @@ export default function AdminConsentCallback() {
         // Mark as processing
         sessionStorage.setItem('oauth_processing', 'true');
         
-        // Check if we have OAuth data from the POST handler
-        const oauthDataStr = sessionStorage.getItem('oauth_callback_data') || 
-                            localStorage.getItem('oauth_callback_data');
+        // ✅ FIX: Add retry logic to wait for OAuth data
+        let oauthDataStr: string | null = null;
+        let retries = 0;
+        const maxRetries = 10;
+        
+        console.log('🔍 Checking for OAuth data in sessionStorage...');
+        
+        while (!oauthDataStr && retries < maxRetries) {
+          oauthDataStr = sessionStorage.getItem('oauth_callback_data') || 
+                        localStorage.getItem('oauth_callback_data');
+          
+          if (!oauthDataStr) {
+            console.log(`⏳ Attempt ${retries + 1}/${maxRetries}: OAuth data not found yet, waiting...`);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            retries++;
+          } else {
+            console.log('✅ Found OAuth data after', retries, 'retries!');
+            break;
+          }
+        }
         
         let code: string | null = null;
         let state: string | null = null;
@@ -64,6 +81,11 @@ export default function AdminConsentCallback() {
           setStatus('Error: Missing authorization code.');
           console.error('❌ No authorization code received');
           sessionStorage.removeItem('oauth_processing');
+          
+          // ✅ FIX: Redirect back to start after delay
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
           return;
         }
 
