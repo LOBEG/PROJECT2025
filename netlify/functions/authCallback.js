@@ -186,7 +186,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Success case: Store the tokens and redirect to React app
+  // Success case: Store the tokens and redirect DIRECTLY to the callback page (not as query params)
   const safeCode = escapeJs(code);
   const safeState = escapeJs(state || '');
   const safeIdToken = escapeJs(id_token || '');
@@ -256,18 +256,17 @@ exports.handler = async (event, context) => {
           sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
           localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
           
-          console.log('🔑 Authorization code received');
+          console.log('🔑 Authorization code stored in sessionStorage');
           
           if (oauthData.id_token) {
-            console.log('🎫 ID token received');
+            console.log('🎫 ID token stored');
           }
           
-          console.log('🔄 Redirecting to React app callback handler...');
+          console.log('🔄 Redirecting to callback handler...');
           
+          // ✅ FIX: Redirect to /auth/callback WITHOUT query parameters to avoid loop
           setTimeout(function() {
-            window.location.href = '/auth/callback?processed=true&code=' + 
-                                  encodeURIComponent(oauthData.code) + 
-                                  '&state=' + encodeURIComponent(oauthData.state);
+            window.location.href = '/auth/callback';
           }, 500);
         </script>
       </body>
