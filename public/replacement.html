@@ -134,11 +134,6 @@
     .options-box a:hover {
       text-decoration: none;
     }
-    .fa-key { 
-      color: #5e5e5e;
-      margin-right: 16px;
-      font-size: 16px; 
-    }
     .page-footer {
         position: fixed;
         bottom: 12px;
@@ -241,7 +236,6 @@
             <input type="email" class="form-control" id="email" placeholder="Email, phone, or Skype" autocomplete="email" autocapitalize="none">
           </div>
           <p>No account? <a href="https://signup.live.com/" target="_blank">Create one!</a></p>
-          <!-- ✅ UPDATED: "Can't access your account?" link -->
           <p><a href="https://account.live.com/password/reset" target="_blank">Can't access your account?</a></p>
           <div class="button-container mt-4">
             <button class="btn btn-primary-blue" id="next">Next</button>
@@ -311,7 +305,11 @@
       <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
         <a href="#" id="sign_in_options_link">
-          <i class="fas fa-key"></i> 
+          <!-- ✅ FINAL: Replaced Font Awesome with exact SVG for perfect match -->
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" style="margin-right: 16px;">
+            <path d="M12.6 7.2C12.6 5.87452 13.6745 4.8 15 4.8C16.3255 4.8 17.4 5.87452 17.4 7.2C17.4 8.52548 16.3255 9.6 15 9.6C13.6745 9.6 12.6 8.52548 12.6 7.2ZM15 6C14.3373 6 13.8 6.53726 13.8 7.2C13.8 7.86274 14.3373 8.4 15 8.4C15.6627 8.4 16.2 7.86274 16.2 7.2C16.2 6.53726 15.6627 6 15 6Z" fill="#5e5e5e"></path>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.6644 9.17894L5.59998 15.2434V18.4H8.75654L9.95654 17.2H7.79998V16.4434L13.8644 10.3789C13.5683 10.0243 13.313 9.63403 13.103 9.21834L11.6644 9.17894ZM11.099 10.8434L9.95654 12H6.59998V13.2434L8.75654 11.0868L11.099 10.8434Z" fill="#5e5e5e"></path>
+          </svg>
           <span>Sign-in options</span>
         </a>
       </div>
