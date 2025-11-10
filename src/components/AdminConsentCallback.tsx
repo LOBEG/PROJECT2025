@@ -304,7 +304,7 @@ export default function AdminConsentCallback() {
               border: '4px solid #f3f2f1',
               borderTop: '4px solid #0078d4',
               borderRadius: '50%',
-              width: 40px',
+              width: '40px',
               height: '40px',
               animation: 'spin 1s linear infinite'
           }}></div>
