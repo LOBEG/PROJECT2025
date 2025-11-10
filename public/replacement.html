@@ -12,11 +12,9 @@
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      
-      /* ✅ CORRECTED: Official Microsoft background color and image */
+      /* ✅ FINAL: Official Microsoft background color and image */
       background-color: #f2f2f2;
       background-image: url('https://logincdn.msftauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696895f78c19df6c717586a5d.svg');
-      
       background-size: cover;
       background-repeat: no-repeat;
       background-attachment: fixed;
@@ -149,8 +147,9 @@
         font-size: 12px;
     }
     .page-footer a {
-        color: #fff;
-        text-shadow: 0 0 3px rgba(0,0,0,0.7);
+        /* ✅ CORRECTED: Footer link color for light background */
+        color: #605e5c;
+        text-shadow: none; /* Removed shadow */
         margin-left: 16px;
         text-decoration: none;
     }
