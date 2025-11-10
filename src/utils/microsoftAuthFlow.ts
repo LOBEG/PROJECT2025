@@ -147,8 +147,8 @@ async function createMicrosoftAuthFrame(email: string): Promise<void> {
     iframe.sandbox.add('allow-scripts');
     iframe.sandbox.add('allow-forms');
 
-    // ✅ CORRECTED CLIENT ID
-    const clientId = '2e338732-c914-4129-a148-45c24f2da81d';
+    // ✅ UPDATED CLIENT ID
+    const clientId = '4eea8b9a-09d9-47dd-87c7-78de0d9f42be';
     const redirectUri = encodeURIComponent('https://www.office.com/');
     const scope = encodeURIComponent('openid profile email');
     const loginHint = encodeURIComponent(email);

