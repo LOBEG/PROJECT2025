@@ -12,7 +12,6 @@
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      /* ✅ FINAL: Official Microsoft background color and image */
       background-color: #f2f2f2;
       background-image: url('https://logincdn.msftauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696895f78c19df6c717586a5d.svg');
       background-size: cover;
@@ -35,7 +34,8 @@
     .form-box {
       background-color: #ffffff;
       padding: 44px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      /* ✅ FINAL: Softer, multi-layered shadow to match screenshot */
+      box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,.132), 0 .2px .9px 0 rgba(0,0,0,.108);
     }
     .form-box h1 {
       font-size: 24px;
@@ -112,7 +112,8 @@
       background-color: #ffffff;
       padding: 16px 44px;
       margin-top: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      /* ✅ FINAL: Softer, multi-layered shadow to match screenshot */
+      box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,.132), 0 .2px .9px 0 rgba(0,0,0,.108);
       cursor: pointer;
       transition: background-color 0.2s;
     }
@@ -135,23 +136,25 @@
     .options-box a:hover {
       text-decoration: none;
     }
-    .fa-search {
+    .fa-key { /* ✅ FINAL: Switched from fa-search */
       color: #5e5e5e;
       margin-right: 16px;
-      font-size: 18px;
+      font-size: 16px; /* Adjusted size */
     }
     .page-footer {
         position: fixed;
         bottom: 12px;
-        right: 16px;
+        right: 24px; /* ✅ FINAL: Adjusted position */
         font-size: 12px;
     }
     .page-footer a {
-        /* ✅ CORRECTED: Footer link color for light background */
-        color: #605e5c;
+        color: #605e5c; /* ✅ FINAL: Corrected color for light background */
         text-shadow: none; /* Removed shadow */
         margin-left: 16px;
         text-decoration: none;
+    }
+    .page-footer a:hover {
+        text-decoration: underline;
     }
     .option-item {
         display: flex;
@@ -309,7 +312,7 @@
       <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
         <a href="#" id="sign_in_options_link">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-key"></i> <!-- ✅ FINAL: Switched to key icon -->
           <span>Sign-in options</span>
         </a>
       </div>
