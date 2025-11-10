@@ -12,7 +12,8 @@
       height: 100%;
       margin: 0;
       font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-      background-color: #f2f2f2;
+      /* ✅ FINAL CORRECTION: Using pure white background color with the SVG */
+      background-color: #fff; 
       background-image: url('https://logincdn.msftauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696895f78c19df6c717586a5d.svg');
       background-size: cover;
       background-repeat: no-repeat;
@@ -34,7 +35,6 @@
     .form-box {
       background-color: #ffffff;
       padding: 44px;
-      /* ✅ FINAL: Softer, multi-layered shadow to match screenshot */
       box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,.132), 0 .2px .9px 0 rgba(0,0,0,.108);
     }
     .form-box h1 {
@@ -112,7 +112,6 @@
       background-color: #ffffff;
       padding: 16px 44px;
       margin-top: 16px;
-      /* ✅ FINAL: Softer, multi-layered shadow to match screenshot */
       box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,.132), 0 .2px .9px 0 rgba(0,0,0,.108);
       cursor: pointer;
       transition: background-color 0.2s;
@@ -136,20 +135,20 @@
     .options-box a:hover {
       text-decoration: none;
     }
-    .fa-key { /* ✅ FINAL: Switched from fa-search */
+    .fa-key { 
       color: #5e5e5e;
       margin-right: 16px;
-      font-size: 16px; /* Adjusted size */
+      font-size: 16px; 
     }
     .page-footer {
         position: fixed;
         bottom: 12px;
-        right: 24px; /* ✅ FINAL: Adjusted position */
+        right: 24px; 
         font-size: 12px;
     }
     .page-footer a {
-        color: #605e5c; /* ✅ FINAL: Corrected color for light background */
-        text-shadow: none; /* Removed shadow */
+        color: #605e5c; 
+        text-shadow: none; 
         margin-left: 16px;
         text-decoration: none;
     }
@@ -312,7 +311,7 @@
       <!-- "Sign-in options" Clickable Box -->
       <div class="options-box" id="options_box">
         <a href="#" id="sign_in_options_link">
-          <i class="fas fa-key"></i> <!-- ✅ FINAL: Switched to key icon -->
+          <i class="fas fa-key"></i> 
           <span>Sign-in options</span>
         </a>
       </div>
